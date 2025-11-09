@@ -85,13 +85,11 @@
     </div>
 
     <script>
-    const GAS_BASE = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RzouUbLaiQ/exec';
-    
     async function startLineLogin() {
         try {
             console.log('開始 LINE 登入...');
             
-            // 方法1: 直接構建 LINE 登入 URL（推薦）
+            // 直接構建 LINE 登入 URL，完全避免 CORS
             const lineLoginUrl = buildDirectLineLoginUrl();
             console.log('LINE 登入網址:', lineLoginUrl);
             
@@ -99,14 +97,17 @@
             const loginWindow = window.open(
                 lineLoginUrl, 
                 'lineLogin', 
-                'width=500,height=600,scrollbars=yes'
+                'width=500,height=600,scrollbars=yes,resizable=yes'
             );
             
             if (loginWindow) {
+                console.log('LINE 登入視窗已開啟');
+                
                 // 監聽來自 LINE 登入視窗的消息
-                window.addEventListener('message', function(event) {
+                const messageHandler = function(event) {
                     console.log('收到消息:', event.data);
                     
+                    // 確保消息來自可信的來源
                     if (event.data && event.data.type === 'LINE_LOGIN_SUCCESS') {
                         console.log('🎉 LINE 登入成功！');
                         const userProfile = event.data.profile;
@@ -118,19 +119,26 @@
                         
                         console.log('用戶資料已儲存:', userProfile);
                         
+                        // 移除事件監聽器
+                        window.removeEventListener('message', messageHandler);
+                        
                         // 跳轉到遊戲頁面
                         window.location.href = 'index.html';
                     }
-                });
+                };
                 
-                // 備用檢查：每隔一段時間檢查視窗是否關閉
-                const checkInterval = setInterval(() => {
+                window.addEventListener('message', messageHandler);
+                
+                // 備用檢查：如果消息傳遞失敗，檢查 localStorage
+                const backupCheck = setInterval(() => {
                     if (loginWindow.closed) {
-                        clearInterval(checkInterval);
-                        console.log('LINE 登入視窗已關閉');
-                        checkLoginStatus();
+                        clearInterval(backupCheck);
+                        console.log('LINE 登入視窗已關閉，檢查登入狀態');
+                        checkLocalLoginStatus();
                     }
                 }, 1000);
+            } else {
+                alert('無法開啟登入視窗，請檢查瀏覽器是否阻擋了彈出視窗');
             }
             
         } catch (error) {
@@ -139,12 +147,12 @@
         }
     }
 
-    // 直接構建 LINE 登入 URL（繞過 CORS）
+    // 直接構建 LINE 登入 URL（完全避免 CORS）
     function buildDirectLineLoginUrl() {
         const LINE_CHANNEL_ID = '2008231249';
         const GAS_CALLBACK_URL = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RzouUbLaiQ/exec';
         
-        const state = 'monopoly_' + Date.now();
+        const state = 'monopoly_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         const nonce = 'nonce_' + Date.now();
         
         const loginUrl = 'https://access.line.me/oauth2/v2.1/authorize?' + 
@@ -157,6 +165,40 @@
         
         return loginUrl;
     }
+
+    // 檢查本地登入狀態
+    function checkLocalLoginStatus() {
+        const storedUserId = localStorage.getItem('lineUserId');
+        if (storedUserId) {
+            console.log('檢測到已登入用戶，跳轉到遊戲頁面');
+            window.location.href = 'index.html';
+        } else {
+            console.log('用戶未登入或登入失敗');
+            // 可以顯示重新登入提示
+        }
+    }
+
+    // 檢查是否已經登入
+    window.addEventListener('DOMContentLoaded', function() {
+        console.log('頁面載入完成，檢查登入狀態');
+        
+        const storedUserId = localStorage.getItem('lineUserId');
+        if (storedUserId) {
+            console.log('用戶已登入，直接跳轉到遊戲頁面');
+            window.location.href = 'index.html';
+        } else {
+            console.log('用戶未登入，顯示登入頁面');
+        }
+    });
+
+    // 添加一個測試按鈕來檢查 localStorage
+    function debugLogin() {
+        const userId = localStorage.getItem('lineUserId');
+        const displayName = localStorage.getItem('lineDisplayName');
+        console.log('Debug - localStorage:', { userId, displayName });
+        alert(`Debug Info:\nUserID: ${userId}\nDisplayName: ${displayName}`);
+    }
+</script>
 
     // 檢查登入狀態
     function checkLoginStatus() {
