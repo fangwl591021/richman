@@ -1,41 +1,149 @@
-<!-- login.html -->
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE 登入 - 歡樂大富翁</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .login-box {
+            background: white;
+            border-radius: 30px;
+            padding: 50px 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 450px;
+            width: 100%;
+            animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite ease-in-out;
+        }
+        @keyframes bounce {
+            0%,100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        p {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .line-login-btn {
+            width: 100%;
+            padding: 20px;
+            background: #06C755;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 8px 20px rgba(6,199,85,0.3);
+        }
+        .line-login-btn:hover {
+            background: #05b04b;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(6,199,85,0.4);
+        }
+    </style>
 </head>
 <body>
-    <h1>歡迎來到歡樂大富翁</h1>
-    <p>請先使用 LINE 登入</p>
-    <button onclick="lineLogin()">LINE 登入</button>
-    
+    <div class="login-box">
+        <div class="logo">🎲</div>
+        <h1>歡樂大富翁</h1>
+        <p>歡迎來到板橋商圈！<br>請先使用 LINE 登入開始遊戲，<br>收集專屬優惠券吧！</p>
+        <button class="line-login-btn" onclick="startLineLogin()">
+            <span>📱</span>
+            <span>使用 LINE 登入</span>
+        </button>
+    </div>
+
     <script>
-        function lineLogin() {
-            // 跳轉到 LINE 登入頁面
-            const redirectUri = encodeURIComponent('https://your-username.github.io/your-repo/game.html');
-            const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=YOUR_CHANNEL_ID&redirect_uri=${redirectUri}&state=random_string&scope=profile%20openid`;
-            window.location.href = lineAuthUrl;
-        }
+        const GAS_BASE = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RzouUbLaiQ/exec';
         
-        // 檢查 URL 參數，如果有 code 表示從 LINE 回調
-        const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
-        if (code) {
-            // 交換 access token 並獲取用戶資料
-            exchangeCodeForToken(code);
-        }
-        
-        async function exchangeCodeForToken(code) {
-            const response = await fetch('YOUR_GAS_URL?action=lineLogin&code=' + code);
-            const result = await response.json();
-            
-            if (result.success) {
-                // 儲存用戶資訊並跳轉到遊戲頁面
-                localStorage.setItem('lineUserId', result.userId);
-                localStorage.setItem('lineDisplayName', result.displayName);
-                window.location.href = 'game.html';
+        async function startLineLogin() {
+            try {
+                console.log('開始 LINE 登入...');
+                
+                const response = await fetch(`${GAS_BASE}?action=getLineLoginUrl&timestamp=${Date.now()}`);
+                const result = await response.json();
+                
+                console.log('GAS 回應:', result);
+                
+                if (result.success && result.loginUrl) {
+                    console.log('開啟 LINE 登入視窗:', result.loginUrl);
+                    
+                    // 在新視窗中打開 LINE 登入
+                    const loginWindow = window.open(
+                        result.loginUrl, 
+                        'lineLogin', 
+                        'width=500,height=600,scrollbars=yes'
+                    );
+                    
+                    if (loginWindow) {
+                        // 監聽來自 LINE 登入視窗的消息
+                        window.addEventListener('message', function(event) {
+                            console.log('收到消息:', event.data);
+                            
+                            if (event.data.type === 'LINE_LOGIN_SUCCESS') {
+                                console.log('🎉 LINE 登入成功！');
+                                const userProfile = event.data.profile;
+                                
+                                // 儲存用戶資料
+                                localStorage.setItem('lineUserId', userProfile.userId);
+                                localStorage.setItem('lineDisplayName', userProfile.displayName);
+                                localStorage.setItem('linePictureUrl', userProfile.pictureUrl || '');
+                                
+                                console.log('用戶資料已儲存:', userProfile);
+                                
+                                // 跳轉到遊戲頁面
+                                window.location.href = 'index.html';
+                            }
+                        });
+                    }
+                } else {
+                    alert('登入失敗：' + (result.message || '無法取得登入網址'));
+                }
+            } catch (error) {
+                console.error('登入錯誤:', error);
+                alert('登入發生錯誤：' + error);
             }
         }
+
+        // 檢查是否已經登入
+        window.addEventListener('DOMContentLoaded', function() {
+            const storedUserId = localStorage.getItem('lineUserId');
+            if (storedUserId) {
+                // 如果已經登入，直接跳轉到遊戲頁面
+                window.location.href = 'index.html';
+            }
+        });
     </script>
 </body>
 </html>
