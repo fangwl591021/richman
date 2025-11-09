@@ -54,10 +54,17 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
+            box-shadow: 0 8px 20px rgba(6,199,85,0.3);
         }
         .line-login-btn:hover {
             background: #05b04b;
             transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(6,199,85,0.4);
+        }
+        .line-login-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
         }
         .loading {
             display: inline-block;
@@ -72,22 +79,42 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            color: #666;
+        }
+        .error-message {
+            background: #ffeaea;
+            color: #e74c3c;
+        }
+        .success-message {
+            background: #e8f5e8;
+            color: #27ae60;
+        }
     </style>
 </head>
 <body>
     <div class="login-box">
         <div class="logo">🎲</div>
         <h1>歡樂大富翁</h1>
-        <p>歡迎來到板橋商圈！<br>請先使用 LINE 登入開始遊戲</p>
+        <p>歡迎來到板橋商圈！<br>請使用 LINE 登入開始遊戲，<br>收集專屬優惠券吧！</p>
         
         <button class="line-login-btn" id="loginBtn" onclick="liffLogin()">
             <span>📱</span>
             <span>使用 LINE 登入</span>
         </button>
         
-        <div id="status" style="margin-top: 20px; display: none;">
+        <div id="status" class="status-message" style="display: none;">
             <div class="loading"></div>
-            <span>登入中...</span>
+            <span>初始化中...</span>
+        </div>
+
+        <div id="debugInfo" style="margin-top: 20px; font-size: 12px; color: #999; text-align: left; display: none;">
+            <h4>除錯資訊：</h4>
+            <div id="debugContent"></div>
         </div>
     </div>
 
@@ -95,33 +122,85 @@
     <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
     
     <script>
-        const LIFF_ID = '2008231249-7DlMkygo'; // 請替換為您的 LIFF ID
+        // 🔑 請替換為您的 LIFF ID
+        const LIFF_ID = '2008231249-7DlMkygo'; // 請替換為您實際的 LIFF ID
         
+        let liffInitialized = false;
+
+        // 顯示狀態訊息
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = message;
+            statusEl.style.display = 'block';
+            statusEl.className = isError ? 'status-message error-message' : 'status-message';
+        }
+
+        // 顯示除錯資訊
+        function showDebugInfo(info) {
+            const debugEl = document.getElementById('debugInfo');
+            const contentEl = document.getElementById('debugContent');
+            contentEl.innerHTML = info;
+            debugEl.style.display = 'block';
+        }
+
         // 初始化 LIFF
         async function initializeLiff() {
             try {
-                await liff.init({ liffId: LIFF_ID });
-                console.log('LIFF 初始化成功');
+                showStatus('<div class="loading"></div> LIFF 初始化中...');
                 
-                // 檢查是否已經登入
+                await liff.init({ liffId: LIFF_ID });
+                liffInitialized = true;
+                
+                console.log('✅ LIFF 初始化成功');
+                console.log('OS:', liff.getOS());
+                console.log('Language:', liff.getLanguage());
+                console.log('Version:', liff.getVersion());
+                console.log('Is In Client:', liff.isInClient());
+                console.log('Is Logged In:', liff.isLoggedIn());
+                
+                showDebugInfo(`
+                    <div>✅ LIFF 初始化成功</div>
+                    <div>OS: ${liff.getOS()}</div>
+                    <div>Language: ${liff.getLanguage()}</div>
+                    <div>In Client: ${liff.isInClient()}</div>
+                    <div>Logged In: ${liff.isLoggedIn()}</div>
+                `);
+                
+                // 檢查登入狀態
                 if (liff.isLoggedIn()) {
-                    // 已經登入，取得用戶資料
+                    showStatus('🎉 已登入，取得用戶資料中...');
                     await getUserProfile();
                 } else {
-                    // 顯示登入按鈕
-                    document.getElementById('loginBtn').style.display = 'flex';
+                    showStatus('請點擊上方按鈕開始 LINE 登入');
+                    document.getElementById('loginBtn').disabled = false;
                 }
+                
             } catch (error) {
-                console.error('LIFF 初始化失敗:', error);
-                showError('LINE 服務初始化失敗，請稍後再試');
+                console.error('❌ LIFF 初始化失敗:', error);
+                showStatus(`❌ LIFF 初始化失敗: ${error.message}`, true);
+                
+                showDebugInfo(`
+                    <div>❌ LIFF 初始化失敗</div>
+                    <div>Error: ${error.message}</div>
+                    <div>LIFF ID: ${LIFF_ID}</div>
+                    <div>請確認：</div>
+                    <div>1. LIFF ID 是否正確</div>
+                    <div>2. LIFF App 是否已發布</div>
+                    <div>3. Endpoint URL 是否正確</div>
+                `);
             }
         }
 
         // LINE 登入
         async function liffLogin() {
+            if (!liffInitialized) {
+                showStatus('❌ LIFF 尚未初始化完成，請稍候', true);
+                return;
+            }
+            
             try {
-                document.getElementById('status').style.display = 'block';
-                document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('loginBtn').disabled = true;
+                showStatus('<div class="loading"></div> 登入中...');
                 
                 if (!liff.isLoggedIn()) {
                     // 跳轉到 LINE 登入頁面
@@ -131,45 +210,51 @@
                     await getUserProfile();
                 }
             } catch (error) {
-                console.error('登入失敗:', error);
-                showError('登入失敗，請稍後再試');
+                console.error('❌ 登入失敗:', error);
+                showStatus(`❌ 登入失敗: ${error.message}`, true);
+                document.getElementById('loginBtn').disabled = false;
             }
         }
 
         // 取得用戶資料
         async function getUserProfile() {
             try {
+                showStatus('<div class="loading"></div> 取得用戶資料中...');
+                
                 const profile = await liff.getProfile();
-                console.log('用戶資料:', profile);
+                console.log('✅ 用戶資料:', profile);
                 
                 // 儲存用戶資料
                 localStorage.setItem('lineUserId', profile.userId);
                 localStorage.setItem('lineDisplayName', profile.displayName);
                 localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
                 
+                showDebugInfo(`
+                    <div>✅ 用戶資料取得成功</div>
+                    <div>User ID: ${profile.userId}</div>
+                    <div>Display Name: ${profile.displayName}</div>
+                `);
+                
+                showStatus('🎉 登入成功！跳轉中...');
+                
                 // 跳轉到遊戲頁面
-                window.location.href = 'game.html';
+                setTimeout(() => {
+                    window.location.href = 'game.html';
+                }, 1000);
                 
             } catch (error) {
-                console.error('取得用戶資料失敗:', error);
-                showError('取得用戶資料失敗，請重新登入');
+                console.error('❌ 取得用戶資料失敗:', error);
+                showStatus(`❌ 取得用戶資料失敗: ${error.message}`, true);
+                document.getElementById('loginBtn').disabled = false;
             }
         }
 
-        // 顯示錯誤訊息
-        function showError(message) {
-            document.getElementById('status').innerHTML = `
-                <div style="color: #e74c3c; background: #ffeaea; padding: 10px; border-radius: 5px;">
-                    ❌ ${message}
-                </div>
-                <button onclick="location.reload()" style="margin-top: 10px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                    重新載入
-                </button>
-            `;
-        }
-
         // 頁面載入時初始化
-        window.addEventListener('DOMContentLoaded', initializeLiff);
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 頁面載入完成，開始初始化 LIFF');
+            document.getElementById('loginBtn').disabled = true;
+            initializeLiff();
+        });
     </script>
 </body>
 </html>
