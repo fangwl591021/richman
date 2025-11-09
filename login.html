@@ -5,7 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LINE 登入 - 歡樂大富翁</title>
     <style>
-        /* 保持您的 CSS 樣式 */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .login-box {
+            background: white;
+            border-radius: 30px;
+            padding: 50px 40px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 450px;
+            width: 100%;
+        }
+        .logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        p {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+        .line-login-btn {
+            width: 100%;
+            padding: 20px;
+            background: #06C755;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .line-login-btn:hover {
+            background: #05b04b;
+            transform: translateY(-2px);
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -13,57 +79,97 @@
         <div class="logo">🎲</div>
         <h1>歡樂大富翁</h1>
         <p>歡迎來到板橋商圈！<br>請先使用 LINE 登入開始遊戲</p>
-        <button class="line-login-btn" onclick="startLineLogin()">
+        
+        <button class="line-login-btn" id="loginBtn" onclick="liffLogin()">
             <span>📱</span>
             <span>使用 LINE 登入</span>
         </button>
+        
+        <div id="status" style="margin-top: 20px; display: none;">
+            <div class="loading"></div>
+            <span>登入中...</span>
+        </div>
     </div>
 
+    <!-- LINE LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/versions/2.22.3/sdk.js"></script>
+    
     <script>
-        const LINE_CHANNEL_ID = '2008231249';
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbydMhPLcjmxe7TJzZ-Ck6XNu3atpXygBFIyN7A7o6-14xKpzy6i3kuYap6Yy8liRKQm/exec';
+        const LIFF_ID = '2008231249-7DlMkygo'; // 請替換為您的 LIFF ID
         
-        function startLineLogin() {
-            // 直接構建 LINE 登入 URL
-            const state = 'state_' + Date.now();
-            const loginUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=${LINE_CHANNEL_ID}&redirect_uri=${encodeURIComponent('https://fangwl591021.github.io/richman/')}&state=${state}&scope=profile%20openid`;
-            
-            // 跳轉到 LINE 登入
-            window.location.href = loginUrl;
-        }
-
-        // 檢查 URL 參數，處理 LINE 回調
-        function checkLineCallback() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const code = urlParams.get('code');
-            const state = urlParams.get('state');
-            
-            if (code && state) {
-                // 使用 LINE 前端 SDK 或直接處理
-                handleLineCallback(code);
+        // 初始化 LIFF
+        async function initializeLiff() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                console.log('LIFF 初始化成功');
+                
+                // 檢查是否已經登入
+                if (liff.isLoggedIn()) {
+                    // 已經登入，取得用戶資料
+                    await getUserProfile();
+                } else {
+                    // 顯示登入按鈕
+                    document.getElementById('loginBtn').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('LIFF 初始化失敗:', error);
+                showError('LINE 服務初始化失敗，請稍後再試');
             }
         }
 
-        // 簡單的 LINE 登入處理（需要 LINE Front-end Framework）
-        function handleLineCallback(code) {
-            // 這裡可以使用 LINE Front-end Framework
-            // 或者使用 liff.init() 和 liff.getProfile()
-            alert('LINE 登入成功！代碼: ' + code);
-            // 模擬登入成功
-            localStorage.setItem('lineUserId', 'user_' + Date.now());
-            localStorage.setItem('lineDisplayName', '測試用戶');
-            window.location.href = 'game.html';
+        // LINE 登入
+        async function liffLogin() {
+            try {
+                document.getElementById('status').style.display = 'block';
+                document.getElementById('loginBtn').style.display = 'none';
+                
+                if (!liff.isLoggedIn()) {
+                    // 跳轉到 LINE 登入頁面
+                    liff.login();
+                } else {
+                    // 已經登入，取得用戶資料
+                    await getUserProfile();
+                }
+            } catch (error) {
+                console.error('登入失敗:', error);
+                showError('登入失敗，請稍後再試');
+            }
         }
 
-        // 頁面載入時檢查
-        window.addEventListener('DOMContentLoaded', function() {
-            // 如果已經登入，跳轉到遊戲
-            if (localStorage.getItem('lineUserId')) {
+        // 取得用戶資料
+        async function getUserProfile() {
+            try {
+                const profile = await liff.getProfile();
+                console.log('用戶資料:', profile);
+                
+                // 儲存用戶資料
+                localStorage.setItem('lineUserId', profile.userId);
+                localStorage.setItem('lineDisplayName', profile.displayName);
+                localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
+                
+                // 跳轉到遊戲頁面
                 window.location.href = 'game.html';
+                
+            } catch (error) {
+                console.error('取得用戶資料失敗:', error);
+                showError('取得用戶資料失敗，請重新登入');
             }
-            // 檢查 LINE 回調
-            checkLineCallback();
-        });
+        }
+
+        // 顯示錯誤訊息
+        function showError(message) {
+            document.getElementById('status').innerHTML = `
+                <div style="color: #e74c3c; background: #ffeaea; padding: 10px; border-radius: 5px;">
+                    ❌ ${message}
+                </div>
+                <button onclick="location.reload()" style="margin-top: 10px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    重新載入
+                </button>
+            `;
+        }
+
+        // 頁面載入時初始化
+        window.addEventListener('DOMContentLoaded', initializeLiff);
     </script>
 </body>
 </html>
