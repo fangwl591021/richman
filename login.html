@@ -94,15 +94,25 @@
             background: #e8f5e8;
             color: #27ae60;
         }
+        .debug-info {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+            text-align: left;
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
     </style>
 </head>
 <body>
     <div class="login-box">
         <div class="logo">🎲</div>
         <h1>歡樂大富翁</h1>
-        <p>歡迎來到板橋商圈！<br>請使用 LINE 登入開始遊戲，<br>收集專屬優惠券吧！</p>
+        <p>歡迎來到板橋商圈！<br>請使用 LINE 登入開始遊戲</p>
         
-        <button class="line-login-btn" id="loginBtn" onclick="liffLogin()">
+        <button class="line-login-btn" id="loginBtn">
             <span>📱</span>
             <span>使用 LINE 登入</span>
         </button>
@@ -112,8 +122,8 @@
             <span>初始化中...</span>
         </div>
 
-        <div id="debugInfo" style="margin-top: 20px; font-size: 12px; color: #999; text-align: left; display: none;">
-            <h4>除錯資訊：</h4>
+        <div id="debugInfo" class="debug-info" style="display: none;">
+            <h4 style="margin: 0 0 10px 0;">除錯資訊：</h4>
             <div id="debugContent"></div>
         </div>
     </div>
@@ -123,16 +133,14 @@
     
     <script>
         // 🔑 請替換為您的 LIFF ID
-        const LIFF_ID = '2008231249-7DlMkygo'; // 請替換為您實際的 LIFF ID
+        const LIFF_ID = '2008231249-7DlMkygo'; // 請確認這是正確的 LIFF ID
         
-        let liffInitialized = false;
-
         // 顯示狀態訊息
         function showStatus(message, isError = false) {
             const statusEl = document.getElementById('status');
             statusEl.innerHTML = message;
             statusEl.style.display = 'block';
-            statusEl.className = isError ? 'status-message error-message' : 'status-message';
+            statusEl.className = `status-message ${isError ? 'error-message' : ''}`;
         }
 
         // 顯示除錯資訊
@@ -148,58 +156,63 @@
             try {
                 showStatus('<div class="loading"></div> LIFF 初始化中...');
                 
+                // 初始化 LIFF
                 await liff.init({ liffId: LIFF_ID });
-                liffInitialized = true;
                 
                 console.log('✅ LIFF 初始化成功');
-                console.log('OS:', liff.getOS());
-                console.log('Language:', liff.getLanguage());
-                console.log('Version:', liff.getVersion());
-                console.log('Is In Client:', liff.isInClient());
-                console.log('Is Logged In:', liff.isLoggedIn());
                 
-                showDebugInfo(`
-                    <div>✅ LIFF 初始化成功</div>
-                    <div>OS: ${liff.getOS()}</div>
-                    <div>Language: ${liff.getLanguage()}</div>
-                    <div>In Client: ${liff.isInClient()}</div>
-                    <div>Logged In: ${liff.isLoggedIn()}</div>
-                `);
+                // 顯示除錯資訊
+                const debugInfo = `
+                    <div><strong>✅ LIFF 狀態：</strong> 初始化成功</div>
+                    <div><strong>作業系統：</strong> ${liff.getOS()}</div>
+                    <div><strong>語言：</strong> ${liff.getLanguage()}</div>
+                    <div><strong>在 LINE 內：</strong> ${liff.isInClient()}</div>
+                    <div><strong>已登入：</strong> ${liff.isLoggedIn()}</div>
+                    <div><strong>URL 參數：</strong> ${window.location.search || '無'}</div>
+                `;
+                showDebugInfo(debugInfo);
                 
                 // 檢查登入狀態
                 if (liff.isLoggedIn()) {
-                    showStatus('🎉 已登入，取得用戶資料中...');
+                    showStatus('<div class="loading"></div> 已登入，取得用戶資料中...');
                     await getUserProfile();
                 } else {
                     showStatus('請點擊上方按鈕開始 LINE 登入');
-                    document.getElementById('loginBtn').disabled = false;
+                    setupLoginButton();
                 }
                 
             } catch (error) {
                 console.error('❌ LIFF 初始化失敗:', error);
-                showStatus(`❌ LIFF 初始化失敗: ${error.message}`, true);
                 
-                showDebugInfo(`
-                    <div>❌ LIFF 初始化失敗</div>
-                    <div>Error: ${error.message}</div>
-                    <div>LIFF ID: ${LIFF_ID}</div>
-                    <div>請確認：</div>
+                const errorInfo = `
+                    <div><strong>❌ LIFF 初始化失敗</strong></div>
+                    <div><strong>錯誤：</strong> ${error.message}</div>
+                    <div><strong>LIFF ID：</strong> ${LIFF_ID}</div>
+                    <div><strong>請確認：</strong></div>
                     <div>1. LIFF ID 是否正確</div>
                     <div>2. LIFF App 是否已發布</div>
-                    <div>3. Endpoint URL 是否正確</div>
-                `);
+                    <div>3. Endpoint URL 設定為：https://fangwl591021.github.io/richman/</div>
+                `;
+                showDebugInfo(errorInfo);
+                showStatus(`❌ LIFF 初始化失敗: ${error.message}`, true);
             }
+        }
+
+        // 設定登入按鈕
+        function setupLoginButton() {
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<span>📱</span><span>使用 LINE 登入</span>';
+            loginBtn.onclick = liffLogin;
         }
 
         // LINE 登入
         async function liffLogin() {
-            if (!liffInitialized) {
-                showStatus('❌ LIFF 尚未初始化完成，請稍候', true);
-                return;
-            }
-            
             try {
-                document.getElementById('loginBtn').disabled = true;
+                const loginBtn = document.getElementById('loginBtn');
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<div class="loading"></div><span>登入中...</span>';
+                
                 showStatus('<div class="loading"></div> 登入中...');
                 
                 if (!liff.isLoggedIn()) {
@@ -212,7 +225,7 @@
             } catch (error) {
                 console.error('❌ 登入失敗:', error);
                 showStatus(`❌ 登入失敗: ${error.message}`, true);
-                document.getElementById('loginBtn').disabled = false;
+                setupLoginButton();
             }
         }
 
@@ -224,35 +237,42 @@
                 const profile = await liff.getProfile();
                 console.log('✅ 用戶資料:', profile);
                 
-                // 儲存用戶資料
+                // 儲存用戶資料到 localStorage
                 localStorage.setItem('lineUserId', profile.userId);
                 localStorage.setItem('lineDisplayName', profile.displayName);
                 localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
                 
+                // 更新除錯資訊
                 showDebugInfo(`
-                    <div>✅ 用戶資料取得成功</div>
-                    <div>User ID: ${profile.userId}</div>
-                    <div>Display Name: ${profile.displayName}</div>
+                    <div><strong>✅ 登入成功！</strong></div>
+                    <div><strong>用戶 ID：</strong> ${profile.userId}</div>
+                    <div><strong>顯示名稱：</strong> ${profile.displayName}</div>
+                    <div><strong>頭像：</strong> ${profile.pictureUrl ? '有' : '無'}</div>
                 `);
                 
-                showStatus('🎉 登入成功！跳轉中...');
+                showStatus('🎉 登入成功！跳轉到遊戲中...');
                 
                 // 跳轉到遊戲頁面
                 setTimeout(() => {
                     window.location.href = 'game.html';
-                }, 1000);
+                }, 1500);
                 
             } catch (error) {
                 console.error('❌ 取得用戶資料失敗:', error);
                 showStatus(`❌ 取得用戶資料失敗: ${error.message}`, true);
-                document.getElementById('loginBtn').disabled = false;
+                setupLoginButton();
             }
         }
 
         // 頁面載入時初始化
         window.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 頁面載入完成，開始初始化 LIFF');
+            
+            // 禁用按鈕直到初始化完成
             document.getElementById('loginBtn').disabled = true;
+            document.getElementById('loginBtn').innerHTML = '<div class="loading"></div><span>初始化中...</span>';
+            
+            // 初始化 LIFF
             initializeLiff();
         });
     </script>
