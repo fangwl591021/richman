@@ -85,65 +85,111 @@
     </div>
 
     <script>
-        const GAS_BASE = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RzouUbLaiQ/exec';
-        
-        async function startLineLogin() {
-            try {
-                console.log('開始 LINE 登入...');
-                
-                const response = await fetch(`${GAS_BASE}?action=getLineLoginUrl&timestamp=${Date.now()}`);
-                const result = await response.json();
-                
-                console.log('GAS 回應:', result);
-                
-                if (result.success && result.loginUrl) {
-                    console.log('開啟 LINE 登入視窗:', result.loginUrl);
+    const GAS_BASE = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RzouUbLaiQ/exec';
+    
+    async function startLineLogin() {
+        try {
+            console.log('開始 LINE 登入...');
+            
+            // 方法1: 直接構建 LINE 登入 URL（推薦）
+            const lineLoginUrl = buildDirectLineLoginUrl();
+            console.log('LINE 登入網址:', lineLoginUrl);
+            
+            // 在新視窗中打開 LINE 登入
+            const loginWindow = window.open(
+                lineLoginUrl, 
+                'lineLogin', 
+                'width=500,height=600,scrollbars=yes'
+            );
+            
+            if (loginWindow) {
+                // 監聽來自 LINE 登入視窗的消息
+                window.addEventListener('message', function(event) {
+                    console.log('收到消息:', event.data);
                     
-                    // 在新視窗中打開 LINE 登入
-                    const loginWindow = window.open(
-                        result.loginUrl, 
-                        'lineLogin', 
-                        'width=500,height=600,scrollbars=yes'
-                    );
-                    
-                    if (loginWindow) {
-                        // 監聽來自 LINE 登入視窗的消息
-                        window.addEventListener('message', function(event) {
-                            console.log('收到消息:', event.data);
-                            
-                            if (event.data.type === 'LINE_LOGIN_SUCCESS') {
-                                console.log('🎉 LINE 登入成功！');
-                                const userProfile = event.data.profile;
-                                
-                                // 儲存用戶資料
-                                localStorage.setItem('lineUserId', userProfile.userId);
-                                localStorage.setItem('lineDisplayName', userProfile.displayName);
-                                localStorage.setItem('linePictureUrl', userProfile.pictureUrl || '');
-                                
-                                console.log('用戶資料已儲存:', userProfile);
-                                
-                                // 跳轉到遊戲頁面
-                                window.location.href = 'index.html';
-                            }
-                        });
+                    if (event.data && event.data.type === 'LINE_LOGIN_SUCCESS') {
+                        console.log('🎉 LINE 登入成功！');
+                        const userProfile = event.data.profile;
+                        
+                        // 儲存用戶資料
+                        localStorage.setItem('lineUserId', userProfile.userId);
+                        localStorage.setItem('lineDisplayName', userProfile.displayName);
+                        localStorage.setItem('linePictureUrl', userProfile.pictureUrl || '');
+                        
+                        console.log('用戶資料已儲存:', userProfile);
+                        
+                        // 跳轉到遊戲頁面
+                        window.location.href = 'index.html';
                     }
-                } else {
-                    alert('登入失敗：' + (result.message || '無法取得登入網址'));
-                }
-            } catch (error) {
-                console.error('登入錯誤:', error);
-                alert('登入發生錯誤：' + error);
+                });
+                
+                // 備用檢查：每隔一段時間檢查視窗是否關閉
+                const checkInterval = setInterval(() => {
+                    if (loginWindow.closed) {
+                        clearInterval(checkInterval);
+                        console.log('LINE 登入視窗已關閉');
+                        checkLoginStatus();
+                    }
+                }, 1000);
             }
+            
+        } catch (error) {
+            console.error('登入錯誤:', error);
+            alert('登入發生錯誤：' + error.message);
         }
+    }
 
-        // 檢查是否已經登入
-        window.addEventListener('DOMContentLoaded', function() {
-            const storedUserId = localStorage.getItem('lineUserId');
-            if (storedUserId) {
-                // 如果已經登入，直接跳轉到遊戲頁面
-                window.location.href = 'index.html';
-            }
-        });
-    </script>
+    // 直接構建 LINE 登入 URL（繞過 CORS）
+    function buildDirectLineLoginUrl() {
+        const LINE_CHANNEL_ID = '2008231249';
+        const GAS_CALLBACK_URL = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RzouUbLaiQ/exec';
+        
+        const state = 'monopoly_' + Date.now();
+        const nonce = 'nonce_' + Date.now();
+        
+        const loginUrl = 'https://access.line.me/oauth2/v2.1/authorize?' + 
+            'response_type=code' +
+            '&client_id=' + encodeURIComponent(LINE_CHANNEL_ID) +
+            '&redirect_uri=' + encodeURIComponent(GAS_CALLBACK_URL) +
+            '&state=' + encodeURIComponent(state) +
+            '&scope=profile%20openid' +
+            '&nonce=' + encodeURIComponent(nonce);
+        
+        return loginUrl;
+    }
+
+    // 檢查登入狀態
+    function checkLoginStatus() {
+        const storedUserId = localStorage.getItem('lineUserId');
+        if (storedUserId) {
+            console.log('用戶已登入，更新界面');
+            // 如果已經登入，直接跳轉到遊戲頁面
+            window.location.href = 'index.html';
+        }
+    }
+
+    // 檢查是否已經登入
+    window.addEventListener('DOMContentLoaded', function() {
+        const storedUserId = localStorage.getItem('lineUserId');
+        if (storedUserId) {
+            // 如果已經登入，直接跳轉到遊戲頁面
+            window.location.href = 'index.html';
+        }
+        
+        // 測試 GAS 連接
+        testGASConnection();
+    });
+
+    // 測試 GAS 連接
+    async function testGASConnection() {
+        try {
+            const response = await fetch(`${GAS_BASE}?action=getShops`);
+            const result = await response.json();
+            console.log('GAS 連接測試:', result);
+        } catch (error) {
+            console.log('GAS 連接測試失敗（預期中）:', error);
+        }
+    }
+</script>
 </body>
 </html>
