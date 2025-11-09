@@ -1,0 +1,41 @@
+<!-- login.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LINE 登入 - 歡樂大富翁</title>
+</head>
+<body>
+    <h1>歡迎來到歡樂大富翁</h1>
+    <p>請先使用 LINE 登入</p>
+    <button onclick="lineLogin()">LINE 登入</button>
+    
+    <script>
+        function lineLogin() {
+            // 跳轉到 LINE 登入頁面
+            const redirectUri = encodeURIComponent('https://your-username.github.io/your-repo/game.html');
+            const lineAuthUrl = `https://access.line.me/oauth2/v2.1/authorize?response_type=code&client_id=YOUR_CHANNEL_ID&redirect_uri=${redirectUri}&state=random_string&scope=profile%20openid`;
+            window.location.href = lineAuthUrl;
+        }
+        
+        // 檢查 URL 參數，如果有 code 表示從 LINE 回調
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        if (code) {
+            // 交換 access token 並獲取用戶資料
+            exchangeCodeForToken(code);
+        }
+        
+        async function exchangeCodeForToken(code) {
+            const response = await fetch('YOUR_GAS_URL?action=lineLogin&code=' + code);
+            const result = await response.json();
+            
+            if (result.success) {
+                // 儲存用戶資訊並跳轉到遊戲頁面
+                localStorage.setItem('lineUserId', result.userId);
+                localStorage.setItem('lineDisplayName', result.displayName);
+                window.location.href = 'game.html';
+            }
+        }
+    </script>
+</body>
+</html>
