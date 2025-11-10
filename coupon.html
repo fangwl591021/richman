@@ -295,8 +295,8 @@ async function loadCouponList() {
             <div class="status ${statusClass}">${statusText}</div>
             ${!isUsed ? `
             <div class="coupon-actions">
-              <button class="verify-btn" onclick="verifyCoupon('${couponId}')">核銷使用</button>
-              <button class="cancel-btn" onclick="cancelCoupon('${couponId}')">取消</button>
+              <button class="verify-btn" onclick="handleVerifyCoupon('${couponId}')">核銷使用</button>
+              <button class="cancel-btn" onclick="handleCancelCoupon('${couponId}')">取消</button>
             </div>
             ` : ''}
           </div>
@@ -324,21 +324,40 @@ async function loadCouponList() {
   }
 }
 
-// 核銷優惠券
-async function verifyCoupon(couponId) {
-  const success = await verifyCoupon(couponId);
-  if (success) {
-    alert('優惠券已成功核銷！');
-    loadCouponList();
-  } else {
-    alert('核銷失敗，請稍後再試');
+// 核銷優惠券處理函數
+async function handleVerifyCoupon(couponId) {
+  try {
+    console.log('開始核銷優惠券:', couponId);
+    
+    // 禁用按鈕防止重複點擊
+    const buttons = document.querySelectorAll('.verify-btn');
+    buttons.forEach(btn => btn.disabled = true);
+    
+    const success = await verifyCoupon(couponId);
+    
+    if (success) {
+      alert('優惠券已成功核銷！');
+      // 重新載入列表
+      loadCouponList();
+    } else {
+      alert('核銷失敗，請稍後再試');
+      // 重新啟用按鈕
+      buttons.forEach(btn => btn.disabled = false);
+    }
+    
+  } catch (error) {
+    console.error('核銷處理錯誤:', error);
+    alert('核銷過程中發生錯誤');
+    // 重新啟用按鈕
+    const buttons = document.querySelectorAll('.verify-btn');
+    buttons.forEach(btn => btn.disabled = false);
   }
 }
 
-// 取消核銷
-function cancelCoupon(couponId) {
+// 取消核銷處理函數
+function handleCancelCoupon(couponId) {
   console.log('取消核銷:', couponId);
-  // 這裡可以添加取消邏輯
+  // 這裡可以添加取消邏輯，如果需要
 }
 </script>
 </body>
