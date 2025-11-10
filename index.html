@@ -15,57 +15,6 @@ body{
   padding-bottom:70px;
 }
 
-/* === LINE 登入歡迎頁面 === */
-.login-screen{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:999;padding:20px;
-}
-.login-screen.hidden{display:none;}
-.login-box{
-  background:white;border-radius:30px;
-  padding:50px 40px;text-align:center;
-  box-shadow:0 20px 60px rgba(0,0,0,0.3);
-  max-width:450px;width:100%;
-  animation:slideIn 0.5s ease;
-}
-@keyframes slideIn{
-  from{opacity:0;transform:translateY(-30px);}
-  to{opacity:1;transform:translateY(0);}
-}
-.login-box .logo{
-  font-size:80px;margin-bottom:20px;
-  animation:bounce 1s infinite ease-in-out;
-}
-@keyframes bounce{
-  0%,100%{transform:translateY(0);}
-  50%{transform:translateY(-10px);}
-}
-.login-box h1{
-  font-size:36px;color:#333;margin-bottom:15px;
-}
-.login-box p{
-  font-size:18px;color:#666;margin-bottom:40px;
-  line-height:1.6;
-}
-.login-box .line-login-btn{
-  width:100%;padding:20px;
-  background:#06C755;color:white;
-  border:none;border-radius:15px;
-  font-size:24px;font-weight:bold;
-  cursor:pointer;transition:all 0.3s ease;
-  display:flex;align-items:center;justify-content:center;
-  gap:15px;box-shadow:0 8px 20px rgba(6,199,85,0.3);
-}
-.login-box .line-login-btn:hover{
-  background:#05b04b;transform:translateY(-2px);
-  box-shadow:0 12px 30px rgba(6,199,85,0.4);
-}
-.login-box .line-login-btn .icon{
-  font-size:32px;
-}
-
 /* 保持您原有的所有其他 CSS 樣式... */
 .board{/* 保持不變 */}
 .player{/* 保持不變 */}
@@ -81,23 +30,12 @@ body{
 .bottom-bar{/* 保持不變 */}
 .coupon-panel{/* 保持不變 */}
 .map-panel{/* 保持不變 */}
-/* ... 其他所有 CSS 保持不變 ... */
+/* ... 複製您原有的所有遊戲 CSS ... */
 </style>
 </head>
 <body>
 
-<!-- 🔐 LINE 登入歡迎頁面 -->
-<div class="login-screen" id="loginScreen">
-  <div class="login-box">
-    <div class="logo">🎲</div>
-    <h1>歡樂大富翁</h1>
-    <p>歡迎來到板橋商圈！<br>請先使用 LINE 登入開始遊戲，<br>收集專屬優惠券吧！</p>
-    <button class="line-login-btn" onclick="startLineLogin()">
-      <span class="icon">📱</span>
-      <span>使用 LINE 登入</span>
-    </button>
-  </div>
-</div>
+<!-- ❌ 移除登入畫面，改由 login.html 處理 -->
 
 <!-- 遊戲主畫面 -->
 <div class="board" id="board">
@@ -115,73 +53,13 @@ body{
   </div>
 </div>
 
-<!-- 🧧 店家優惠卡片 -->
-<div class="shop-popup" id="shopPopup">
-  <img id="shopImg" src="">
-  <div class="shop-content">
-    <h2 id="shopName"></h2>
-    <p id="shopDesc"></p>
-    <div class="shop-buttons">
-      <button class="claim" id="claimBtn">收藏優惠</button>
-      <button class="close" onclick="closeShop()">放棄收藏</button>
-    </div>
-  </div>
-</div>
-
-<!-- 🎫 優惠券收集區 -->
-<div class="coupon-panel" id="couponPanel">
-  <div class="coupon-panel-header">
-    <h2>我的優惠券 (<span id="couponCount">0</span>)</h2>
-    <button class="close-btn" onclick="closeCouponPanel()">×</button>
-  </div>
-  <div class="coupon-list" id="couponList">
-    <div class="empty-state">
-      <div class="icon">🎫</div>
-      <p>還沒有收集任何優惠券<br>快去遊戲中收集吧！</p>
-    </div>
-  </div>
-</div>
-
-<!-- 🗺️ 店家地圖 -->
-<div class="map-panel" id="mapPanel">
-  <div class="map-panel-header">
-    <h2>店家地圖</h2>
-    <button class="close-btn" onclick="closeMapPanel()">×</button>
-  </div>
-  <div class="map-container">
-    <div class="shop-list" id="shopList">
-      <p style="text-align:center;color:#999;padding:20px;">載入中...</p>
-    </div>
-  </div>
-</div>
-
-<!-- 📱 底部功能列 -->
-<div class="bottom-bar">
-  <button onclick="openCouponPanel()">
-    <span class="icon">🎫</span>
-    <span>優惠券</span>
-  </button>
-  <button id="lineLoginBtn" onclick="lineLogin()">
-    <span class="icon">📱</span>
-    <span id="lineLoginText">LINE登入</span>
-  </button>
-  <button onclick="openMapPanel()">
-    <span class="icon">🗺️</span>
-    <span>店家地圖</span>
-  </button>
-</div>
-
-<!-- 音效 -->
-<audio id="bgm" loop src="https://aiwe.cc/wp-content/uploads/2025/11/901cd11beb7b52aea3f9011f2d3d33bb.mp3"></audio>
-<audio id="sDice" src="https://aiwe.cc/wp-content/uploads/2025/11/77b2287cce9574aeb82a8dbbcf200050.mp3"></audio>
-<audio id="sMove" src="https://aiwe.cc/wp-content/uploads/2025/11/f8bf2fa137503315a28ad81a8aee77a5.mp3"></audio>
+<!-- ... 保持您原有的所有其他 HTML ... -->
 
 <script>
 // ============================================
 // 🎮 遊戲核心設定
 // ============================================
-const GAS_BASE = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RzouUbLaiQ/exec';
-const GAS_URL = GAS_BASE + '?action=getShops&sheet=店家資料';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwwO2pMBDAADUEZ8NKYbicrB3_LlcL2u3-bZZF5xXjrgBxNlHLbXXLT_N7uorJgYhPB/exec';
 
 const player = document.getElementById('player');
 const board = document.getElementById('board');
@@ -197,14 +75,14 @@ const shopImg = document.getElementById('shopImg');
 const shopName = document.getElementById('shopName');
 const shopDesc = document.getElementById('shopDesc');
 const claimBtn = document.getElementById('claimBtn');
-const loginScreen = document.getElementById('loginScreen');
 
 let currentShop = null;
 const rows = 9, cols = 6;
 let pos = 0;
 let userId = "TEMP_USER";
+let userDisplayName = "訪客";
 
-// 遊戲路徑設定
+// 遊戲路徑設定（保持不變）
 const path = [];
 for (let x = cols - 1; x >= 0; x--) path.push({ x, y: rows - 1 });
 for (let y = rows - 2; y >= 0; y--) path.push({ x: 0, y });
@@ -212,137 +90,49 @@ for (let x = 1; x < cols; x++) path.push({ x, y: 0 });
 for (let y = 1; y < rows - 1; y++) path.push({ x: cols - 1, y });
 
 // ============================================
-// 📱 LINE 登入功能 (GitHub Pages 版本)
+// ✅ 簡化的登入檢查（只檢查 localStorage）
 // ============================================
-async function startLineLogin() {
-  try {
-    console.log('=== 🔐 開始 LINE 登入流程 ===');
-    
-    // 從 GAS 獲取 LINE 登入 URL
-    const apiUrl = `${GAS_BASE}?action=getLineLoginUrl&timestamp=${Date.now()}`;
-    const response = await fetch(apiUrl);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    
-    if (result.success && result.loginUrl) {
-      console.log('✅ 成功取得登入網址，準備跳轉...');
-      
-      // 在新視窗中打開 LINE 登入
-      const loginWindow = window.open(result.loginUrl, 'lineLogin', 'width=500,height=600,scrollbars=yes');
-      
-      if (loginWindow) {
-        // 監聽來自 LINE 登入視窗的消息
-        window.addEventListener('message', function(event) {
-          console.log('📨 收到消息:', event.data);
-          
-          if (event.data.type === 'LINE_LOGIN_SUCCESS') {
-            console.log('🎉 LINE 登入成功！');
-            const userProfile = event.data.profile;
-            
-            // 儲存用戶資料
-            localStorage.setItem('lineUserId', userProfile.userId);
-            localStorage.setItem('lineDisplayName', userProfile.displayName);
-            localStorage.setItem('linePictureUrl', userProfile.pictureUrl || '');
-            
-            // 更新界面
-            updateUserInterface(userProfile);
-            
-            // 關閉登入視窗
-            if (loginWindow && !loginWindow.closed) {
-              loginWindow.close();
-            }
-          }
-        });
-        
-        // 備用：監聽視窗關閉
-        const checkLogin = setInterval(() => {
-          if (loginWindow.closed) {
-            clearInterval(checkLogin);
-            console.log('LINE 登入視窗已關閉');
-            checkLocalLoginStatus();
-          }
-        }, 1000);
-      }
-    } else {
-      console.error('❌ 後端回傳失敗:', result.message);
-      alert('LINE 登入失敗：' + (result.message || '無法取得登入網址'));
-    }
-  } catch (error) {
-    console.error('❌ LINE 登入發生錯誤:', error);
-    alert('LINE 登入發生錯誤，請稍後再試');
-  }
-}
-
-// 檢查本地登入狀態
-function checkLocalLoginStatus() {
+function checkLogin() {
   const storedUserId = localStorage.getItem('lineUserId');
-  if (storedUserId) {
-    console.log('用戶已登入，更新界面');
-    updateUserInterface({
-      userId: storedUserId,
-      displayName: localStorage.getItem('lineDisplayName') || '用戶',
-      pictureUrl: localStorage.getItem('linePictureUrl') || ''
-    });
-  }
-}
-
-// 更新用戶界面
-function updateUserInterface(userInfo) {
-  if (userInfo && userInfo.userId) {
-    document.getElementById('lineLoginText').textContent = userInfo.displayName;
-    document.getElementById('lineLoginBtn').classList.add('logged-in');
-    userId = userInfo.userId;
-    
-    // 隱藏登入畫面，顯示遊戲
-    loginScreen.classList.add('hidden');
-    
-    console.log('✅ 用戶界面已更新:', userInfo.displayName);
-    
-    // 顯示歡迎訊息
-    setTimeout(() => {
-      showMsg(`歡迎，${userInfo.displayName}！`);
-      setTimeout(() => hideMsg(), 2000);
-    }, 500);
-  }
-}
-
-// 底部功能列的 LINE 登入/登出按鈕
-async function lineLogin() {
-  const lineLoginBtn = document.getElementById('lineLoginBtn');
-  const lineLoginText = document.getElementById('lineLoginText');
+  const storedDisplayName = localStorage.getItem('lineDisplayName');
   
+  if (!storedUserId) {
+    // 未登入，跳轉到登入頁面
+    console.log('❌ 未登入，跳轉到 login.html');
+    window.location.href = 'login.html';
+    return false;
+  }
+  
+  // 已登入
+  userId = storedUserId;
+  userDisplayName = storedDisplayName || '已登入用戶';
+  console.log('✅ 已登入:', userDisplayName);
+  
+  // 更新底部按鈕顯示
+  const lineLoginText = document.getElementById('lineLoginText');
+  if (lineLoginText) {
+    lineLoginText.textContent = userDisplayName;
+  }
+  
+  return true;
+}
+
+// 底部功能列的登出按鈕
+async function lineLogin() {
   if (localStorage.getItem('lineUserId')) {
     // 已登入，顯示登出選項
-    if (confirm('確定要登出 LINE 帳號嗎？')) {
-      localStorage.removeItem('lineUserId');
-      localStorage.removeItem('lineDisplayName');
-      localStorage.removeItem('linePictureUrl');
-      
-      lineLoginText.textContent = 'LINE登入';
-      lineLoginBtn.classList.remove('logged-in');
-      userId = 'TEMP_USER';
-      
-      alert('已登出！');
-      
-      // 顯示登入畫面
-      loginScreen.classList.remove('hidden');
-      
-      if (document.getElementById('couponPanel').classList.contains('show')) {
-        loadCoupons();
-      }
+    if (confirm('確定要登出嗎？')) {
+      localStorage.clear();
+      window.location.href = 'login.html';
     }
   } else {
-    // 未登入，執行登入
-    startLineLogin();
+    // 未登入，跳轉到登入頁面
+    window.location.href = 'login.html';
   }
 }
 
 // ============================================
-// 🎮 遊戲核心功能 (保持不變)
+// 🎮 遊戲核心功能（保持您原有的所有程式碼）
 // ============================================
 function startGame() {
   if (bgm.paused) {
@@ -432,7 +222,7 @@ async function movePlayer(steps) {
 }
 
 // ============================================
-// 🏪 店家與優惠功能 (保持不變)
+// 🏪 店家與優惠功能（保持不變）
 // ============================================
 async function checkEvent() {
   const cell = path[pos];
@@ -455,8 +245,6 @@ async function checkEvent() {
       const shop = shops[Math.floor(Math.random() * shops.length)];
       currentShop = shop;
       showShopPopup(shop);
-    } else {
-      console.log('沒有可用的店家資料');
     }
   } catch (error) {
     console.error('載入店家時發生錯誤:', error);
@@ -466,7 +254,6 @@ async function checkEvent() {
 function showShopPopup(shop) {
   const imgUrl = shop["圖片網址"] || shop.icon || shop["圖示"] || "";
   
-  // 安全設置圖片
   if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
     shopImg.src = imgUrl;
     shopImg.onerror = function() {
@@ -488,7 +275,7 @@ function closeShop() {
 }
 
 // ============================================
-// 🎫 優惠券收集區功能 (保持不變)
+// 🎫 優惠券收集區功能（保持不變）
 // ============================================
 function openCouponPanel() {
   document.getElementById('couponPanel').classList.add('show');
@@ -510,14 +297,14 @@ async function loadCoupons() {
       sheetName: '2025/11'
     });
     
-    const response = await safeFetch(`${GAS_BASE}?${params}`);
+    const response = await safeFetch(`${GAS_URL}?${params}`);
     
     if (response.success && response.data && response.data.length > 0) {
       couponCount.textContent = response.data.length;
       
       couponList.innerHTML = response.data.map(coupon => `
         <div class="coupon-card">
-          <img src="${coupon.imageUrl || coupon.icon || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}" 
+          <img src="${coupon.imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}" 
                onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
           <div class="coupon-card-info">
             <h3>${coupon.shopName || '店家名稱'}</h3>
@@ -547,7 +334,7 @@ async function loadCoupons() {
 }
 
 // ============================================
-// 🗺️ 店家地圖功能 (保持不變)
+// 🗺️ 店家地圖功能（保持不變）
 // ============================================
 function openMapPanel() {
   document.getElementById('mapPanel').classList.add('show');
@@ -567,7 +354,7 @@ async function loadShopMap() {
     if (shops.length > 0) {
       shopList.innerHTML = shops.map(shop => `
         <div class="shop-item">
-          <img src="${shop['圖片網址'] || shop.icon || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}"
+          <img src="${shop['圖片網址'] || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}"
                onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
           <div class="shop-item-info">
             <h3>${shop['店家名稱'] || '店家名稱'}</h3>
@@ -586,9 +373,8 @@ async function loadShopMap() {
 }
 
 // ============================================
-// 🔧 工具函數 (保持不變)
+// 🔧 工具函數（保持不變）
 // ============================================
-// 安全請求函數
 async function safeFetch(url, options = {}) {
   try {
     const response = await fetch(url, {
@@ -610,9 +396,8 @@ async function safeFetch(url, options = {}) {
   }
 }
 
-// 載入店家資料
 async function loadShops() {
-  const result = await safeFetch(GAS_URL);
+  const result = await safeFetch(`${GAS_URL}?action=getShops&sheet=店家資料`);
   if (result.success && Array.isArray(result.data)) {
     return result.data;
   } else {
@@ -622,9 +407,8 @@ async function loadShops() {
 }
 
 // ============================================
-// 🎯 事件監聽器 (保持不變)
+// 🎯 事件監聽器（保持不變）
 // ============================================
-// 收藏優惠按鈕事件
 claimBtn.addEventListener('click', () => {
   if (!currentShop) return;
   
@@ -652,7 +436,7 @@ claimBtn.addEventListener('click', () => {
     sheetName: "2025/11"
   });
   
-  fetch(`${GAS_BASE}?${params.toString()}`)
+  fetch(`${GAS_URL}?${params.toString()}`)
     .then(r => r.json())
     .then(res => {
       if (res.success) {
@@ -668,53 +452,22 @@ claimBtn.addEventListener('click', () => {
 });
 
 // ============================================
-// 🔍 頁面載入時檢查 LINE 登入狀態
+// ✅ 頁面載入時只檢查登入狀態
 // ============================================
 window.addEventListener('DOMContentLoaded', function() {
-  console.log('=== 📱 檢查頁面參數 ===');
+  console.log('=== 📱 檢查登入狀態 ===');
   
-  // 檢查 URL 是否包含登入成功的標記
-  const urlParams = new URLSearchParams(window.location.search);
-  const lineUserId = urlParams.get('lineUserId');
-  const lineDisplayName = urlParams.get('lineDisplayName');
-  const linePictureUrl = urlParams.get('linePictureUrl');
-  
-  if (lineUserId && lineDisplayName) {
-    console.log('🎉 偵測到 LINE 登入成功！');
-    
-    // 儲存到 localStorage
-    localStorage.setItem('lineUserId', lineUserId);
-    localStorage.setItem('lineDisplayName', decodeURIComponent(lineDisplayName));
-    localStorage.setItem('linePictureUrl', decodeURIComponent(linePictureUrl || ''));
-    
-    // 更新 UI
-    updateUserInterface({
-      userId: lineUserId,
-      displayName: decodeURIComponent(lineDisplayName),
-      pictureUrl: decodeURIComponent(linePictureUrl || '')
-    });
-    
-    // 清除 URL 參數
-    window.history.replaceState({}, document.title, window.location.pathname);
-  } else {
-    // 檢查 localStorage 是否有登入資料
-    const storedUserId = localStorage.getItem('lineUserId');
-    const storedDisplayName = localStorage.getItem('lineDisplayName');
-    
-    if (storedUserId) {
-      console.log('✅ 用戶已登入（從 localStorage）');
-      
-      updateUserInterface({
-        userId: storedUserId,
-        displayName: storedDisplayName || '已登入',
-        pictureUrl: localStorage.getItem('linePictureUrl') || ''
-      });
-    } else {
-      console.log('⚪ 用戶未登入，顯示登入畫面');
-      // 顯示登入畫面
-      loginScreen.classList.remove('hidden');
-    }
+  // 檢查登入
+  if (!checkLogin()) {
+    // 會自動跳轉到 login.html
+    return;
   }
+  
+  // 已登入，顯示歡迎訊息
+  setTimeout(() => {
+    showMsg(`歡迎，${userDisplayName}！`);
+    setTimeout(() => hideMsg(), 2000);
+  }, 500);
   
   // 初始化角色位置
   updatePlayer();
