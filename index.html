@@ -593,37 +593,26 @@ function closeShop() {
 }
 
 // ✅ 修正：載入店家資料函數
-// ✅ 修正：載入店家資料函數
 async function loadShops() {
   try {
     console.log('📋 開始載入店家資料...');
     
-    // 使用更簡單的請求方式
-    const response = await fetch(GAS_SHOP_URL, {
-      method: 'GET',
-      mode: 'no-cors' // 避免 CORS 問題
-    }).catch(err => {
-      console.log('使用備用請求方式...');
-      return safeFetch(GAS_SHOP_URL);
-    });
+    // 直接使用 fetch 載入店家資料
+    const response = await fetch(GAS_SHOP_URL);
     
-    let result;
-    if (response instanceof Response) {
-      try {
-        result = await response.json();
-      } catch (e) {
-        console.log('JSON 解析失敗，使用備用資料');
-        return getDefaultShops();
-      }
-    } else {
-      result = response;
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
     
-    if (result && result.success && Array.isArray(result.data)) {
+    const result = await response.json();
+    console.log('🛍️ 店家資料API回應:', result);
+    
+    if (result.success && Array.isArray(result.data) && result.data.length > 0) {
       console.log(`✅ 成功載入 ${result.data.length} 個店家`);
       return result.data;
     } else {
-      console.log('❌ 載入店家資料失敗，使用預設資料');
+      console.error('❌ 載入店家資料失敗:', result.message);
+      // 返回預設店家資料作為備份
       return getDefaultShops();
     }
   } catch (error) {
