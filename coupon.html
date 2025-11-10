@@ -260,7 +260,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   loadCouponList();
 });
 
-// 載入優惠券列表
+// 在 coupon.html 中修改 loadCouponList 函數
 async function loadCouponList() {
   const couponList = document.getElementById('couponList');
   
@@ -280,7 +280,12 @@ async function loadCouponList() {
         const isUsed = coupon.used || false;
         const statusClass = isUsed ? 'used' : 'available';
         const statusText = isUsed ? '已使用' : '可使用';
-        const couponId = coupon.id || coupon._id;
+        
+        // 確保 couponId 有值，使用多種可能的 ID 字段
+        const couponId = coupon.id || coupon._id || coupon.couponId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        console.log('優惠券資料:', coupon); // 調試用
+        console.log('使用的 couponId:', couponId); // 調試用
         
         return `
         <div class="coupon-card ${isUsed ? 'used' : ''}">
