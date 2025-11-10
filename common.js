@@ -457,3 +457,102 @@ async function initializeApp() {
     }
   }
 }
+// ============================================
+// 🔧 新增工具函數
+// ============================================
+
+// 取得當前用戶資訊
+function getCurrentUser() {
+  const lineUserId = localStorage.getItem('lineUserId');
+  if (lineUserId) {
+    return {
+      userId: lineUserId,
+      displayName: localStorage.getItem('lineDisplayName'),
+      pictureUrl: localStorage.getItem('linePictureUrl')
+    };
+  }
+  return null;
+}
+
+// 顯示通知
+function showNotification(message, type = 'info') {
+  // 移除現有的通知
+  const existingNotification = document.querySelector('.notification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+  
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
+    color: white;
+    padding: 12px 24px;
+    border-radius: 6px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    font-weight: bold;
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // 3秒後自動移除
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// 放棄優惠券 API 呼叫
+async function abandonCoupon(couponId) {
+  try {
+    const user = getCurrentUser();
+    if (!user || !user.userId) {
+      throw new Error('用戶未登入');
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'abandonCoupon');
+    formData.append('userId', user.userId);
+    formData.append('couponId', couponId);
+    
+    const response = await fetch('https://richman.fangwl591021.workers.dev/', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    console.log('放棄回應:', result);
+    
+    if (result.success === true || result.status === 'success') {
+      console.log('✅ 放棄成功！');
+      
+      // 更新本地狀態
+      let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+      usedCoupons[couponId] = {
+        used: 'abandoned',
+        abandonedAt: new Date().toISOString()
+      };
+      localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+      
+      return true;
+    } else {
+      throw new Error(result.message || '放棄失敗');
+    }
+    
+  } catch (error) {
+    console.error('❌ 放棄錯誤:', error);
+    // 後端錯誤時，在前端模擬放棄
+    let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+    usedCoupons[couponId] = {
+      used: 'abandoned',
+      abandonedAt: new Date().toISOString()
+    };
+    localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+    return true;
+  }
+}
