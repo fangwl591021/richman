@@ -929,30 +929,40 @@
         // ==================== ✅ 簡化的登入檢查 ====================
         
         // 檢查登入狀態（只檢查 localStorage）
-        function checkLogin() {
-            const userId = localStorage.getItem('lineUserId');
-            const displayName = localStorage.getItem('lineDisplayName');
-            const pictureUrl = localStorage.getItem('linePictureUrl');
-            
-            if (!userId) {
-                // 未登入，跳轉到登入頁面
-                console.log('❌ 未登入，跳轉到 login.html');
-                window.location.href = 'login.html';
-                return false;
-            }
-            
-            // 已登入，更新遊戲狀態
-            gameState.userId = userId;
-            gameState.displayName = displayName || '玩家';
-            gameState.pictureUrl = pictureUrl || '';
-            
-            console.log('✅ 已登入:', gameState.displayName);
-            
-            // 更新介面
-            updateUserInterface();
-            
-            return true;
-        }
+function checkLogin() {
+    console.log('🔍 檢查登入狀態...');
+    
+    const userId = localStorage.getItem('lineUserId');
+    const displayName = localStorage.getItem('lineDisplayName');
+    const pictureUrl = localStorage.getItem('linePictureUrl');
+    
+    console.log('localStorage 資料:');
+    console.log('- userId:', userId);
+    console.log('- displayName:', displayName);
+    console.log('- pictureUrl:', pictureUrl);
+    
+    if (!userId) {
+        // 未登入，跳轉到登入頁面
+        console.log('❌ 未登入，跳轉到 login.html');
+        
+        // ✅ 添加參數，防止無限循環
+        window.location.href = 'login.html?from=index';
+        return false;
+    }
+    
+    // 已登入，更新遊戲狀態
+    gameState.userId = userId;
+    gameState.displayName = displayName || '玩家';
+    gameState.pictureUrl = pictureUrl || '';
+    
+    console.log('✅ 已登入:', gameState.displayName);
+    console.log('✅ 用戶ID:', gameState.userId);
+    
+    // 更新介面
+    updateUserInterface();
+    
+    return true;
+}
         
         // 更新用戶介面
         function updateUserInterface() {
