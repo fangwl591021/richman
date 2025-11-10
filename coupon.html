@@ -366,7 +366,7 @@ function createCouponHTML(coupon) {
   `;
 }
 
-// 添加放棄處理函數
+// 放棄處理函數
 async function handleAbandonCoupon(couponId) {
   try {
     console.log('🗑️ 開始放棄優惠券:', couponId);
@@ -385,23 +385,61 @@ async function handleAbandonCoupon(couponId) {
     const success = await abandonCoupon(couponId);
     
     if (success) {
-      showNotification('優惠券已放棄！', 'success');
+      // 使用 alert 替代 showNotification
+      alert('優惠券已放棄！');
       
       // 延遲一下再重新載入，讓用戶看到成功訊息
       setTimeout(() => {
         loadCouponList();
       }, 1000);
     } else {
-      showNotification('放棄失敗，請稍後再試', 'error');
+      alert('放棄失敗，請稍後再試');
       // 重新啟用按鈕
       buttons.forEach(btn => btn.disabled = false);
     }
     
   } catch (error) {
     console.error('❌ 放棄處理錯誤:', error);
-    showNotification('放棄過程中發生錯誤', 'error');
+    alert('放棄過程中發生錯誤');
     // 重新啟用按鈕
     const buttons = document.querySelectorAll('.abandon-btn');
+    buttons.forEach(btn => btn.disabled = false);
+  }
+}
+
+// 核銷處理函數（確保這個函數存在）
+async function handleVerifyCoupon(couponId) {
+  try {
+    console.log('🎫 開始核銷優惠券:', couponId);
+    
+    // 顯示確認對話框
+    const confirmed = confirm('確定要核銷這張優惠券嗎？核銷後將無法復原。');
+    
+    if (!confirmed) {
+      return;
+    }
+    
+    // 禁用按鈕防止重複點擊
+    const buttons = document.querySelectorAll('.verify-btn');
+    buttons.forEach(btn => btn.disabled = true);
+    
+    const success = await verifyCoupon(couponId);
+    
+    if (success) {
+      alert('優惠券已成功核銷！');
+      // 重新載入列表
+      loadCouponList();
+    } else {
+      alert('核銷失敗，請稍後再試');
+      // 重新啟用按鈕
+      buttons.forEach(btn => btn.disabled = false);
+    }
+    
+  } catch (error) {
+    console.error('❌ 核銷處理錯誤:', error);
+    alert('核銷過程中發生錯誤');
+    // 重新啟用按鈕
+    const buttons = document.querySelectorAll('.verify-btn');
     buttons.forEach(btn => btn.disabled = false);
   }
 }
