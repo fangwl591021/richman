@@ -370,11 +370,18 @@ async function loadCouponList() {
   }
 }
 
-// 創建優惠券 HTML 的輔助函數
+// 創建優惠券 HTML 的輔助函數 - 修正版
 function createCouponHTML(coupon) {
   const discountText = (coupon.discount || '優惠內容').replace(/\\n/g, '<br>');
-  const isUsed = coupon.used === true || coupon.used === 'TRUE';
-  const isAbandoned = coupon.used === 'abandoned';
+  
+  // 更精確的狀態判斷
+  const usedValue = coupon.used;
+  const isUsed = usedValue === true || 
+                usedValue === 'TRUE' || 
+                usedValue === 'true' ||
+                usedValue === '已使用';
+  
+  const isAbandoned = usedValue === 'abandoned';
   
   let statusClass = 'available';
   let statusText = '可使用';
@@ -388,6 +395,8 @@ function createCouponHTML(coupon) {
   }
   
   const couponId = coupon.couponId || coupon.id || `temp_${Date.now()}`;
+  
+  console.log(`優惠券 ${couponId} 狀態:`, { usedValue, isUsed, isAbandoned });
   
   return `
   <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}">
