@@ -361,15 +361,14 @@ body{
 // ============================================
 // 🎮 遊戲核心變數與設定
 // ============================================
-const GAS_BASE = 'https://script.google.com/macros/s/AKfycbwwO2pMBDAADUEZ8NKYbicrB3_LlcL2u3-bZZF5xXjrgBxNlHLbXXLT_N7uorJgYhPB/exec';
+// ============================================
+// 🎮 遊戲核心變數與設定
+// ============================================
+const GAS_BASE = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RZzouUbLaiQ/exec';
 
-// ✅ 修正店家資料和優惠券資料的 Google Sheets ID
-const SHOP_SHEET_ID = '1-qvp5x8VJa_vFULJy8dfT3FjQwLDkGV8ECyeCiwJpkU';
-const COUPON_SHEET_NAME = '2025/11';
-
-// ✅ 修正 GAS URL
-const GAS_SHOP_URL = `${GAS_BASE}?action=getShops&sheetId=${SHOP_SHEET_ID}&sheetName=店家資料`;
-const GAS_COUPON_URL = `${GAS_BASE}?action=getCoupons&sheetName=${COUPON_SHEET_NAME}`;
+// ✅ 簡化 GAS URL - 使用預設的參數設定
+const GAS_SHOP_URL = `${GAS_BASE}?action=getShops`;
+const GAS_COUPON_BASE = `${GAS_BASE}?action=getCoupons`;
 
 const player = document.getElementById('player');
 const board = document.getElementById('board');
@@ -550,17 +549,37 @@ function closeShop() {
 }
 
 // ✅ 修正：載入店家資料函數
+// ✅ 修正：載入店家資料函數
 async function loadShops() {
   try {
     console.log('📋 開始載入店家資料...');
-    const result = await safeFetch(GAS_SHOP_URL);
     
-    if (result.success && Array.isArray(result.data)) {
+    // 使用更簡單的請求方式
+    const response = await fetch(GAS_SHOP_URL, {
+      method: 'GET',
+      mode: 'no-cors' // 避免 CORS 問題
+    }).catch(err => {
+      console.log('使用備用請求方式...');
+      return safeFetch(GAS_SHOP_URL);
+    });
+    
+    let result;
+    if (response instanceof Response) {
+      try {
+        result = await response.json();
+      } catch (e) {
+        console.log('JSON 解析失敗，使用備用資料');
+        return getDefaultShops();
+      }
+    } else {
+      result = response;
+    }
+    
+    if (result && result.success && Array.isArray(result.data)) {
       console.log(`✅ 成功載入 ${result.data.length} 個店家`);
       return result.data;
     } else {
-      console.error('❌ 載入店家資料失敗:', result.message);
-      // 返回預設店家資料作為備份
+      console.log('❌ 載入店家資料失敗，使用預設資料');
       return getDefaultShops();
     }
   } catch (error) {
@@ -606,19 +625,33 @@ async function loadCoupons() {
   try {
     console.log('🎫 開始載入優惠券...');
     
-    const params = new URLSearchParams({
-      action: 'getCoupons',
-      userId: userId,
-      sheetName: COUPON_SHEET_NAME
+    // 使用更簡單的參數傳遞方式
+    const couponUrl = `${GAS_COUPON_BASE}&userId=${encodeURIComponent(userId)}`;
+    
+    const response = await fetch(couponUrl, {
+      method: 'GET',
+      mode: 'no-cors'
+    }).catch(err => {
+      console.log('使用備用請求方式...');
+      return safeFetch(couponUrl);
     });
     
-    const response = await safeFetch(`${GAS_BASE}?${params}`);
-    console.log('📋 優惠券API回應:', response);
+    let result;
+    if (response instanceof Response) {
+      try {
+        result = await response.json();
+      } catch (e) {
+        console.log('優惠券 JSON 解析失敗');
+        result = { success: false };
+      }
+    } else {
+      result = response;
+    }
     
-    if (response.success && response.data && response.data.length > 0) {
-      couponCount.textContent = response.data.length;
+    if (result.success && result.data && result.data.length > 0) {
+      couponCount.textContent = result.data.length;
       
-      couponList.innerHTML = response.data.map(coupon => `
+      couponList.innerHTML = result.data.map(coupon => `
         <div class="coupon-card">
           <img src="${coupon.imageUrl || coupon.icon || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}" 
                onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
