@@ -66,7 +66,7 @@
             gap: 15px;
             box-shadow: 0 8px 20px rgba(6,199,85,0.3);
         }
-        .line-login-btn:hover {
+        .line-login-btn:hover:not(:disabled) {
             background: #05b04b;
             transform: translateY(-2px);
             box-shadow: 0 12px 30px rgba(6,199,85,0.4);
@@ -75,6 +75,21 @@
             background: #ccc;
             cursor: not-allowed;
             transform: none;
+            opacity: 0.7;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         .status-message {
             margin-top: 20px;
@@ -98,6 +113,56 @@
             background: #e8f5e9;
             color: #2e7d32;
         }
+        .debug-panel {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            text-align: left;
+            font-size: 14px;
+            display: none;
+        }
+        .debug-panel.show {
+            display: block;
+        }
+        .debug-panel h4 {
+            margin: 0 0 15px 0;
+            color: #667eea;
+            font-size: 16px;
+        }
+        .debug-item {
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .debug-item:last-child {
+            border-bottom: none;
+        }
+        .debug-label {
+            color: #666;
+            font-weight: 600;
+        }
+        .debug-value {
+            color: #333;
+            margin-left: 10px;
+        }
+        .toggle-debug {
+            margin-top: 15px;
+            padding: 8px 15px;
+            background: transparent;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            color: #666;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .toggle-debug:hover {
+            background: #f5f5f5;
+            border-color: #667eea;
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -105,193 +170,278 @@
         <div class="logo">🎲</div>
         <h1>歡樂大富翁</h1>
         <p>歡迎來到板橋商圈！<br>請先使用 LINE 登入開始遊戲，<br>收集專屬優惠券吧！</p>
-        <button class="line-login-btn" onclick="startLineLogin()" id="loginBtn">
-            <span>📱</span>
-            <span>使用 LINE 登入</span>
+        
+        <button class="line-login-btn" id="loginBtn" disabled>
+            <div class="loading"></div>
+            <span>初始化中...</span>
         </button>
+        
         <div class="status-message" id="statusMessage"></div>
+        
+        <button class="toggle-debug" onclick="toggleDebug()">顯示除錯資訊</button>
+        
+        <div class="debug-panel" id="debugPanel">
+            <h4>🔧 除錯資訊</h4>
+            <div id="debugContent"></div>
+        </div>
     </div>
 
+    <!-- LINE LIFF SDK (最新版本) -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
     <script>
-    const LINE_CHANNEL_ID = '2008231249';
-    const GAS_CALLBACK_URL = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RzouUbLaiQ/exec';
-    
-    // 顯示狀態訊息
-    function showStatus(message, type = 'info') {
-        const statusEl = document.getElementById('statusMessage');
-        statusEl.textContent = message;
-        statusEl.className = `status-message show ${type}`;
+        // ⚠️ 請替換為您的 LIFF ID
+        const LIFF_ID = '2008231249-7DlMkygo';
         
-        if (type === 'success' || type === 'info') {
-            setTimeout(() => {
-                statusEl.classList.remove('show');
-            }, 3000);
+        let debugMode = false;
+        
+        // 顯示狀態訊息
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message show ${type}`;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusEl.classList.remove('show');
+                }, 3000);
+            }
         }
-    }
-    
-    // 開始 LINE 登入
-    async function startLineLogin() {
-        try {
+        
+        // 更新除錯資訊
+        function updateDebugInfo(info) {
+            const debugContent = document.getElementById('debugContent');
+            const items = Object.entries(info).map(([key, value]) => {
+                const displayValue = typeof value === 'object' ? JSON.stringify(value) : value;
+                return `
+                    <div class="debug-item">
+                        <span class="debug-label">${key}:</span>
+                        <span class="debug-value">${displayValue}</span>
+                    </div>
+                `;
+            }).join('');
+            debugContent.innerHTML = items;
+        }
+        
+        // 切換除錯面板
+        function toggleDebug() {
+            debugMode = !debugMode;
+            const panel = document.getElementById('debugPanel');
+            const btn = event.target;
+            
+            if (debugMode) {
+                panel.classList.add('show');
+                btn.textContent = '隱藏除錯資訊';
+            } else {
+                panel.classList.remove('show');
+                btn.textContent = '顯示除錯資訊';
+            }
+        }
+        
+        // 初始化 LIFF
+        async function initializeLiff() {
             const loginBtn = document.getElementById('loginBtn');
-            loginBtn.disabled = true;
-            showStatus('正在開啟 LINE 登入視窗...', 'info');
             
-            console.log('開始 LINE 登入流程');
+            try {
+                console.log('🚀 開始初始化 LIFF...');
+                showStatus('正在初始化 LINE 登入...', 'info');
+                
+                // 初始化 LIFF SDK
+                await liff.init({ liffId: LIFF_ID });
+                
+                console.log('✅ LIFF 初始化成功！');
+                
+                // 收集除錯資訊
+                const debugInfo = {
+                    'LIFF 狀態': '✅ 初始化成功',
+                    'LIFF ID': LIFF_ID,
+                    'LIFF 版本': liff.getVersion(),
+                    '作業系統': liff.getOS(),
+                    '語言': liff.getLanguage(),
+                    '在 LINE 內': liff.isInClient() ? '是' : '否',
+                    '已登入': liff.isLoggedIn() ? '是' : '否',
+                    'URL': window.location.href
+                };
+                
+                updateDebugInfo(debugInfo);
+                
+                // 檢查登入狀態
+                if (liff.isLoggedIn()) {
+                    console.log('✅ 用戶已登入');
+                    showStatus('已登入，正在取得用戶資料...', 'info');
+                    await handleLoggedIn();
+                } else {
+                    console.log('ℹ️ 用戶未登入');
+                    showStatus('請點擊下方按鈕進行 LINE 登入', 'info');
+                    setupLoginButton();
+                }
+                
+            } catch (error) {
+                console.error('❌ LIFF 初始化失敗:', error);
+                
+                const errorInfo = {
+                    '錯誤狀態': '❌ 初始化失敗',
+                    '錯誤訊息': error.message,
+                    'LIFF ID': LIFF_ID,
+                    '可能原因': 'LIFF ID 錯誤或 LIFF App 未發布',
+                    'Endpoint URL': 'https://fangwl591021.github.io/richman/'
+                };
+                
+                updateDebugInfo(errorInfo);
+                
+                showStatus(`初始化失敗：${error.message}`, 'error');
+                
+                // 即使初始化失敗，也提供登入按鈕（但會失效）
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<span>⚠️</span><span>初始化失敗</span>';
+            }
+        }
+        
+        // 設定登入按鈕
+        function setupLoginButton() {
+            const loginBtn = document.getElementById('loginBtn');
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = '<span>📱</span><span>使用 LINE 登入</span>';
+            loginBtn.onclick = handleLogin;
+        }
+        
+        // 處理登入
+        async function handleLogin() {
+            const loginBtn = document.getElementById('loginBtn');
             
-            // 直接構建 LINE 登入 URL
-            const lineLoginUrl = buildLineLoginUrl();
-            console.log('LINE 登入網址:', lineLoginUrl);
+            try {
+                console.log('🔐 開始 LINE 登入流程');
+                
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<div class="loading"></div><span>登入中...</span>';
+                showStatus('正在跳轉到 LINE 登入...', 'info');
+                
+                // LIFF 登入（會自動跳轉到 LINE 授權頁面）
+                liff.login();
+                
+            } catch (error) {
+                console.error('❌ 登入失敗:', error);
+                showStatus(`登入失敗：${error.message}`, 'error');
+                setupLoginButton();
+                
+                updateDebugInfo({
+                    ...JSON.parse(document.getElementById('debugContent').firstElementChild?.dataset.info || '{}'),
+                    '登入錯誤': error.message
+                });
+            }
+        }
+        
+        // 處理已登入狀態
+        async function handleLoggedIn() {
+            const loginBtn = document.getElementById('loginBtn');
             
-            // 在新視窗中打開 LINE 登入（彈出視窗）
-            const loginWindow = window.open(
-                lineLoginUrl, 
-                'lineLogin', 
-                'width=500,height=700,scrollbars=yes,resizable=yes'
-            );
+            try {
+                console.log('📋 取得用戶資料...');
+                
+                // 取得用戶個人資料
+                const profile = await liff.getProfile();
+                
+                console.log('✅ 用戶資料:', profile);
+                
+                // 儲存到 localStorage
+                localStorage.setItem('lineUserId', profile.userId);
+                localStorage.setItem('lineDisplayName', profile.displayName);
+                localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
+                localStorage.setItem('lineStatusMessage', profile.statusMessage || '');
+                localStorage.setItem('loginTime', new Date().toISOString());
+                
+                // 更新除錯資訊
+                updateDebugInfo({
+                    '登入狀態': '✅ 登入成功',
+                    '用戶 ID': profile.userId,
+                    '顯示名稱': profile.displayName,
+                    '頭像': profile.pictureUrl ? '有' : '無',
+                    '狀態訊息': profile.statusMessage || '(無)',
+                    '登入時間': new Date().toLocaleString('zh-TW')
+                });
+                
+                showStatus(`歡迎，${profile.displayName}！`, 'success');
+                
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<span>✅</span><span>登入成功</span>';
+                
+                // 延遲跳轉，讓用戶看到成功訊息
+                setTimeout(() => {
+                    console.log('🎮 跳轉到遊戲頁面...');
+                    showStatus('正在進入遊戲...', 'success');
+                    
+                    setTimeout(() => {
+                        // 跳轉到遊戲頁面
+                        window.location.href = 'index.html';
+                    }, 500);
+                }, 1500);
+                
+            } catch (error) {
+                console.error('❌ 取得用戶資料失敗:', error);
+                showStatus(`取得用戶資料失敗：${error.message}`, 'error');
+                
+                // 清除登入狀態並重新登入
+                localStorage.clear();
+                liff.logout();
+                setupLoginButton();
+                
+                updateDebugInfo({
+                    '錯誤狀態': '❌ 取得資料失敗',
+                    '錯誤訊息': error.message,
+                    '建議': '請重新登入'
+                });
+            }
+        }
+        
+        // 頁面載入時初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('📱 歡樂大富翁 - LINE 登入頁面');
+            console.log('📅 載入時間:', new Date().toLocaleString('zh-TW'));
+            console.log('🌐 URL:', window.location.href);
             
-            if (!loginWindow) {
-                throw new Error('無法開啟登入視窗，請確認瀏覽器沒有封鎖彈出視窗');
+            // 檢查是否有 localStorage 資料（可能已經登入過）
+            const storedUserId = localStorage.getItem('lineUserId');
+            if (storedUserId) {
+                console.log('ℹ️ 發現本地登入資料，用戶 ID:', storedUserId);
             }
             
-            // 監聽來自 LINE 登入視窗的消息
-            window.addEventListener('message', handleLoginMessage);
-            
-            // 監控視窗關閉
-            const checkInterval = setInterval(() => {
-                if (loginWindow.closed) {
-                    clearInterval(checkInterval);
-                    console.log('LINE 登入視窗已關閉');
-                    loginBtn.disabled = false;
-                    
-                    // 檢查是否成功登入
-                    setTimeout(() => {
-                        const userId = localStorage.getItem('lineUserId');
-                        if (!userId) {
-                            showStatus('登入已取消或未完成', 'info');
-                        }
-                    }, 500);
-                }
-            }, 1000);
-            
-        } catch (error) {
-            console.error('登入錯誤:', error);
-            showStatus('登入發生錯誤：' + error.message, 'error');
-            document.getElementById('loginBtn').disabled = false;
-        }
-    }
-    
-    // 處理登入訊息
-    function handleLoginMessage(event) {
-        console.log('收到訊息:', event.data);
-        
-        // 驗證訊息來源（安全性考量）
-        if (event.origin !== window.location.origin && 
-            !event.origin.includes('script.google.com')) {
-            console.warn('忽略來自未知來源的訊息:', event.origin);
-            return;
-        }
-        
-        if (event.data && event.data.type === 'LINE_LOGIN_SUCCESS') {
-            console.log('🎉 LINE 登入成功！');
-            const userProfile = event.data.profile;
-            
-            // 儲存用戶資料到 localStorage
-            localStorage.setItem('lineUserId', userProfile.userId);
-            localStorage.setItem('lineDisplayName', userProfile.displayName);
-            localStorage.setItem('linePictureUrl', userProfile.pictureUrl || '');
-            localStorage.setItem('loginTime', new Date().toISOString());
-            
-            console.log('用戶資料已儲存:', userProfile);
-            showStatus('登入成功！正在跳轉...', 'success');
-            
-            // 延遲跳轉，讓用戶看到成功訊息
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
-        } else if (event.data && event.data.type === 'LINE_LOGIN_ERROR') {
-            console.error('LINE 登入失敗:', event.data.error);
-            showStatus('登入失敗：' + event.data.error, 'error');
-            document.getElementById('loginBtn').disabled = false;
-        }
-    }
-    
-    // 構建 LINE 登入 URL
-    function buildLineLoginUrl() {
-        const state = 'monopoly_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        const nonce = 'nonce_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        
-        // 儲存 state 供驗證使用
-        sessionStorage.setItem('line_login_state', state);
-        
-        const params = new URLSearchParams({
-            response_type: 'code',
-            client_id: LINE_CHANNEL_ID,
-            redirect_uri: GAS_CALLBACK_URL,
-            state: state,
-            scope: 'profile openid',
-            nonce: nonce
+            // 初始化 LIFF
+            initializeLiff();
         });
         
-        return `https://access.line.me/oauth2/v2.1/authorize?${params.toString()}`;
-    }
-    
-    // 檢查登入狀態
-    function checkLoginStatus() {
-        const userId = localStorage.getItem('lineUserId');
-        const displayName = localStorage.getItem('lineDisplayName');
+        // 全局錯誤處理
+        window.addEventListener('error', function(event) {
+            console.error('❌ 全局錯誤:', event.error);
+            
+            if (event.error && event.error.message) {
+                updateDebugInfo({
+                    '全局錯誤': event.error.message,
+                    '錯誤堆疊': event.error.stack || '無'
+                });
+            }
+        });
         
-        if (userId && displayName) {
-            console.log('用戶已登入:', displayName);
-            return true;
-        }
-        return false;
-    }
-    
-    // 頁面載入時檢查
-    window.addEventListener('DOMContentLoaded', function() {
-        console.log('頁面載入完成');
+        // 提供除錯指令
+        window.clearLoginData = function() {
+            localStorage.clear();
+            if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
+                liff.logout();
+            }
+            console.log('✅ 登入資料已清除');
+            location.reload();
+        };
         
-        // 如果已經登入，直接跳轉
-        if (checkLoginStatus()) {
-            const displayName = localStorage.getItem('lineDisplayName');
-            showStatus(`歡迎回來，${displayName}！正在跳轉...`, 'success');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
-        } else {
-            console.log('尚未登入，等待用戶操作');
-        }
+        window.showLoginData = function() {
+            console.log('📋 本地儲存的登入資料:');
+            console.log('- 用戶 ID:', localStorage.getItem('lineUserId'));
+            console.log('- 顯示名稱:', localStorage.getItem('lineDisplayName'));
+            console.log('- 頭像網址:', localStorage.getItem('linePictureUrl'));
+            console.log('- 登入時間:', localStorage.getItem('loginTime'));
+        };
         
-        // 檢查 URL 參數（可能從 GAS 重導回來）
-        const urlParams = new URLSearchParams(window.location.search);
-        const error = urlParams.get('error');
-        const success = urlParams.get('success');
-        
-        if (error) {
-            showStatus('登入失敗：' + decodeURIComponent(error), 'error');
-        } else if (success === 'true') {
-            showStatus('登入成功！正在跳轉...', 'success');
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1000);
-        }
-    });
-    
-    // 清除登入資料（除錯用）
-    function clearLoginData() {
-        localStorage.removeItem('lineUserId');
-        localStorage.removeItem('lineDisplayName');
-        localStorage.removeItem('linePictureUrl');
-        localStorage.removeItem('loginTime');
-        sessionStorage.clear();
-        console.log('登入資料已清除');
-        location.reload();
-    }
-    
-    // 在 console 中提供除錯指令
-    console.log('🎮 歡樂大富翁除錯工具');
-    console.log('輸入 clearLoginData() 可清除登入資料');
-    console.log('輸入 checkLoginStatus() 可檢查登入狀態');
+        console.log('💡 除錯指令:');
+        console.log('- clearLoginData() - 清除登入資料');
+        console.log('- showLoginData() - 顯示登入資料');
     </script>
 </body>
 </html>
