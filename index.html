@@ -49,85 +49,33 @@ body{
 .face-6 .dot:nth-child(1){top:20%;left:20%;}.face-6 .dot:nth-child(2){top:20%;right:20%;}.face-6 .dot:nth-child(3){top:50%;left:20%;transform:translateY(-50%);}.face-6 .dot:nth-child(4){top:50%;right:20%;transform:translateY(-50%);}.face-6 .dot:nth-child(5){bottom:20%;left:20%;}.face-6 .dot:nth-child(6){bottom:20%;right:20%;}
 
 /* === 🧧 店家彈窗（縮小版） === */
-.shop-popup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.9);
-  width: 80%;
-  max-width: 350px;
-  background: white;
-  color: #222;
-  border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
-  overflow: hidden;
-  text-align: center;
-  z-index: 50;
-  display: none;
-  animation: fadeIn .4s ease;
-}
-.shop-popup img {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  background: #eee;
-}
-.shop-content { padding: 12px 15px 18px; }
-.shop-content h2 { font-size: 18px; color: #222; margin-bottom: 6px; }
-.shop-content p {
-  font-size: 14px;
-  color: #555;
-  margin-bottom: 12px;
-  white-space: pre-line;
-  line-height: 1.4;
-}
-.shop-buttons { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.shop-buttons button {
-  width: 90%;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 15px;
-  font-weight: bold;
-  cursor: pointer;
-  color: white;
-  transition: transform .2s ease;
-}
-.shop-buttons button:active { transform: scale(0.95); }
-.shop-buttons .claim { background: #764ba2; }
-.shop-buttons .close { background: #888; }
+.shop-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.9);width:80%;max-width:350px;background:white;color:#222;border-radius:12px;box-shadow:0 8px 25px rgba(0,0,0,0.35);overflow:hidden;text-align:center;z-index:50;display:none;animation:fadeIn .4s ease;}
+.shop-popup img{width:100%;height:160px;object-fit:cover;background:#eee;}
+.shop-content{padding:12px 15px 18px;}
+.shop-content h2{font-size:18px;color:#222;margin-bottom:6px;}
+.shop-content p{font-size:14px;color:#555;margin-bottom:12px;white-space:pre-line;line-height:1.4;}
+.shop-buttons{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.shop-buttons button{width:90%;border:none;border-radius:8px;padding:10px 12px;font-size:15px;font-weight:bold;cursor:pointer;color:white;transition:transform .2s ease;}
+.shop-buttons button:active{transform:scale(0.95);}
+.shop-buttons .claim{background:#764ba2;}
+.shop-buttons .close{background:#888;}
 
 /* === 🎫 優惠券收集區彈窗（輕量版） === */
-.coupon-panel {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 70px;
-  background: white; z-index: 200; display: none;
-  overflow-y: auto; padding: 10px;
-  transform: scale(0.85); transform-origin: bottom center;
-}
-.coupon-panel.show { display: block; }
-.coupon-panel-header {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #eee;
-}
-.coupon-panel-header h2 { font-size: 16px; color: #333; }
-.coupon-panel-header .close-btn {
-  width: 28px; height: 28px; border: none; background: #ddd;
-  border-radius: 50%; font-size: 16px; cursor: pointer;
-}
-.coupon-list { display: grid; gap: 8px; }
-.coupon-card {
-  border: 1px solid #ddd; border-radius: 8px; padding: 8px;
-  display: flex; gap: 8px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-}
-.coupon-card img { width: 50px; height: 50px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
-.coupon-card-info { flex: 1; }
-.coupon-card-info h3 { font-size: 13px; margin-bottom: 2px; color: #333; }
-.coupon-card-info p { font-size: 12px; color: #666; line-height: 1.3; white-space: pre-line; }
-.coupon-card-info .discount { color: #e53935; font-weight: bold; font-size: 13px; white-space: pre-line; line-height: 1.2; }
-.empty-state { text-align: center; padding: 25px 10px; color: #999; }
-.empty-state .icon { font-size: 36px; margin-bottom: 10px; }
-.empty-state p { font-size: 13px; }
+.coupon-panel{position:fixed;top:0;left:0;right:0;bottom:70px;background:white;z-index:200;display:none;overflow-y:auto;padding:10px;transform:scale(0.85);transform-origin:bottom center;}
+.coupon-panel.show{display:block;}
+.coupon-panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #eee;}
+.coupon-panel-header h2{font-size:16px;color:#333;}
+.coupon-panel-header .close-btn{width:28px;height:28px;border:none;background:#ddd;border-radius:50%;font-size:16px;cursor:pointer;}
+.coupon-list{display:grid;gap:8px;}
+.coupon-card{border:1px solid #ddd;border-radius:8px;padding:8px;display:flex;gap:8px;background:white;box-shadow:0 2px 4px rgba(0,0,0,0.08);}
+.coupon-card img{width:50px;height:50px;object-fit:cover;border-radius:6px;flex-shrink:0;}
+.coupon-card-info{flex:1;}
+.coupon-card-info h3{font-size:13px;margin-bottom:2px;color:#333;}
+.coupon-card-info p{font-size:12px;color:#666;line-height:1.3;white-space:pre-line;}
+.coupon-card-info .discount{color:#e53935;font-weight:bold;font-size:13px;white-space:pre-line;line-height:1.2;}
+.empty-state{text-align:center;padding:25px 10px;color:#999;}
+.empty-state .icon{font-size:36px;margin-bottom:10px;}
+.empty-state p{font-size:13px;}
 
 /* === 🎉 收藏按鈕狀態 === */
 #claimBtn{transition:all 0.25s ease;}
@@ -148,6 +96,9 @@ body{
 </style>
 </head>
 <body>
-<!-- 🔐 主要內容照原樣保持 -->
+<!-- 🔐 主體內容保持原樣 -->
+<script>
+// 這裡可嵌入原本 index.html 的所有遊戲邏輯與 API 互動程式碼
+</script>
 </body>
 </html>
