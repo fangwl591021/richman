@@ -1,36 +1,345 @@
-<!-- 修改底部導航 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
+<title>我的優惠券 - 歡樂大富翁</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="common.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"Microsoft JhengHei",sans-serif;
+  background:#f5f5f5;
+  min-height:100vh;
+  padding-bottom:70px;
+}
+
+/* 頁面標題 */
+.page-header{
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  color:white;
+  padding:20px 15px;
+  text-align:center;
+}
+.page-header h1{
+  font-size:24px;
+  margin-bottom:5px;
+}
+.page-header .subtitle{
+  font-size:14px;
+  opacity:0.9;
+}
+
+/* 優惠券列表 */
+.coupon-list{
+  padding:15px;
+  display:grid;
+  gap:12px;
+}
+.coupon-card{
+  background:white;
+  border-radius:12px;
+  padding:15px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  display:flex;
+  gap:12px;
+  position:relative;
+  transition:all 0.3s ease;
+}
+.coupon-card.used{
+  background:#f9f9f9;
+  opacity:0.7;
+}
+.coupon-card img{
+  width:70px;
+  height:70px;
+  object-fit:cover;
+  border-radius:8px;
+  flex-shrink:0;
+}
+.coupon-card-info{
+  flex:1;
+}
+.coupon-card-info h3{
+  font-size:16px;
+  margin-bottom:6px;
+  color:#333;
+}
+.coupon-card-info .discount{
+  color:#e53935;
+  font-weight:bold;
+  line-height:1.4;
+  font-size:14px;
+  margin-bottom:6px;
+}
+.coupon-card-info .date{
+  font-size:12px;
+  color:#999;
+  margin-bottom:8px;
+}
+.coupon-card-info .status{
+  font-size:12px;
+  font-weight:bold;
+  padding:4px 10px;
+  border-radius:20px;
+  display:inline-block;
+}
+.coupon-card-info .status.available{
+  color:#4caf50;
+  background:#e8f5e8;
+}
+.coupon-card-info .status.used{
+  color:#999;
+  background:#f0f0f0;
+}
+.coupon-actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+.coupon-actions button{
+  padding:8px 16px;
+  border:none;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+.coupon-actions .verify-btn{
+  background:#4caf50;
+  color:white;
+}
+.coupon-actions .verify-btn:active{
+  background:#45a049;
+  transform:scale(0.95);
+}
+.coupon-actions .cancel-btn{
+  background:#f44336;
+  color:white;
+}
+.coupon-actions .cancel-btn:active{
+  background:#e53935;
+  transform:scale(0.95);
+}
+
+/* 空狀態 */
+.empty-state{
+  text-align:center;
+  padding:60px 20px;
+  color:#999;
+}
+.empty-state .icon{
+  font-size:48px;
+  margin-bottom:15px;
+}
+.empty-state p{
+  font-size:16px;
+  line-height:1.5;
+}
+.empty-state .action-btn{
+  margin-top:20px;
+  padding:12px 24px;
+  background:#764ba2;
+  color:white;
+  border:none;
+  border-radius:25px;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+/* 底部導航 */
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:60px;
+  background:white;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  border-top:1px solid #eee;
+  z-index:100;
+}
+.bottom-nav button{
+  flex:1;
+  height:100%;
+  border:none;
+  background:transparent;
+  color:#333;
+  font-size:10px;
+  font-weight:bold;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+}
+.bottom-nav button.active{
+  color:#764ba2;
+}
+.bottom-nav button .icon{
+  font-size:20px;
+}
+
+/* LINE 頭像 */
+.line-avatar{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid #fff;
+  box-shadow:0 2px 6px rgba(0,0,0,0.3);
+}
+#lineLoginBtn.has-avatar .icon{
+  display:none;
+}
+#lineLoginBtn.has-avatar .line-avatar{
+  display:block;
+}
+#lineLoginBtn .line-avatar{
+  display:none;
+}
+.bottom-nav button.logged-in{
+  color:#5D4037;
+}
+
+/* 載入狀態 */
+.loading{
+  text-align:center;
+  padding:40px;
+  color:#999;
+}
+</style>
+</head>
+<body>
+
+<!-- 頁面標題 -->
+<div class="page-header">
+  <h1>我的優惠券</h1>
+  <div class="subtitle">收集的店家優惠都在這裡</div>
+</div>
+
+<!-- 優惠券列表 -->
+<div class="coupon-list" id="couponList">
+  <div class="loading">載入中...</div>
+</div>
+
+<!-- 底部導航 -->
 <div class="bottom-nav">
-  <button class="nav-btn" onclick="showInfo()">
-    <div class="nav-icon">ℹ️</div>
-    <div class="nav-label">說明</div>
+  <button onclick="window.location.href='index.html'">
+    <span class="icon">🎲</span>
+    <span>遊戲</span>
   </button>
-  <button class="nav-btn" onclick="showCoupons()">
-    <div class="nav-icon">🎫</div>
-    <div class="nav-label">優惠券</div>
+  
+  <button class="active">
+    <span class="icon">🎫</span>
+    <span>優惠券</span>
   </button>
-  <button class="nav-btn" onclick="showProfile()">
-    <div class="nav-icon">👤</div>
-    <div class="nav-label">我的</div>
+  
+  <button onclick="window.location.href='shop.html'">
+    <span class="icon">🗺️</span>
+    <span>店家地圖</span>
   </button>
-  <!-- 添加返回主要版本的按鈕 -->
-  <button class="nav-btn" onclick="switchToMainVersion()">
-    <div class="nav-icon">🏠</div>
-    <div class="nav-label">主版本</div>
+  
+  <button id="lineLoginBtn" onclick="lineLogin()">
+    <span class="icon">📱</span>
+    <img class="line-avatar" id="lineAvatar" src="" alt="LINE">
+    <span id="lineLoginText">LINE</span>
   </button>
 </div>
 
 <script>
-// 添加返回函數
-function switchToMainVersion() {
-    if (confirm('要返回主要遊戲版本嗎？')) {
-        window.location.href = 'index.html';
+// 頁面載入時初始化
+window.addEventListener('DOMContentLoaded', async function() {
+  await initializeApp();
+  loadCouponList();
+});
+
+// 載入優惠券列表
+async function loadCouponList() {
+  const couponList = document.getElementById('couponList');
+  
+  try {
+    const coupons = await loadCoupons();
+    
+    if (coupons.length > 0) {
+      // 排序：未使用的在前，已使用的在後
+      coupons.sort((a, b) => {
+        if (a.used && !b.used) return 1;
+        if (!a.used && b.used) return -1;
+        return 0;
+      });
+      
+      couponList.innerHTML = coupons.map(coupon => {
+        const discountText = (coupon.discount || '優惠內容').replace(/\\n/g, '<br>');
+        const isUsed = coupon.used || false;
+        const statusClass = isUsed ? 'used' : 'available';
+        const statusText = isUsed ? '已使用' : '可使用';
+        const couponId = coupon.id || coupon._id;
+        
+        return `
+        <div class="coupon-card ${isUsed ? 'used' : ''}">
+          <img src="${coupon.imageUrl || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'}" 
+               onerror="this.src='https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'">
+          <div class="coupon-card-info">
+            <h3>${coupon.shopName || '店家名稱'}</h3>
+            <div class="discount">${discountText}</div>
+            <div class="date">
+              ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
+            </div>
+            <div class="status ${statusClass}">${statusText}</div>
+            ${!isUsed ? `
+            <div class="coupon-actions">
+              <button class="verify-btn" onclick="verifyCoupon('${couponId}')">核銷使用</button>
+              <button class="cancel-btn" onclick="cancelCoupon('${couponId}')">取消</button>
+            </div>
+            ` : ''}
+          </div>
+        </div>
+      `}).join('');
+    } else {
+      couponList.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">🎫</div>
+          <p>還沒有收集任何優惠券<br>快去遊戲中收集吧！</p>
+          <button class="action-btn" onclick="window.location.href='index.html'">
+            開始遊戲
+          </button>
+        </div>
+      `;
     }
+  } catch (error) {
+    console.error('載入優惠券失敗:', error);
+    couponList.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <p>載入失敗，請稍後再試</p>
+      </div>
+    `;
+  }
 }
 
-// 在 init 函數中添加
-function init() {
-    // ... 您現有的程式碼 ...
-    
-    console.log('🎨 SVG 遊戲版本載入完成');
+// 核銷優惠券
+async function verifyCoupon(couponId) {
+  const success = await verifyCoupon(couponId);
+  if (success) {
+    alert('優惠券已成功核銷！');
+    loadCouponList();
+  } else {
+    alert('核銷失敗，請稍後再試');
+  }
+}
+
+// 取消核銷
+function cancelCoupon(couponId) {
+  console.log('取消核銷:', couponId);
+  // 這裡可以添加取消邏輯
 }
 </script>
+</body>
+</html>
