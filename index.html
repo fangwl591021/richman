@@ -10,13 +10,15 @@
 body{
   font-family:"Microsoft JhengHei",sans-serif;
   background:#111;
-  height:100vh;overflow:hidden;
+  height:auto; /* 改為自動高度 */
+  min-height:100vh; /* 確保最小高度 */
+  overflow-y:auto; /* 允許垂直滾動 */
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:center;
-  padding:0;
-  gap:0;
+  justify-content:flex-start; /* 改為頂部對齊 */
+  padding:10px 0 70px; /* 底部留出功能區空間 */
+  gap:10px;
 }
 .board{
   width:95%;
@@ -25,16 +27,19 @@ body{
   background-color:#000;
   border-radius:10px;
   margin-bottom:0;
+  position:relative; /* 改為相對定位 */
+  transform:none; /* 移除transform */
+  top:auto; /* 移除固定定位 */
+  left:auto;
 }
-  /* === 底部功能區 === */
+/* === 底部功能區 === */
 .bottom-bar{
-  width:95%;
+  position:fixed;bottom:0;left:0;right:0;
   height:60px;
-  background:#FFF8E1; /* 乳黃色 */
+  background:#FFF8E1;
   display:flex;justify-content:space-around;align-items:center;
   z-index:100;
-  border-radius:0 0 10px 10px;
-  margin-top:0;
+  border-top:2px solid rgba(0,0,0,0.1);
 }
 
 /* === LINE 登入歡迎頁面 === */
