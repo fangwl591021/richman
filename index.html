@@ -89,7 +89,15 @@ body{
   display:flex;flex-direction:column;align-items:center;gap:25px;
   z-index:5;
 }
-.msg{color:#000;font-size:28px;font-weight:bold;text-shadow:1px 1px 3px rgba(255,255,255,.6);margin-bottom:10px;min-height:32px;transition:opacity .5s ease;}
+.msg{
+  color:#000;
+  font-size: 20px;  /* 從 28px 改小 */
+  font-weight:bold;
+  text-shadow:1px 1px 2px rgba(255,255,255,.6);
+  margin-bottom:5px;
+  min-height:24px;
+  transition:opacity .5s ease;
+}
 .dice-box{display:flex;gap:40px;}
 .dice{
   width: 80px;    /* 從 160px 改小 */
@@ -138,9 +146,15 @@ body{
 .face-6 .dot:nth-child(5){bottom:25%;left:25%;}
 .face-6 .dot:nth-child(6){bottom:25%;right:25%;}
 .roll-btn{
-  padding:25px 60px;background:linear-gradient(135deg,#667eea,#764ba2);
-  color:white;font-size:34px;font-weight:bold;border:none;border-radius:40px;
-  box-shadow:0 8px 20px rgba(0,0,0,.4);cursor:pointer;
+  padding: 15px 30px;    /* 從 25px 60px 改小 */
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:white;
+  font-size: 20px;       /* 從 34px 改小 */
+  font-weight:bold;
+  border:none;
+  border-radius: 25px;   /* 從 40px 改小 */
+  box-shadow:0 4px 10px rgba(0,0,0,.3);  /* 從 8px 20px 改小 */
+  cursor:pointer;
 }
 
 /* === 上圖下文 名片版彈窗 === */
