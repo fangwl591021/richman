@@ -439,6 +439,7 @@ async function handleVerifyCoupon(couponId) {
 }
 
 // 放棄處理函數
+// 放棄處理函數 - 修正版
 async function handleAbandonCoupon(couponId) {
   try {
     console.log('🗑️ 開始放棄優惠券:', couponId);
@@ -450,30 +451,38 @@ async function handleAbandonCoupon(couponId) {
       return;
     }
     
-    // 禁用按鈕防止重複點擊
-    const buttons = document.querySelectorAll('.abandon-btn');
-    buttons.forEach(btn => btn.disabled = true);
+    // 禁用所有按鈕防止重複點擊
+    const verifyButtons = document.querySelectorAll('.verify-btn');
+    const abandonButtons = document.querySelectorAll('.abandon-btn');
+    
+    verifyButtons.forEach(btn => btn.disabled = true);
+    abandonButtons.forEach(btn => btn.disabled = true);
     
     const success = await abandonCoupon(couponId);
     
     if (success) {
       alert('優惠券已放棄！');
-      // 延遲一下再重新載入，讓用戶看到成功訊息
-      setTimeout(() => {
-        loadCouponList();
-      }, 1000);
+      
+      // 立即重新載入列表，不要延遲
+      await loadCouponList();
+      
+      // 滾動到頂部讓用戶看到變化
+      window.scrollTo(0, 0);
     } else {
       alert('放棄失敗，請稍後再試');
       // 重新啟用按鈕
-      buttons.forEach(btn => btn.disabled = false);
+      verifyButtons.forEach(btn => btn.disabled = false);
+      abandonButtons.forEach(btn => btn.disabled = false);
     }
     
   } catch (error) {
     console.error('❌ 放棄處理錯誤:', error);
-    alert('放棄過程中發生錯誤');
+    alert('放棄過程中發生錯誤: ' + error.message);
     // 重新啟用按鈕
-    const buttons = document.querySelectorAll('.abandon-btn');
-    buttons.forEach(btn => btn.disabled = false);
+    const verifyButtons = document.querySelectorAll('.verify-btn');
+    const abandonButtons = document.querySelectorAll('.abandon-btn');
+    verifyButtons.forEach(btn => btn.disabled = false);
+    abandonButtons.forEach(btn => btn.disabled = false);
   }
 }
 
