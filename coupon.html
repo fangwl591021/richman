@@ -115,6 +115,11 @@ body{
   background:#45a049;
   transform:scale(0.95);
 }
+.coupon-actions .verify-btn:disabled{
+  background:#cccccc;
+  cursor:not-allowed;
+  transform:none;
+}
 .coupon-actions .cancel-btn{
   background:#f44336;
   color:white;
@@ -122,6 +127,17 @@ body{
 .coupon-actions .cancel-btn:active{
   background:#e53935;
   transform:scale(0.95);
+}
+
+/* 分隔線 */
+.section-divider{
+  padding:10px 15px;
+  font-size:14px;
+  color:#666;
+  font-weight:bold;
+  border-bottom:1px solid #eee;
+  margin:10px 0;
+  background:#f9f9f9;
 }
 
 /* 空狀態 */
@@ -260,7 +276,7 @@ window.addEventListener('DOMContentLoaded', async function() {
   loadCouponList();
 });
 
-// 在 coupon.html 中修改 loadCouponList 函數
+// 優化的 loadCouponList 函數
 async function loadCouponList() {
   const couponList = document.getElementById('couponList');
   
@@ -268,45 +284,25 @@ async function loadCouponList() {
     const coupons = await loadCoupons();
     
     if (coupons.length > 0) {
-      // 排序：未使用的在前，已使用的在後
-      coupons.sort((a, b) => {
-        if (a.used && !b.used) return 1;
-        if (!a.used && b.used) return -1;
-        return 0;
-      });
+      // 分組：未使用和已使用
+      const availableCoupons = coupons.filter(coupon => !coupon.used);
+      const usedCoupons = coupons.filter(coupon => coupon.used);
       
-      couponList.innerHTML = coupons.map(coupon => {
-        const discountText = (coupon.discount || '優惠內容').replace(/\\n/g, '<br>');
-        const isUsed = coupon.used || false;
-        const statusClass = isUsed ? 'used' : 'available';
-        const statusText = isUsed ? '已使用' : '可使用';
-        
-        // 確保 couponId 有值，使用多種可能的 ID 字段
-        const couponId = coupon.id || coupon._id || coupon.couponId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        console.log('優惠券資料:', coupon); // 調試用
-        console.log('使用的 couponId:', couponId); // 調試用
-        
-        return `
-        <div class="coupon-card ${isUsed ? 'used' : ''}">
-          <img src="${coupon.imageUrl || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'}" 
-               onerror="this.src='https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'">
-          <div class="coupon-card-info">
-            <h3>${coupon.shopName || '店家名稱'}</h3>
-            <div class="discount">${discountText}</div>
-            <div class="date">
-              ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
-            </div>
-            <div class="status ${statusClass}">${statusText}</div>
-            ${!isUsed ? `
-            <div class="coupon-actions">
-              <button class="verify-btn" onclick="handleVerifyCoupon('${couponId}')">核銷使用</button>
-              <button class="cancel-btn" onclick="handleCancelCoupon('${couponId}')">取消</button>
-            </div>
-            ` : ''}
-          </div>
-        </div>
-      `}).join('');
+      let html = '';
+      
+      // 未使用的優惠券
+      if (availableCoupons.length > 0) {
+        html += '<div class="section-divider">可使用優惠券</div>';
+        html += availableCoupons.map(coupon => createCouponHTML(coupon)).join('');
+      }
+      
+      // 已使用的優惠券
+      if (usedCoupons.length > 0) {
+        html += '<div class="section-divider">已使用優惠券</div>';
+        html += usedCoupons.map(coupon => createCouponHTML(coupon)).join('');
+      }
+      
+      couponList.innerHTML = html;
     } else {
       couponList.innerHTML = `
         <div class="empty-state">
@@ -329,6 +325,38 @@ async function loadCouponList() {
   }
 }
 
+// 創建優惠券 HTML 的輔助函數
+function createCouponHTML(coupon) {
+  const discountText = (coupon.discount || '優惠內容').replace(/\\n/g, '<br>');
+  const isUsed = coupon.used || false;
+  const statusClass = isUsed ? 'used' : 'available';
+  const statusText = isUsed ? '已使用' : '可使用';
+  
+  // 確保 couponId 有值
+  const couponId = coupon.id || coupon._id || coupon.couponId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  return `
+  <div class="coupon-card ${isUsed ? 'used' : ''}">
+    <img src="${coupon.imageUrl || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'}" 
+         onerror="this.src='https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'">
+    <div class="coupon-card-info">
+      <h3>${coupon.shopName || '店家名稱'}</h3>
+      <div class="discount">${discountText}</div>
+      <div class="date">
+        ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
+      </div>
+      <div class="status ${statusClass}">${statusText}</div>
+      ${!isUsed ? `
+      <div class="coupon-actions">
+        <button class="verify-btn" onclick="handleVerifyCoupon('${couponId}')">核銷使用</button>
+        <button class="cancel-btn" onclick="handleCancelCoupon('${couponId}')">取消</button>
+      </div>
+      ` : ''}
+    </div>
+  </div>
+  `;
+}
+
 // 核銷優惠券處理函數
 async function handleVerifyCoupon(couponId) {
   try {
@@ -338,21 +366,34 @@ async function handleVerifyCoupon(couponId) {
     const buttons = document.querySelectorAll('.verify-btn');
     buttons.forEach(btn => btn.disabled = true);
     
+    // 顯示確認對話框
+    const confirmed = confirm('確定要核銷這張優惠券嗎？核銷後將無法復原。');
+    
+    if (!confirmed) {
+      // 重新啟用按鈕
+      buttons.forEach(btn => btn.disabled = false);
+      return;
+    }
+    
     const success = await verifyCoupon(couponId);
     
     if (success) {
-      alert('優惠券已成功核銷！');
-      // 重新載入列表
-      loadCouponList();
+      // 顯示成功訊息
+      showNotification('優惠券已成功核銷！', 'success');
+      
+      // 延遲一下再重新載入，讓用戶看到成功訊息
+      setTimeout(() => {
+        loadCouponList();
+      }, 1000);
     } else {
-      alert('核銷失敗，請稍後再試');
+      showNotification('核銷失敗，請稍後再試', 'error');
       // 重新啟用按鈕
       buttons.forEach(btn => btn.disabled = false);
     }
     
   } catch (error) {
     console.error('核銷處理錯誤:', error);
-    alert('核銷過程中發生錯誤');
+    showNotification('核銷過程中發生錯誤', 'error');
     // 重新啟用按鈕
     const buttons = document.querySelectorAll('.verify-btn');
     buttons.forEach(btn => btn.disabled = false);
@@ -363,6 +404,88 @@ async function handleVerifyCoupon(couponId) {
 function handleCancelCoupon(couponId) {
   console.log('取消核銷:', couponId);
   // 這裡可以添加取消邏輯，如果需要
+}
+
+// 顯示通知的輔助函數
+function showNotification(message, type = 'info') {
+  // 移除現有的通知
+  const existingNotification = document.querySelector('.notification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+  
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
+    color: white;
+    padding: 12px 24px;
+    border-radius: 6px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    font-weight: bold;
+  `;
+  
+  document.body.appendChild(notification);
+  
+  // 3秒後自動移除
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// 模擬 verifyCoupon 函數（如果 common.js 中沒有）
+if (typeof verifyCoupon === 'undefined') {
+  window.verifyCoupon = async function(couponId) {
+    console.log('模擬核銷優惠券:', couponId);
+    
+    // 模擬 API 呼叫延遲
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // 模擬成功核銷
+    return true;
+  };
+}
+
+// 模擬 loadCoupons 函數（如果 common.js 中沒有）
+if (typeof loadCoupons === 'undefined') {
+  window.loadCoupons = async function() {
+    // 模擬載入延遲
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // 模擬測試資料
+    return [
+      {
+        id: 'coupon_1',
+        shopName: '咖啡廳',
+        discount: '買一送一\\n美式咖啡',
+        imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png',
+        obtainedDate: new Date().toISOString(),
+        used: false
+      },
+      {
+        id: 'coupon_2',
+        shopName: '餐廳',
+        discount: '9折優惠\\n全品項',
+        imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png',
+        obtainedDate: new Date(Date.now() - 86400000).toISOString(),
+        used: true
+      },
+      {
+        id: 'coupon_3',
+        shopName: '書店',
+        discount: '滿500送100\\n購物金',
+        imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png',
+        obtainedDate: new Date().toISOString(),
+        used: false
+      }
+    ];
+  };
 }
 </script>
 </body>
