@@ -84,44 +84,21 @@ body{
 @keyframes walk{0%,100%{transform:rotate(0);}25%{transform:rotate(-4deg);}75%{transform:rotate(4deg);}}
 .walking{animation:walk .45s infinite ease-in-out;}
 
-<style>
 .center{
   position:absolute;top:50%;left:50%;
   transform:translate(-50%,-50%);
-  display:flex;flex-direction:column;align-items:center;gap:15px; /* 減少間距 */
+  display:flex;flex-direction:column;align-items:center;gap:25px;
   z-index:5;
 }
 .msg{
   color:#000;
-  font-size:16px; /* 縮小字體 */
-  font-weight:bold;
-  text-shadow:1px 1px 2px rgba(255,255,255,.6);
-  margin-top:-10px; /* 移到按鈕下方 */
-  min-height:20px;
-  transition:opacity .5s ease;
-  order: 3; /* 確保在按鈕之後 */
-}
-
-.dice-box{
-  display:flex;
-  gap:25px;
-  order: 1; /* 骰子在最上面 */
-}
-
-.roll-btn{
-  padding:15px 30px;
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  color:white;
   font-size:20px;
   font-weight:bold;
-  border:none;
-  border-radius:25px;
-  box-shadow:0 4px 10px rgba(0,0,0,.3);
-  cursor:pointer;
-  transition:all 0.3s ease;
-  order: 2; /* 按鈕在中間 */
+  text-shadow:1px 1px 2px rgba(255,255,255,.6);
+  margin-bottom:5px;
+  min-height:24px;
+  transition:opacity .5s ease;
 }
-</style>
 
 /* === 🎲 穩定 2D 骰子樣式 === */
 .dice-box{
