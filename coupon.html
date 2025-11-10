@@ -96,6 +96,7 @@ body{
 .coupon-card-info .status.abandoned{
   color:#ff9800;
   background:#fff3e0;
+  border:1px solid #ffb74d;
 }
 .coupon-actions{
   display:flex;
@@ -136,6 +137,12 @@ body{
   background:#cccccc;
   cursor:not-allowed;
   transform:none;
+}
+/* 確保按鈕禁用狀態明顯 */
+.coupon-actions button:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+  transform:none !important;
 }
 
 /* 分隔線 */
@@ -298,29 +305,18 @@ function getCurrentUser() {
   return null;
 }
 
-// 優化的 loadCouponList 函數 - 添加調試
+// 優化的 loadCouponList 函數
 async function loadCouponList() {
   const couponList = document.getElementById('couponList');
   
   try {
     const coupons = await loadCoupons();
-    console.log('🔍 載入的優惠券詳細資訊:');
-    coupons.forEach((coupon, index) => {
-      console.log(`優惠券 ${index + 1}:`, {
-        couponId: coupon.couponId,
-        shopName: coupon.shopName,
-        used: coupon.used,
-        usedType: typeof coupon.used,
-        usedValue: coupon.used
-      });
-    });
     
     if (coupons.length > 0) {
       // 分組：未使用、已使用、已放棄
       const availableCoupons = coupons.filter(coupon => {
         const used = coupon.used;
         const isAvailable = !(used === true || used === 'TRUE' || used === 'true' || used === 'abandoned' || used === '已使用');
-        console.log(`優惠券 ${coupon.couponId} 可用性:`, { used, isAvailable });
         return isAvailable;
       });
       
@@ -332,12 +328,6 @@ async function loadCouponList() {
       const abandonedCoupons = coupons.filter(coupon => 
         coupon.used === 'abandoned'
       );
-      
-      console.log('📊 分組結果:', {
-        可使用: availableCoupons.length,
-        已使用: usedCoupons.length,
-        已放棄: abandonedCoupons.length
-      });
       
       let html = '';
       
@@ -382,7 +372,7 @@ async function loadCouponList() {
   }
 }
 
-// 創建優惠券 HTML 的輔助函數 - 修正版
+// 創建優惠券 HTML 的輔助函數
 function createCouponHTML(coupon) {
   const discountText = (coupon.discount || '優惠內容').replace(/\\n/g, '<br>');
   
@@ -408,10 +398,8 @@ function createCouponHTML(coupon) {
   
   const couponId = coupon.couponId || coupon.id || `temp_${Date.now()}`;
   
-  console.log(`優惠券 ${couponId} 狀態:`, { usedValue, isUsed, isAbandoned });
-  
   return `
-  <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}">
+  <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}" data-coupon-id="${couponId}">
     <img src="${coupon.imageUrl || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'}" 
          onerror="this.src='https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'">
     <div class="coupon-card-info">
@@ -432,88 +420,130 @@ function createCouponHTML(coupon) {
   `;
 }
 
-// 核銷處理函數
+// 輔助函數：根據 couponId 找到對應的優惠券卡片
+function findCouponCardById(couponId) {
+  // 方法1: 通過 data attribute 查找
+  const cardByDataAttr = document.querySelector(`[data-coupon-id="${couponId}"]`);
+  if (cardByDataAttr) return cardByDataAttr;
+  
+  // 方法2: 通過按鈕的 onclick 內容查找
+  const couponCards = document.querySelectorAll('.coupon-card');
+  for (let card of couponCards) {
+    const buttons = card.querySelectorAll('button');
+    for (let button of buttons) {
+      if (button.getAttribute('onclick') && button.getAttribute('onclick').includes(couponId)) {
+        return card;
+      }
+    }
+  }
+  return null;
+}
+
+// 核銷處理函數 - 立即更新版本
 async function handleVerifyCoupon(couponId) {
   try {
     console.log('🎫 開始核銷優惠券:', couponId);
     
-    // 顯示確認對話框
     const confirmed = confirm('確定要核銷這張優惠券嗎？核銷後將無法復原。');
+    if (!confirmed) return;
     
-    if (!confirmed) {
-      return;
+    // 找到對應的優惠券卡片並立即禁用按鈕
+    const couponCard = findCouponCardById(couponId);
+    if (couponCard) {
+      const buttons = couponCard.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+      });
     }
-    
-    // 禁用按鈕防止重複點擊
-    const buttons = document.querySelectorAll('.verify-btn');
-    buttons.forEach(btn => btn.disabled = true);
     
     const success = await verifyCoupon(couponId);
     
     if (success) {
-      alert('優惠券已成功核銷！');
-      // 重新載入列表
-      loadCouponList();
+      // 立即重新載入列表
+      loadCouponList().then(() => {
+        alert('優惠券已成功核銷！');
+        window.scrollTo(0, 0);
+      });
     } else {
       alert('核銷失敗，請稍後再試');
       // 重新啟用按鈕
-      buttons.forEach(btn => btn.disabled = false);
+      if (couponCard) {
+        const buttons = couponCard.querySelectorAll('button');
+        buttons.forEach(btn => {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        });
+      }
     }
     
   } catch (error) {
     console.error('❌ 核銷處理錯誤:', error);
-    alert('核銷過程中發生錯誤');
+    alert('核銷過程中發生錯誤: ' + error.message);
+    
     // 重新啟用按鈕
-    const buttons = document.querySelectorAll('.verify-btn');
-    buttons.forEach(btn => btn.disabled = false);
+    const couponCard = findCouponCardById(couponId);
+    if (couponCard) {
+      const buttons = couponCard.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      });
+    }
   }
 }
 
-// 放棄處理函數
-// 放棄處理函數 - 修正版
+// 放棄處理函數 - 立即更新版本
 async function handleAbandonCoupon(couponId) {
   try {
     console.log('🗑️ 開始放棄優惠券:', couponId);
     
-    // 顯示確認對話框
     const confirmed = confirm('確定要放棄這張優惠券嗎？放棄後將無法復原。');
+    if (!confirmed) return;
     
-    if (!confirmed) {
-      return;
+    // 找到對應的優惠券卡片並立即禁用按鈕
+    const couponCard = findCouponCardById(couponId);
+    if (couponCard) {
+      const buttons = couponCard.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+      });
     }
-    
-    // 禁用所有按鈕防止重複點擊
-    const verifyButtons = document.querySelectorAll('.verify-btn');
-    const abandonButtons = document.querySelectorAll('.abandon-btn');
-    
-    verifyButtons.forEach(btn => btn.disabled = true);
-    abandonButtons.forEach(btn => btn.disabled = true);
     
     const success = await abandonCoupon(couponId);
     
     if (success) {
-      alert('優惠券已放棄！');
-      
-      // 立即重新載入列表，不要延遲
-      await loadCouponList();
-      
-      // 滾動到頂部讓用戶看到變化
-      window.scrollTo(0, 0);
+      // 立即重新載入列表
+      loadCouponList().then(() => {
+        alert('優惠券已放棄！');
+        window.scrollTo(0, 0);
+      });
     } else {
       alert('放棄失敗，請稍後再試');
       // 重新啟用按鈕
-      verifyButtons.forEach(btn => btn.disabled = false);
-      abandonButtons.forEach(btn => btn.disabled = false);
+      if (couponCard) {
+        const buttons = couponCard.querySelectorAll('button');
+        buttons.forEach(btn => {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        });
+      }
     }
     
   } catch (error) {
     console.error('❌ 放棄處理錯誤:', error);
     alert('放棄過程中發生錯誤: ' + error.message);
+    
     // 重新啟用按鈕
-    const verifyButtons = document.querySelectorAll('.verify-btn');
-    const abandonButtons = document.querySelectorAll('.abandon-btn');
-    verifyButtons.forEach(btn => btn.disabled = false);
-    abandonButtons.forEach(btn => btn.disabled = false);
+    const couponCard = findCouponCardById(couponId);
+    if (couponCard) {
+      const buttons = couponCard.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      });
+    }
   }
 }
 
