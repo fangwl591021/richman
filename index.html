@@ -87,17 +87,34 @@ body{
 .center{
   position:absolute;top:50%;left:50%;
   transform:translate(-50%,-50%);
-  display:flex;flex-direction:column;align-items:center;gap:25px;
+  display:flex;flex-direction:column;align-items:center;
+  gap:15px; /* 減少間距 */
   z-index:5;
+}
+  .dice-box{
+  display:flex;
+  gap:25px;
+}
+  .roll-btn{
+  padding:15px 30px;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:white;
+  font-size:20px;
+  font-weight:bold;
+  border:none;
+  border-radius:25px;
+  box-shadow:0 4px 10px rgba(0,0,0,.3);
+  cursor:pointer;
+  transition:all 0.3s ease;
 }
 .msg{
   color:#000;
-  font-size:20px;
+  font-size:14px; /* 縮小字體 */
   font-weight:bold;
   text-shadow:1px 1px 2px rgba(255,255,255,.6);
-  margin-bottom:5px;
-  min-height:24px;
+  min-height:18px;
   transition:opacity .5s ease;
+  margin-top: -5px; /* 移到按鈕正下方 */
 }
 
 /* === 🎲 穩定 2D 骰子樣式 === */
