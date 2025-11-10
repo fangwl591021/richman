@@ -268,7 +268,7 @@ async function saveCoupon(shopData) {
   }
 }
 
-// 在 common.js 中修正 verifyCoupon 函數
+// 在 common.js 中完全修正 verifyCoupon 函數
 async function verifyCoupon(couponId) {
   try {
     console.log('✅ 核銷優惠券:', couponId);
@@ -278,7 +278,7 @@ async function verifyCoupon(couponId) {
       return false;
     }
     
-    // 嘗試不同的 API action
+    // 只嘗試已知的 API action，完全移除 updateCoupon
     const actions = [
       'verifyCoupon',      // 先嘗試 verifyCoupon
       'markCouponUsed',    // 再嘗試 markCouponUsed  
@@ -286,7 +286,6 @@ async function verifyCoupon(couponId) {
     ];
     
     let success = false;
-    let lastError = '';
     
     for (const action of actions) {
       try {
@@ -314,12 +313,11 @@ async function verifyCoupon(couponId) {
           console.log(`✅ ${action} 成功`);
           break;
         } else {
-          lastError = result.message || '未知錯誤';
-          console.log(`❌ ${action} 失敗:`, lastError);
+          console.log(`❌ ${action} 失敗:`, result.message || '未知錯誤');
+          // 繼續嘗試下一個 action
         }
       } catch (error) {
         console.log(`❌ ${action} 錯誤:`, error.message);
-        lastError = error.message;
         // 繼續嘗試下一個 action
       }
     }
