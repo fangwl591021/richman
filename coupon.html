@@ -47,7 +47,7 @@ body{
   position:relative;
   transition:all 0.3s ease;
 }
-.coupon-card.used{
+.coupon-card.inactive{
   background:#f9f9f9;
   opacity:0.7;
 }
@@ -93,6 +93,10 @@ body{
   color:#999;
   background:#f0f0f0;
 }
+.coupon-card-info .status.abandoned{
+  color:#ff9800;
+  background:#fff3e0;
+}
 .coupon-actions{
   display:flex;
   gap:8px;
@@ -120,13 +124,18 @@ body{
   cursor:not-allowed;
   transform:none;
 }
-.coupon-actions .cancel-btn{
-  background:#f44336;
+.coupon-actions .abandon-btn{
+  background:#ff9800;
   color:white;
 }
-.coupon-actions .cancel-btn:active{
-  background:#e53935;
+.coupon-actions .abandon-btn:active{
+  background:#f57c00;
   transform:scale(0.95);
+}
+.coupon-actions .abandon-btn:disabled{
+  background:#cccccc;
+  cursor:not-allowed;
+  transform:none;
 }
 
 /* 分隔線 */
@@ -276,6 +285,19 @@ window.addEventListener('DOMContentLoaded', async function() {
   loadCouponList();
 });
 
+// 取得當前用戶資訊
+function getCurrentUser() {
+  const lineUserId = localStorage.getItem('lineUserId');
+  if (lineUserId) {
+    return {
+      userId: lineUserId,
+      displayName: localStorage.getItem('lineDisplayName'),
+      pictureUrl: localStorage.getItem('linePictureUrl')
+    };
+  }
+  return null;
+}
+
 // 優化的 loadCouponList 函數
 async function loadCouponList() {
   const couponList = document.getElementById('couponList');
@@ -284,9 +306,16 @@ async function loadCouponList() {
     const coupons = await loadCoupons();
     
     if (coupons.length > 0) {
-      // 分組：未使用和已使用
-      const availableCoupons = coupons.filter(coupon => !coupon.used);
-      const usedCoupons = coupons.filter(coupon => coupon.used);
+      // 分組：未使用、已使用、已放棄
+      const availableCoupons = coupons.filter(coupon => 
+        !coupon.used || coupon.used === false || coupon.used === 'false'
+      );
+      const usedCoupons = coupons.filter(coupon => 
+        coupon.used === true || coupon.used === 'TRUE'
+      );
+      const abandonedCoupons = coupons.filter(coupon => 
+        coupon.used === 'abandoned'
+      );
       
       let html = '';
       
@@ -300,6 +329,12 @@ async function loadCouponList() {
       if (usedCoupons.length > 0) {
         html += '<div class="section-divider">已使用優惠券</div>';
         html += usedCoupons.map(coupon => createCouponHTML(coupon)).join('');
+      }
+      
+      // 已放棄的優惠券
+      if (abandonedCoupons.length > 0) {
+        html += '<div class="section-divider">已放棄優惠券</div>';
+        html += abandonedCoupons.map(coupon => createCouponHTML(coupon)).join('');
       }
       
       couponList.innerHTML = html;
@@ -366,48 +401,7 @@ function createCouponHTML(coupon) {
   `;
 }
 
-// 放棄處理函數
-async function handleAbandonCoupon(couponId) {
-  try {
-    console.log('🗑️ 開始放棄優惠券:', couponId);
-    
-    // 顯示確認對話框
-    const confirmed = confirm('確定要放棄這張優惠券嗎？放棄後將無法復原。');
-    
-    if (!confirmed) {
-      return;
-    }
-    
-    // 禁用按鈕防止重複點擊
-    const buttons = document.querySelectorAll('.abandon-btn');
-    buttons.forEach(btn => btn.disabled = true);
-    
-    const success = await abandonCoupon(couponId);
-    
-    if (success) {
-      // 使用 alert 替代 showNotification
-      alert('優惠券已放棄！');
-      
-      // 延遲一下再重新載入，讓用戶看到成功訊息
-      setTimeout(() => {
-        loadCouponList();
-      }, 1000);
-    } else {
-      alert('放棄失敗，請稍後再試');
-      // 重新啟用按鈕
-      buttons.forEach(btn => btn.disabled = false);
-    }
-    
-  } catch (error) {
-    console.error('❌ 放棄處理錯誤:', error);
-    alert('放棄過程中發生錯誤');
-    // 重新啟用按鈕
-    const buttons = document.querySelectorAll('.abandon-btn');
-    buttons.forEach(btn => btn.disabled = false);
-  }
-}
-
-// 核銷處理函數（確保這個函數存在）
+// 核銷處理函數
 async function handleVerifyCoupon(couponId) {
   try {
     console.log('🎫 開始核銷優惠券:', couponId);
@@ -444,10 +438,49 @@ async function handleVerifyCoupon(couponId) {
   }
 }
 
+// 放棄處理函數
+async function handleAbandonCoupon(couponId) {
+  try {
+    console.log('🗑️ 開始放棄優惠券:', couponId);
+    
+    // 顯示確認對話框
+    const confirmed = confirm('確定要放棄這張優惠券嗎？放棄後將無法復原。');
+    
+    if (!confirmed) {
+      return;
+    }
+    
+    // 禁用按鈕防止重複點擊
+    const buttons = document.querySelectorAll('.abandon-btn');
+    buttons.forEach(btn => btn.disabled = true);
+    
+    const success = await abandonCoupon(couponId);
+    
+    if (success) {
+      alert('優惠券已放棄！');
+      // 延遲一下再重新載入，讓用戶看到成功訊息
+      setTimeout(() => {
+        loadCouponList();
+      }, 1000);
+    } else {
+      alert('放棄失敗，請稍後再試');
+      // 重新啟用按鈕
+      buttons.forEach(btn => btn.disabled = false);
+    }
+    
+  } catch (error) {
+    console.error('❌ 放棄處理錯誤:', error);
+    alert('放棄過程中發生錯誤');
+    // 重新啟用按鈕
+    const buttons = document.querySelectorAll('.abandon-btn');
+    buttons.forEach(btn => btn.disabled = false);
+  }
+}
+
 // 放棄優惠券 API 呼叫
 async function abandonCoupon(couponId) {
   try {
-    const user = await getCurrentUser();
+    const user = getCurrentUser();
     if (!user || !user.userId) {
       throw new Error('用戶未登入');
     }
@@ -494,37 +527,59 @@ async function abandonCoupon(couponId) {
   }
 }
 
-// 模擬 loadCoupons 函數（如果 common.js 中沒有）
+// 如果 common.js 中沒有這些函數，提供模擬版本
+if (typeof verifyCoupon === 'undefined') {
+  window.verifyCoupon = async function(couponId) {
+    console.log('模擬核銷優惠券:', couponId);
+    
+    // 模擬 API 呼叫延遲
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // 模擬成功核銷
+    let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+    usedCoupons[couponId] = {
+      used: true,
+      verifiedAt: new Date().toISOString()
+    };
+    localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+    
+    return true;
+  };
+}
+
 if (typeof loadCoupons === 'undefined') {
   window.loadCoupons = async function() {
     // 模擬載入延遲
     await new Promise(resolve => setTimeout(resolve, 500));
     
+    // 獲取本地核銷狀態
+    const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+    
     // 模擬測試資料
     return [
       {
-        id: 'coupon_1',
+        couponId: 'COUPON_1',
         shopName: '咖啡廳',
         discount: '買一送一\\n美式咖啡',
         imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png',
         obtainedDate: new Date().toISOString(),
-        used: false
+        used: usedCoupons['COUPON_1'] ? usedCoupons['COUPON_1'].used : false
       },
       {
-        id: 'coupon_2',
+        couponId: 'COUPON_2',
         shopName: '餐廳',
         discount: '9折優惠\\n全品項',
         imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png',
         obtainedDate: new Date(Date.now() - 86400000).toISOString(),
-        used: true
+        used: usedCoupons['COUPON_2'] ? usedCoupons['COUPON_2'].used : 'abandoned'
       },
       {
-        id: 'coupon_3',
+        couponId: 'COUPON_3',
         shopName: '書店',
         discount: '滿500送100\\n購物金',
         imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png',
         obtainedDate: new Date().toISOString(),
-        used: false
+        used: usedCoupons['COUPON_3'] ? usedCoupons['COUPON_3'].used : false
       }
     ];
   };
