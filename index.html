@@ -938,10 +938,7 @@ async function safeFetch(url, options = {}) {
   }
 }
 
-// ============================================
-// 🎯 事件監聽器 - 修正收藏優惠功能
-// ============================================
-// 收藏優惠按鈕事件
+// 恢復使用 FormData 發送請求
 claimBtn.addEventListener('click', async () => {
   if (!currentShop) return;
   
@@ -949,22 +946,19 @@ claimBtn.addEventListener('click', async () => {
   claimBtn.textContent = "🎉 收藏中...";
   
   try {
-    // 從當前店家獲取資料
     const shopName = currentShop["店家名稱"] || currentShop.name || '';
     const discount = currentShop["優惠內容"] || currentShop.discount || '';
     const imageUrl = currentShop["圖片網址"] || currentShop.icon || '';
     
     console.log('💾 準備收藏優惠券:', { shopName, discount, userId });
     
-    // 使用 FormData 發送 POST 請求
+    // 使用 FormData（之前成功的方式）
     const formData = new FormData();
     formData.append('action', 'saveCoupon');
     formData.append('userId', userId);
-    formData.append('couponId', 'CPN' + Date.now());
     formData.append('shopName', shopName);
     formData.append('discount', discount);
     formData.append('imageUrl', imageUrl);
-    formData.append('status', 'active');
     
     const response = await fetch(GAS_BASE, {
       method: 'POST',
@@ -978,9 +972,8 @@ claimBtn.addEventListener('click', async () => {
     const result = await response.json();
     console.log('💾 收藏優惠券回應:', result);
     
-    if (result.success) {
+    if (result.status === 'success') {
       claimBtn.textContent = "✅ 收藏成功！";
-      // 重新載入優惠券列表
       setTimeout(() => {
         closeShop();
         // 如果優惠券面板是打開的，重新載入
