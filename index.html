@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
-<title>歡樂大富翁 - 真實 3D 骰子版</title>
+<title>歡樂大富翁 - 3D 骰子版</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>  
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -100,175 +100,170 @@ body{
   transition:opacity .5s ease;
 }
 
-/* === 🎲 真實 3D 骰子樣式 === */
-/* === 🎲 圓潤現代風格 3D 骰子 === */
-/* 在您的 CSS 中找到骰子相關部分，替換為以下代碼 */
-
+/* === ✨ 全新 3D 立體骰子樣式 === */
 .dice-box{
   display:flex;
   gap:25px;
-  perspective:600px;
+  perspective:1000px;
 }
 
-/* 3D 骰子容器 */
-.dice-container{
-  width:60px;
-  height:60px;
-  position:relative;
-  transform-style:preserve-3d;
-  transition:transform 0.1s ease;
-  filter:drop-shadow(0 8px 15px rgba(0,0,0,0.25));
-}
-
-/* 骰子立方體 */
 .dice{
-  width:100%;
-  height:100%;
-  position:relative;
-  transform-style:preserve-3d;
-  transform:rotateX(-20deg) rotateY(-25deg);
-}
-
-/* 骰子的六個面 - 圓潤現代風格 */
-.dice-face{
-  position:absolute;
   width:60px;
   height:60px;
-  /* 關鍵：淺紫灰色漸層 + 大圓角 */
-  background:linear-gradient(145deg, #e8e4f0 0%, #d8d4e8 50%, #c8c4d8 100%);
-  border:none;
+  background:linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%);
+  border-radius:14px;
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.3),
+    0 5px 15px rgba(0,0,0,0.2),
+    inset 0 -3px 8px rgba(0,0,0,0.15),
+    inset 0 3px 8px rgba(255,255,255,0.9);
+  position:relative;
   display:flex;
   justify-content:center;
   align-items:center;
-  flex-wrap:wrap;
-  border-radius:12px; /* 大圓角！ */
-  box-shadow:
-    inset 0 2px 6px rgba(255,255,255,0.8),
-    inset 0 -2px 4px rgba(0,0,0,0.1);
+  transform-style:preserve-3d;
+  transition:transform 0.1s ease;
+  border:3px solid rgba(220,220,220,0.6);
 }
 
-/* 前面 */
-.dice-face.front{
-  transform:translateZ(30px);
-  background:linear-gradient(145deg, #ebe7f2 0%, #dbd7ea 50%, #cbc7da 100%);
-}
-
-/* 後面 */
-.dice-face.back{
-  transform:rotateY(180deg) translateZ(30px);
-  background:linear-gradient(145deg, #d8d4e8 0%, #c8c4d8 50%, #b8b4c8 100%);
-}
-
-/* 右面 */
-.dice-face.right{
-  transform:rotateY(90deg) translateZ(30px);
-  background:linear-gradient(145deg, #e0dce8 0%, #d0ccd8 50%, #c0bcc8 100%);
-}
-
-/* 左面 */
-.dice-face.left{
-  transform:rotateY(-90deg) translateZ(30px);
-  background:linear-gradient(145deg, #dad6e8 0%, #cac6d8 50%, #bab6c8 100%);
-}
-
-/* 上面 - 最亮 */
-.dice-face.top{
-  transform:rotateX(90deg) translateZ(30px);
-  background:linear-gradient(145deg, #f0ecf8 0%, #e0dcf0 50%, #d0cce0 100%);
-}
-
-/* 下面 - 最暗 */
-.dice-face.bottom{
-  transform:rotateX(-90deg) translateZ(30px);
-  background:linear-gradient(145deg, #d0ccd8 0%, #c0bcc8 50%, #b0acb8 100%);
-}
-
-/* 骰子的點 - 基礎樣式（深藍色）*/
-.dot{
-  width:9px;
-  height:9px;
-  background:radial-gradient(circle at 30% 30%, #5a4d7e, #3a2d5e);
-  border-radius:50%;
-  box-shadow:
-    inset 0 1px 2px rgba(0,0,0,0.5),
-    0 1px 2px rgba(255,255,255,0.2);
-}
-
-/* 🔴 特殊：1點是粉紅色 */
-.face-1 .dot{
-  background:radial-gradient(circle at 30% 30%, #ff8ba7, #ff6b8a);
-  box-shadow:
-    inset 0 1px 2px rgba(0,0,0,0.3),
-    0 1px 3px rgba(255,107,138,0.4);
-}
-
-/* 骰子點數布局 */
-.face-1{display:flex;justify-content:center;align-items:center;}
-.face-1 .dot{margin:0;}
-
-.face-2{display:flex;justify-content:space-between;align-items:center;padding:10px;}
-.face-2 .dot:first-child{align-self:flex-start;}
-.face-2 .dot:last-child{align-self:flex-end;}
-
-.face-3{display:flex;justify-content:space-between;align-items:center;padding:10px;}
-.face-3 .dot:first-child{align-self:flex-start;}
-.face-3 .dot:nth-child(2){align-self:center;}
-.face-3 .dot:last-child{align-self:flex-end;}
-
-.face-4{display:grid;grid-template:1fr 1fr/1fr 1fr;padding:10px;gap:20px;}
-
-.face-5{display:grid;grid-template:1fr 1fr/1fr 1fr;padding:10px;gap:20px;}
-.face-5 .dot:nth-child(3){grid-column:1/3;grid-row:1/3;place-self:center;}
-
-.face-6{display:grid;grid-template:1fr 1fr 1fr/1fr 1fr;padding:10px;gap:8px;}
-
-/* 🎲 3D 滾動動畫 */
-.dice-container.rolling .dice{
-  animation:dice3DRoll 0.08s infinite;
-}
-
-@keyframes dice3DRoll{
-  0%{transform:rotateX(0deg) rotateY(0deg) rotateZ(0deg);}
-  16%{transform:rotateX(60deg) rotateY(45deg) rotateZ(30deg);}
-  33%{transform:rotateX(120deg) rotateY(90deg) rotateZ(60deg);}
-  50%{transform:rotateX(180deg) rotateY(135deg) rotateZ(90deg);}
-  66%{transform:rotateX(240deg) rotateY(180deg) rotateZ(120deg);}
-  83%{transform:rotateX(300deg) rotateY(225deg) rotateZ(150deg);}
-  100%{transform:rotateX(360deg) rotateY(270deg) rotateZ(180deg);}
-}
-
-/* 🎯 停止震動效果 */
-.dice-container.shake{
-  animation:diceShake3D 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
-}
-
-@keyframes diceShake3D{
-  0%,100%{transform:translateY(0) scale(1);}
-  10%{transform:translateY(-12px) scale(1.1);}
-  20%{transform:translateY(-8px) scale(1.05);}
-  30%{transform:translateY(-10px) scale(1.08);}
-  40%{transform:translateY(-6px) scale(1.04);}
-  50%{transform:translateY(-8px) scale(1.06);}
-  60%{transform:translateY(-4px) scale(1.03);}
-  70%{transform:translateY(-5px) scale(1.04);}
-  80%{transform:translateY(-3px) scale(1.02);}
-  90%{transform:translateY(-2px) scale(1.01);}
-}
-
-/* ✨ 額外的光澤效果 */
-.dice-face::after{
+/* 高光效果 */
+.dice::before{
   content:'';
   position:absolute;
-  top:5px;
-  left:5px;
-  right:5px;
-  bottom:50%;
-  background:linear-gradient(180deg, 
-    rgba(255,255,255,0.4) 0%, 
-    rgba(255,255,255,0.1) 50%,
-    transparent 100%);
-  border-radius:8px 8px 0 0;
+  top:6px;left:6px;right:6px;bottom:6px;
+  background:linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 50%);
+  border-radius:14px;
   pointer-events:none;
+  opacity:0.7;
+}
+
+/* 🎲 滾動動畫 */
+.dice.rolling{
+  animation:diceRoll3D 0.08s infinite;
+}
+
+@keyframes diceRoll3D{
+  0%{
+    transform:rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
+  }
+  16%{
+    transform:rotateX(60deg) rotateY(30deg) rotateZ(45deg) scale(1.08);
+  }
+  33%{
+    transform:rotateX(120deg) rotateY(60deg) rotateZ(90deg) scale(1.05);
+  }
+  50%{
+    transform:rotateX(180deg) rotateY(90deg) rotateZ(135deg) scale(1.1);
+  }
+  66%{
+    transform:rotateX(240deg) rotateY(120deg) rotateZ(180deg) scale(1.05);
+  }
+  83%{
+    transform:rotateX(300deg) rotateY(150deg) rotateZ(225deg) scale(1.08);
+  }
+  100%{
+    transform:rotateX(360deg) rotateY(180deg) rotateZ(270deg) scale(1);
+  }
+}
+
+/* 🎯 停止時的震動效果 */
+.dice.shake{
+  animation:diceShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes diceShake{
+  0%,100%{
+    transform:translateY(0) translateX(0) scale(1) rotate(0deg);
+  }
+  10%{
+    transform:translateY(-15px) translateX(-3px) scale(1.12) rotate(-8deg);
+  }
+  20%{
+    transform:translateY(-10px) translateX(3px) scale(1.08) rotate(8deg);
+  }
+  30%{
+    transform:translateY(-12px) translateX(-2px) scale(1.1) rotate(-5deg);
+  }
+  40%{
+    transform:translateY(-8px) translateX(2px) scale(1.06) rotate(5deg);
+  }
+  50%{
+    transform:translateY(-10px) translateX(-1px) scale(1.08) rotate(-3deg);
+  }
+  60%{
+    transform:translateY(-6px) translateX(1px) scale(1.04) rotate(3deg);
+  }
+  70%{
+    transform:translateY(-7px) translateX(0) scale(1.05) rotate(-2deg);
+  }
+  80%{
+    transform:translateY(-4px) translateX(0) scale(1.02) rotate(2deg);
+  }
+  90%{
+    transform:translateY(-3px) translateX(0) scale(1.01) rotate(-1deg);
+  }
+}
+
+/* 🔴 骰子點數樣式 */
+.dot{
+  width:8px;
+  height:8px;
+  background:radial-gradient(circle at 35% 35%, #444, #000);
+  border-radius:50%;
+  position:absolute;
+  box-shadow:
+    inset 0 2px 3px rgba(0,0,0,0.4),
+    0 1px 3px rgba(255,255,255,0.3),
+    0 2px 5px rgba(0,0,0,0.3);
+}
+
+.face-1 .dot:nth-child(1){top:50%;left:50%;transform:translate(-50%,-50%);}
+.face-2 .dot:nth-child(1){top:25%;left:25%;}
+.face-2 .dot:nth-child(2){bottom:25%;right:25%;}
+.face-3 .dot:nth-child(1){top:25%;left:25%;}
+.face-3 .dot:nth-child(2){top:50%;left:50%;transform:translate(-50%,-50%);}
+.face-3 .dot:nth-child(3){bottom:25%;right:25%;}
+.face-4 .dot:nth-child(1){top:25%;left:25%;}
+.face-4 .dot:nth-child(2){top:25%;right:25%;}
+.face-4 .dot:nth-child(3){bottom:25%;left:25%;}
+.face-4 .dot:nth-child(4){bottom:25%;right:25%;}
+.face-5 .dot:nth-child(1){top:25%;left:25%;}
+.face-5 .dot:nth-child(2){top:25%;right:25%;}
+.face-5 .dot:nth-child(3){top:50%;left:50%;transform:translate(-50%,-50%);}
+.face-5 .dot:nth-child(4){bottom:25%;left:25%;}
+.face-5 .dot:nth-child(5){bottom:25%;right:25%;}
+.face-6 .dot:nth-child(1){top:25%;left:25%;}
+.face-6 .dot:nth-child(2){top:25%;right:25%;}
+.face-6 .dot:nth-child(3){top:50%;left:25%;transform:translateY(-50%);}
+.face-6 .dot:nth-child(4){top:50%;right:25%;transform:translateY(-50%);}
+.face-6 .dot:nth-child(5){bottom:25%;left:25%;}
+.face-6 .dot:nth-child(6){bottom:25%;right:25%;}
+
+.roll-btn{
+  padding:15px 30px;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:white;
+  font-size:20px;
+  font-weight:bold;
+  border:none;
+  border-radius:25px;
+  box-shadow:0 4px 10px rgba(0,0,0,.3);
+  cursor:pointer;
+  transition:all 0.3s ease;
+}
+
+.roll-btn:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 6px 15px rgba(0,0,0,.4);
+}
+
+.roll-btn:active:not(:disabled){
+  transform:translateY(0);
+}
+
+.roll-btn:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
 }
 
 /* === 上圖下文 名片版彈窗 === */
@@ -311,7 +306,7 @@ body{
 .shop-buttons .claim{background:#764ba2;}
 .shop-buttons .close{background:#888;}
 
-/* === 底部功能區 - 修改版 === */
+/* === 底部功能區 === */
 .bottom-bar{
   position:fixed;bottom:0;left:0;right:0;
   height:60px;background:rgba(0,0,0,0.85);
@@ -330,32 +325,6 @@ body{
 .bottom-bar button:active{background:rgba(255,255,255,0.1);}
 .bottom-bar button .icon{font-size:24px;}
 .bottom-bar button.logged-in{color:#4caf50;}
-
-/* ✨ LINE 頭像樣式 */
-.line-avatar{
-  width:36px;
-  height:36px;
-  border-radius:50%;
-  object-fit:cover;
-  border:2px solid #fff;
-  box-shadow:0 2px 8px rgba(0,0,0,0.3);
-}
-
-.line-avatar.default{
-  display:none;
-}
-
-#lineLoginBtn.has-avatar .icon{
-  display:none;
-}
-
-#lineLoginBtn .line-avatar{
-  display:none;
-}
-
-#lineLoginBtn.has-avatar .line-avatar{
-  display:block;
-}
 
 /* === 優惠券收集區彈窗 === */
 .coupon-panel{
@@ -468,57 +437,8 @@ body{
   <div class="center">
     <div class="msg" id="msg"></div>
     <div class="dice-box">
-      <!-- 骰子 1 -->
-      <div class="dice-container" id="diceContainer1">
-        <div class="dice" id="dice1">
-          <div class="dice-face front face-1"><div class="dot"></div></div>
-          <div class="dice-face back face-6">
-            <div class="dot"></div><div class="dot"></div>
-            <div class="dot"></div><div class="dot"></div>
-            <div class="dot"></div><div class="dot"></div>
-          </div>
-          <div class="dice-face right face-3">
-            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-          </div>
-          <div class="dice-face left face-4">
-            <div class="dot"></div><div class="dot"></div>
-            <div class="dot"></div><div class="dot"></div>
-          </div>
-          <div class="dice-face top face-5">
-            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-            <div class="dot"></div><div class="dot"></div>
-          </div>
-          <div class="dice-face bottom face-2">
-            <div class="dot"></div><div class="dot"></div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 骰子 2 -->
-      <div class="dice-container" id="diceContainer2">
-        <div class="dice" id="dice2">
-          <div class="dice-face front face-1"><div class="dot"></div></div>
-          <div class="dice-face back face-6">
-            <div class="dot"></div><div class="dot"></div>
-            <div class="dot"></div><div class="dot"></div>
-            <div class="dot"></div><div class="dot"></div>
-          </div>
-          <div class="dice-face right face-3">
-            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-          </div>
-          <div class="dice-face left face-4">
-            <div class="dot"></div><div class="dot"></div>
-            <div class="dot"></div><div class="dot"></div>
-          </div>
-          <div class="dice-face top face-5">
-            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-            <div class="dot"></div><div class="dot"></div>
-          </div>
-          <div class="dice-face bottom face-2">
-            <div class="dot"></div><div class="dot"></div>
-          </div>
-        </div>
-      </div>
+      <div class="dice face-1" id="dice1"><div class="dot"></div></div>
+      <div class="dice face-1" id="dice2"><div class="dot"></div></div>
     </div>
     <button class="roll-btn" onclick="startGame()" id="rollBtn">🎲 投擲骰子</button>
   </div>
@@ -564,28 +484,20 @@ body{
   </div>
 </div>
 
-<!-- 📱 底部功能列 - 順序已調整 -->
+<!-- 📱 底部功能列 -->
 <div class="bottom-bar">
-  <!-- LINE 按鈕移到最左邊 -->
-  <button id="lineLoginBtn" onclick="lineLogin()">
-    <span class="icon">📱</span>
-    <img class="line-avatar" id="lineAvatar" src="" alt="LINE">
-    <span id="lineLoginText">LINE</span>
-  </button>
-  
-  <!-- 優惠券按鈕移到第二個 -->
   <button onclick="openCouponPanel()">
     <span class="icon">🎫</span>
     <span>優惠券</span>
   </button>
-  
-  <!-- 店家地圖 -->
+  <button id="lineLoginBtn" onclick="lineLogin()">
+    <span class="icon">📱</span>
+    <span id="lineLoginText">LINE登入</span>
+  </button>
   <button onclick="openMapPanel()">
     <span class="icon">🗺️</span>
     <span>店家地圖</span>
   </button>
-  
-  <!-- SVG版本 -->
   <button onclick="switchToSVGVersion()">
     <span class="icon">🎮</span>
     <span>SVG版本</span>
@@ -604,8 +516,6 @@ const GAS_BASE = 'https://richman.fangwl591021.workers.dev/';
 const player = document.getElementById('player');
 const board = document.getElementById('board');
 const msg = document.getElementById('msg');
-const diceContainer1 = document.getElementById('diceContainer1');
-const diceContainer2 = document.getElementById('diceContainer2');
 const dice1 = document.getElementById('dice1');
 const dice2 = document.getElementById('dice2');
 const rollBtn = document.getElementById('rollBtn');
@@ -618,8 +528,6 @@ const shopName = document.getElementById('shopName');
 const shopDesc = document.getElementById('shopDesc');
 const claimBtn = document.getElementById('claimBtn');
 const loginScreen = document.getElementById('loginScreen');
-const lineAvatar = document.getElementById('lineAvatar');
-const lineLoginBtn = document.getElementById('lineLoginBtn');
 
 let currentShop = null;
 const rows = 9, cols = 6;
@@ -669,29 +577,24 @@ function updatePlayer() {
   player.style.top = `${cell.y * h + h / 2 - player.clientHeight / 2}px`;
 }
 
-// ✨ 設定 3D 骰子的旋轉角度
-function setDiceRotation(diceElement, value) {
-  // 根據點數設定旋轉角度，讓對應的面朝前
-  const rotations = {
-    1: 'rotateX(-20deg) rotateY(-25deg)',           // 前面
-    2: 'rotateX(-110deg) rotateY(-25deg)',          // 下面
-    3: 'rotateX(-20deg) rotateY(65deg)',            // 右面
-    4: 'rotateX(-20deg) rotateY(-115deg)',          // 左面
-    5: 'rotateX(70deg) rotateY(-25deg)',            // 上面
-    6: 'rotateX(-200deg) rotateY(-25deg)'           // 後面
-  };
-  
-  diceElement.style.transform = rotations[value] || rotations[1];
+function updateDiceFace(el, v) {
+  el.className = 'dice face-' + v;
+  el.innerHTML = '';
+  for (let i = 0; i < v; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    el.appendChild(dot);
+  }
 }
 
-// ✨ 改進的骰子投擲函數 - 真實 3D 效果
+// ✨ 改進的骰子投擲函數 - 添加 3D 滾動效果
 async function rollDice() {
   rollBtn.disabled = true;
   rollBtn.textContent = '🎲 投擲中...';
   
   // 添加滾動 class
-  diceContainer1.classList.add('rolling');
-  diceContainer2.classList.add('rolling');
+  dice1.classList.add('rolling');
+  dice2.classList.add('rolling');
   
   sDice.currentTime = 0;
   sDice.play();
@@ -700,28 +603,24 @@ async function rollDice() {
   const interval = setInterval(() => {
     v1 = Math.floor(Math.random() * 6) + 1;
     v2 = Math.floor(Math.random() * 6) + 1;
+    updateDiceFace(dice1, v1);
+    updateDiceFace(dice2, v2);
     count++;
     
     if (count > 20) {
       clearInterval(interval);
       sDice.pause();
       
-      // 移除滾動 class，設定最終角度
-      diceContainer1.classList.remove('rolling');
-      diceContainer2.classList.remove('rolling');
-      
-      // 設定最終的骰子面
-      setDiceRotation(dice1, v1);
-      setDiceRotation(dice2, v2);
-      
-      // 添加震動效果
-      diceContainer1.classList.add('shake');
-      diceContainer2.classList.add('shake');
+      // 移除滾動 class，添加震動 class
+      dice1.classList.remove('rolling');
+      dice2.classList.remove('rolling');
+      dice1.classList.add('shake');
+      dice2.classList.add('shake');
       
       // 震動結束後移除 class
       setTimeout(() => {
-        diceContainer1.classList.remove('shake');
-        diceContainer2.classList.remove('shake');
+        dice1.classList.remove('shake');
+        dice2.classList.remove('shake');
       }, 500);
       
       const total = v1 + v2;
@@ -937,7 +836,7 @@ async function loadCoupons() {
 }
 
 // ============================================
-// 📱 LINE 登入功能 - 加入頭像顯示
+// 📱 LINE 登入功能
 // ============================================
 let liffInitialized = false;
 
@@ -1014,14 +913,8 @@ function updateUserInterface(userInfo) {
     localStorage.setItem('lineDisplayName', userInfo.displayName);
     localStorage.setItem('linePictureUrl', userInfo.pictureUrl || '');
     
-    // 更新頭像
-    if (userInfo.pictureUrl) {
-      lineAvatar.src = userInfo.pictureUrl;
-      lineLoginBtn.classList.add('has-avatar');
-    }
-    
     document.getElementById('lineLoginText').textContent = userInfo.displayName;
-    lineLoginBtn.classList.add('logged-in');
+    document.getElementById('lineLoginBtn').classList.add('logged-in');
     userId = userInfo.userId;
     
     loginScreen.classList.add('hidden');
@@ -1031,16 +924,17 @@ function updateUserInterface(userInfo) {
 }
 
 async function lineLogin() {
+  const lineLoginBtn = document.getElementById('lineLoginBtn');
+  const lineLoginText = document.getElementById('lineLoginText');
+  
   if (localStorage.getItem('lineUserId')) {
     if (confirm('確定要登出 LINE 帳號嗎？')) {
       localStorage.removeItem('lineUserId');
       localStorage.removeItem('lineDisplayName');
       localStorage.removeItem('linePictureUrl');
       
-      document.getElementById('lineLoginText').textContent = 'LINE';
+      lineLoginText.textContent = 'LINE登入';
       lineLoginBtn.classList.remove('logged-in');
-      lineLoginBtn.classList.remove('has-avatar');
-      lineAvatar.src = '';
       userId = 'TEMP_USER';
       
       alert('已登出！');
@@ -1168,11 +1062,7 @@ function switchToSVGVersion() {
 // ============================================
 window.addEventListener('DOMContentLoaded', async function() {
   console.log('=== 📱 初始化應用程式 ===');
-  console.log('🎲 真實 3D 骰子版本已啟用！');
-  
-  // 初始化骰子角度
-  setDiceRotation(dice1, 1);
-  setDiceRotation(dice2, 1);
+  console.log('🎲 3D 骰子版本已啟用！');
   
   try {
     await initLiff();
@@ -1193,20 +1083,13 @@ window.addEventListener('DOMContentLoaded', async function() {
   const urlParams = new URLSearchParams(window.location.search);
   const lineUserId = urlParams.get('lineUserId');
   const lineDisplayName = urlParams.get('lineDisplayName');
-  const linePictureUrl = urlParams.get('linePictureUrl');
   
   if (lineUserId && lineDisplayName) {
     localStorage.setItem('lineUserId', lineUserId);
     localStorage.setItem('lineDisplayName', decodeURIComponent(lineDisplayName));
     
-    if (linePictureUrl) {
-      localStorage.setItem('linePictureUrl', decodeURIComponent(linePictureUrl));
-      lineAvatar.src = decodeURIComponent(linePictureUrl);
-      lineLoginBtn.classList.add('has-avatar');
-    }
-    
     document.getElementById('lineLoginText').textContent = decodeURIComponent(lineDisplayName);
-    lineLoginBtn.classList.add('logged-in');
+    document.getElementById('lineLoginBtn').classList.add('logged-in');
     userId = lineUserId;
     
     loginScreen.classList.add('hidden');
@@ -1219,18 +1102,11 @@ window.addEventListener('DOMContentLoaded', async function() {
   } else {
     const storedUserId = localStorage.getItem('lineUserId');
     const storedDisplayName = localStorage.getItem('lineDisplayName');
-    const storedPictureUrl = localStorage.getItem('linePictureUrl');
     
     if (storedUserId) {
       document.getElementById('lineLoginText').textContent = storedDisplayName || '已登入';
-      lineLoginBtn.classList.add('logged-in');
+      document.getElementById('lineLoginBtn').classList.add('logged-in');
       userId = storedUserId;
-      
-      if (storedPictureUrl) {
-        lineAvatar.src = storedPictureUrl;
-        lineLoginBtn.classList.add('has-avatar');
-      }
-      
       loginScreen.classList.add('hidden');
     } else {
       loginScreen.classList.remove('hidden');
