@@ -268,74 +268,70 @@ async function saveCoupon(shopData) {
   }
 }
 
-// 在 common.js 中完全修正 verifyCoupon 函數
+// 在 common.js 中修正 verifyCoupon 函數
 async function verifyCoupon(couponId) {
   try {
-    console.log('✅ 核銷優惠券:', couponId);
+    console.log('🎫 開始核銷優惠券:', couponId);
     
-    if (!couponId || couponId === 'undefined') {
-      console.error('❌ 無效的 couponId');
-      return false;
+    const user = await getCurrentUser();
+    if (!user || !user.userId) {
+      console.log('⚠️ 未登入用戶，使用前端模擬核銷');
+      return simulateVerifyCoupon(couponId);
     }
     
-    // 只嘗試已知的 API action，完全移除 updateCoupon
-    const actions = [
-      'verifyCoupon',      // 先嘗試 verifyCoupon
-      'markCouponUsed',    // 再嘗試 markCouponUsed  
-      'useCoupon'          // 最後嘗試 useCoupon
-    ];
+    // 只嘗試 verifyCoupon，移除其他 action
+    const action = 'verifyCoupon';
     
-    let success = false;
+    console.log(`🔄 使用 action: ${action}`);
     
-    for (const action of actions) {
-      try {
-        console.log(`🔄 嘗試使用 action: ${action}`);
-        
-        const formData = new FormData();
-        formData.append('action', action);
-        formData.append('userId', userId);
-        formData.append('couponId', couponId);
-        
-        const response = await fetch(GAS_BASE, {
-          method: 'POST',
-          body: formData
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log(`📊 ${action} 回應:`, result);
-        
-        if (result.status === 'success' || result.success === true) {
-          success = true;
-          console.log(`✅ ${action} 成功`);
-          break;
-        } else {
-          console.log(`❌ ${action} 失敗:`, result.message || '未知錯誤');
-          // 繼續嘗試下一個 action
-        }
-      } catch (error) {
-        console.log(`❌ ${action} 錯誤:`, error.message);
-        // 繼續嘗試下一個 action
+    const formData = new FormData();
+    formData.append('action', action);
+    formData.append('userId', user.userId);
+    formData.append('couponId', couponId);
+    
+    const response = await fetch('https://richman.fangwl591021.workers.dev/', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    console.log(`📊 ${action} 回應:`, result);
+    
+    if (result.success === true || result.status === 'success') {
+      console.log(`✅ ${action} 成功`);
+      
+      // 更新本地狀態
+      let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+      usedCoupons[couponId] = {
+        used: true,
+        verifiedAt: new Date().toISOString()
+      };
+      localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+      
+      return true;
+    } else {
+      console.log(`❌ ${action} 失敗:`, result.message);
+      
+      // 如果後端說"已經處理過"，也視為成功
+      if (result.message && result.message.includes('已經處理')) {
+        console.log('ℹ️ 優惠券已經處理過，更新本地狀態');
+        let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+        usedCoupons[couponId] = {
+          used: true,
+          verifiedAt: new Date().toISOString()
+        };
+        localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+        return true;
       }
+      
+      throw new Error(result.message || '核銷失敗');
     }
-    
-    if (!success) {
-      // 如果所有後端 API 都失敗，使用前端模擬
-      console.log('🔧 所有後端 API 失敗，使用前端模擬核銷');
-      simulateVerifyCoupon(couponId);
-      return true; // 前端模擬視為成功
-    }
-    
-    return success;
     
   } catch (error) {
     console.error('❌ 核銷錯誤:', error);
     // 後端錯誤時，在前端模擬核銷
     simulateVerifyCoupon(couponId);
-    return true; // 前端模擬視為成功
+    return true;
   }
 }
 
