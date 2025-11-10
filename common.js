@@ -507,7 +507,7 @@ function showNotification(message, type = 'info') {
   }, 3000);
 }
 
-// 放棄優惠券 API 呼叫
+// 放棄優惠券 API 呼叫 - 修正版
 async function abandonCoupon(couponId) {
   try {
     const user = getCurrentUser();
@@ -541,6 +541,18 @@ async function abandonCoupon(couponId) {
       
       return true;
     } else {
+      // 即使後端返回錯誤，也檢查是否是"已經處理過"的錯誤
+      if (result.message && result.message.includes('已經處理')) {
+        console.log('ℹ️ 優惠券已經處理過，更新本地狀態');
+        // 更新本地狀態
+        let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+        usedCoupons[couponId] = {
+          used: 'abandoned',
+          abandonedAt: new Date().toISOString()
+        };
+        localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+        return true;
+      }
       throw new Error(result.message || '放棄失敗');
     }
     
