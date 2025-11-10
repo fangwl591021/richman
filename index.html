@@ -611,12 +611,14 @@ async function loadShops() {
     const result = await response.json();
     console.log('🛍️ 店家資料API回應:', result);
     
-    // 修正：根據實際的 GAS 回傳結構處理
-    if (result.success && Array.isArray(result.data)) {
+    // 修正：更嚴謹的錯誤處理
+    if (result && result.success === true && Array.isArray(result.data)) {
       console.log(`✅ 成功載入 ${result.data.length} 個店家`);
-      return result.data;  // 使用 result.data 而不是 result.shops
+      return result.data;
     } else {
-      console.error('❌ 載入店家資料失敗:', result.message);
+      // 如果沒有明確的錯誤訊息，提供默認訊息
+      const errorMsg = result.message || '載入店家資料失敗';
+      console.error('❌ 載入店家資料失敗:', errorMsg);
       return getDefaultShops();
     }
   } catch (error) {
@@ -673,7 +675,8 @@ async function loadCoupons() {
     const result = await response.json();
     console.log('🎫 優惠券API回應:', result);
     
-    if (result.status === 'success' && Array.isArray(result.coupons)) {
+    // 修正：更嚴謹的條件判斷
+    if (result && result.status === 'success' && Array.isArray(result.coupons)) {
       const coupons = result.coupons;
       couponCount.textContent = coupons.length;
       
@@ -704,6 +707,8 @@ async function loadCoupons() {
       }
     } else {
       couponCount.textContent = '0';
+      const errorMsg = result && result.message ? result.message : '載入優惠券失敗';
+      console.error('❌ 優惠券載入失敗:', errorMsg);
       couponList.innerHTML = `
         <div class="empty-state">
           <div class="icon">🎫</div>
@@ -721,7 +726,44 @@ async function loadCoupons() {
     `;
   }
 }
+// 除錯函數：檢查 GAS 回應結構
+async function debugGASResponse() {
+  try {
+    console.log('🔍 開始除錯 GAS 回應結構...');
+    
+    // 測試店家 API
+    const shopResponse = await fetch(`${GAS_BASE}?action=getShops`);
+    const shopResult = await shopResponse.json();
+    console.log('🏪 店家 API 回應結構:', shopResult);
+    
+    // 測試優惠券 API
+    const couponResponse = await fetch(`${GAS_BASE}?action=getUserCoupons&userId=test`);
+    const couponResult = await couponResponse.json();
+    console.log('🎫 優惠券 API 回應結構:', couponResult);
+    
+    // 測試 POST 請求
+    const formData = new FormData();
+    formData.append('action', 'saveCoupon');
+    formData.append('userId', 'test_user');
+    formData.append('shopName', '測試店家');
+    formData.append('discount', '測試優惠');
+    
+    const postResponse = await fetch(GAS_BASE, {
+      method: 'POST',
+      body: formData
+    });
+    const postResult = await postResponse.json();
+    console.log('📨 POST 請求回應結構:', postResult);
+    
+  } catch (error) {
+    console.error('❌ 除錯失敗:', error);
+  }
+}
 
+// 在頁面載入時執行除錯（可選）
+// window.addEventListener('DOMContentLoaded', function() {
+//   setTimeout(debugGASResponse, 1000);
+// });
 // ============================================
 // 📱 LINE 登入功能 - 使用 LIFF 內建登入
 // ============================================
