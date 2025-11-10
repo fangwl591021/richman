@@ -14,6 +14,137 @@ body{
   display:flex;align-items:center;justify-content:center;
   padding-bottom:70px;
 }
+
+/* === LINE 登入畫面 === */
+.login-screen{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:999;padding:20px;
+}
+.login-screen.hidden{display:none;}
+.login-box{
+  background:white;border-radius:30px;
+  padding:50px 40px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  max-width:450px;width:100%;
+  animation:slideIn 0.5s ease;
+}
+@keyframes slideIn{
+  from{opacity:0;transform:translateY(-30px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.login-box .logo{font-size:80px;margin-bottom:20px;animation:bounce 1s infinite ease-in-out;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.login-box h1{font-size:36px;color:#333;margin-bottom:15px;}
+.login-box p{font-size:18px;color:#666;margin-bottom:40px;line-height:1.6;}
+.login-box .line-login-btn{
+  width:100%;padding:20px;background:#06C755;color:white;border:none;
+  border-radius:15px;font-size:24px;font-weight:bold;cursor:pointer;
+  transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;
+  gap:15px;box-shadow:0 8px 20px rgba(6,199,85,0.3);
+}
+.login-box .line-login-btn:hover{
+  background:#05b04b;transform:translateY(-2px);
+  box-shadow:0 12px 30px rgba(6,199,85,0.4);
+}
+
+/* === 棋盤與玩家 === */
+.board{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%) translateY(-35px);
+  width:95%;aspect-ratio:2/3;
+  background:url("https://aiwe.cc/wp-content/uploads/2025/11/c4ca4238a0b923820dcc509a6f75849b-2.png") center/contain no-repeat;
+  background-color:#000;border-radius:10px;overflow:hidden;
+}
+.player{position:absolute;width:80px;height:85px;transition:all .4s ease-in-out;z-index:10;}
+.player img{width:100%;height:100%;object-fit:contain;}
+@keyframes walk{0%,100%{transform:rotate(0);}25%{transform:rotate(-4deg);}75%{transform:rotate(4deg);}}
+.walking{animation:walk .45s infinite ease-in-out;}
+
+.center{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:25px;
+  z-index:5;
+}
+.msg{
+  color:#000;font-size:20px;font-weight:bold;
+  text-shadow:1px 1px 2px rgba(255,255,255,.6);
+  margin-bottom:5px;min-height:24px;transition:opacity .5s ease;
+}
+
+/* === 骰子樣式 (2D穩定版) === */
+.dice-box{display:flex;gap:25px;}
+.dice{
+  width:60px;height:60px;background:white;border-radius:12px;
+  box-shadow:0 5px 15px rgba(0,0,0,.3);
+  position:relative;display:flex;justify-content:center;align-items:center;
+  border:2px solid #333;
+}
+.dot{width:10px;height:10px;background:black;border-radius:50%;position:absolute;}
+.face-1 .dot:nth-child(1){top:50%;left:50%;transform:translate(-50%,-50%);}
+.face-2 .dot:nth-child(1){top:20%;left:20%;}
+.face-2 .dot:nth-child(2){bottom:20%;right:20%;}
+.face-3 .dot:nth-child(1){top:20%;left:20%;}
+.face-3 .dot:nth-child(2){top:50%;left:50%;transform:translate(-50%,-50%);}
+.face-3 .dot:nth-child(3){bottom:20%;right:20%;}
+.face-4 .dot:nth-child(1){top:20%;left:20%;}
+.face-4 .dot:nth-child(2){top:20%;right:20%;}
+.face-4 .dot:nth-child(3){bottom:20%;left:20%;}
+.face-4 .dot:nth-child(4){bottom:20%;right:20%;}
+.face-5 .dot:nth-child(1){top:20%;left:20%;}
+.face-5 .dot:nth-child(2){top:20%;right:20%;}
+.face-5 .dot:nth-child(3){top:50%;left:50%;transform:translate(-50%,-50%);}
+.face-5 .dot:nth-child(4){bottom:20%;left:20%;}
+.face-5 .dot:nth-child(5){bottom:20%;right:20%;}
+.face-6 .dot:nth-child(1){top:20%;left:20%;}
+.face-6 .dot:nth-child(2){top:20%;right:20%;}
+.face-6 .dot:nth-child(3){top:50%;left:20%;transform:translateY(-50%);}
+.face-6 .dot:nth-child(4){top:50%;right:20%;transform:translateY(-50%);}
+.face-6 .dot:nth-child(5){bottom:20%;left:20%;}
+.face-6 .dot:nth-child(6){bottom:20%;right:20%;}
+
+/* === 按鈕樣式 === */
+.roll-btn{
+  padding:15px 30px;background:linear-gradient(135deg,#667eea,#764ba2);
+  color:white;font-size:20px;font-weight:bold;border:none;
+  border-radius:25px;box-shadow:0 4px 10px rgba(0,0,0,.3);
+  cursor:pointer;transition:all 0.3s ease;
+}
+.roll-btn:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 6px 15px rgba(0,0,0,.4);
+}
+.roll-btn:disabled{opacity:0.6;cursor:not-allowed;}
+
+/* === 店家彈窗、優惠券、地圖縮小三分之一 === */
+.shop-popup, .coupon-panel, .map-panel{
+  transform-origin:center;
+  scale:0.67;
+}
+
+/* === 頭像與底部選單 === */
+.bottom-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  height:60px;background:rgba(0,0,0,0.85);
+  display:flex;justify-content:space-around;align-items:center;
+  z-index:100;backdrop-filter:blur(10px);
+  border-top:2px solid rgba(255,255,255,0.1);
+}
+.bottom-bar button{
+  flex:1;height:100%;border:none;
+  background:transparent;color:white;
+  font-size:12px;font-weight:bold;
+  cursor:pointer;transition:all .3s ease;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+}
+.bottom-bar button:active{background:rgba(255,255,255,0.1);}
+.bottom-bar button .icon{font-size:24px;}
+.line-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #fff;}
+</style>
+</head>
+<body>
 <!-- 🔐 LINE 登入畫面 -->
 <div class="login-screen" id="loginScreen">
   <div class="login-box">
@@ -339,134 +470,3 @@ window.onload=()=>{
 </script>
 </body>
 </html>
-
-/* === LINE 登入畫面 === */
-.login-screen{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:999;padding:20px;
-}
-.login-screen.hidden{display:none;}
-.login-box{
-  background:white;border-radius:30px;
-  padding:50px 40px;text-align:center;
-  box-shadow:0 20px 60px rgba(0,0,0,0.3);
-  max-width:450px;width:100%;
-  animation:slideIn 0.5s ease;
-}
-@keyframes slideIn{
-  from{opacity:0;transform:translateY(-30px);}
-  to{opacity:1;transform:translateY(0);}
-}
-.login-box .logo{font-size:80px;margin-bottom:20px;animation:bounce 1s infinite ease-in-out;}
-@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
-.login-box h1{font-size:36px;color:#333;margin-bottom:15px;}
-.login-box p{font-size:18px;color:#666;margin-bottom:40px;line-height:1.6;}
-.login-box .line-login-btn{
-  width:100%;padding:20px;background:#06C755;color:white;border:none;
-  border-radius:15px;font-size:24px;font-weight:bold;cursor:pointer;
-  transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;
-  gap:15px;box-shadow:0 8px 20px rgba(6,199,85,0.3);
-}
-.login-box .line-login-btn:hover{
-  background:#05b04b;transform:translateY(-2px);
-  box-shadow:0 12px 30px rgba(6,199,85,0.4);
-}
-
-/* === 棋盤與玩家 === */
-.board{
-  position:fixed;top:50%;left:50%;
-  transform:translate(-50%,-50%) translateY(-35px);
-  width:95%;aspect-ratio:2/3;
-  background:url("https://aiwe.cc/wp-content/uploads/2025/11/c4ca4238a0b923820dcc509a6f75849b-2.png") center/contain no-repeat;
-  background-color:#000;border-radius:10px;overflow:hidden;
-}
-.player{position:absolute;width:80px;height:85px;transition:all .4s ease-in-out;z-index:10;}
-.player img{width:100%;height:100%;object-fit:contain;}
-@keyframes walk{0%,100%{transform:rotate(0);}25%{transform:rotate(-4deg);}75%{transform:rotate(4deg);}}
-.walking{animation:walk .45s infinite ease-in-out;}
-
-.center{
-  position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  display:flex;flex-direction:column;align-items:center;gap:25px;
-  z-index:5;
-}
-.msg{
-  color:#000;font-size:20px;font-weight:bold;
-  text-shadow:1px 1px 2px rgba(255,255,255,.6);
-  margin-bottom:5px;min-height:24px;transition:opacity .5s ease;
-}
-
-/* === 骰子樣式 (2D穩定版) === */
-.dice-box{display:flex;gap:25px;}
-.dice{
-  width:60px;height:60px;background:white;border-radius:12px;
-  box-shadow:0 5px 15px rgba(0,0,0,.3);
-  position:relative;display:flex;justify-content:center;align-items:center;
-  border:2px solid #333;
-}
-.dot{width:10px;height:10px;background:black;border-radius:50%;position:absolute;}
-.face-1 .dot:nth-child(1){top:50%;left:50%;transform:translate(-50%,-50%);}
-.face-2 .dot:nth-child(1){top:20%;left:20%;}
-.face-2 .dot:nth-child(2){bottom:20%;right:20%;}
-.face-3 .dot:nth-child(1){top:20%;left:20%;}
-.face-3 .dot:nth-child(2){top:50%;left:50%;transform:translate(-50%,-50%);}
-.face-3 .dot:nth-child(3){bottom:20%;right:20%;}
-.face-4 .dot:nth-child(1){top:20%;left:20%;}
-.face-4 .dot:nth-child(2){top:20%;right:20%;}
-.face-4 .dot:nth-child(3){bottom:20%;left:20%;}
-.face-4 .dot:nth-child(4){bottom:20%;right:20%;}
-.face-5 .dot:nth-child(1){top:20%;left:20%;}
-.face-5 .dot:nth-child(2){top:20%;right:20%;}
-.face-5 .dot:nth-child(3){top:50%;left:50%;transform:translate(-50%,-50%);}
-.face-5 .dot:nth-child(4){bottom:20%;left:20%;}
-.face-5 .dot:nth-child(5){bottom:20%;right:20%;}
-.face-6 .dot:nth-child(1){top:20%;left:20%;}
-.face-6 .dot:nth-child(2){top:20%;right:20%;}
-.face-6 .dot:nth-child(3){top:50%;left:20%;transform:translateY(-50%);}
-.face-6 .dot:nth-child(4){top:50%;right:20%;transform:translateY(-50%);}
-.face-6 .dot:nth-child(5){bottom:20%;left:20%;}
-.face-6 .dot:nth-child(6){bottom:20%;right:20%;}
-
-/* === 按鈕樣式 === */
-.roll-btn{
-  padding:15px 30px;background:linear-gradient(135deg,#667eea,#764ba2);
-  color:white;font-size:20px;font-weight:bold;border:none;
-  border-radius:25px;box-shadow:0 4px 10px rgba(0,0,0,.3);
-  cursor:pointer;transition:all 0.3s ease;
-}
-.roll-btn:hover:not(:disabled){
-  transform:translateY(-2px);
-  box-shadow:0 6px 15px rgba(0,0,0,.4);
-}
-.roll-btn:disabled{opacity:0.6;cursor:not-allowed;}
-
-/* === 店家彈窗、優惠券、地圖縮小三分之一 === */
-.shop-popup, .coupon-panel, .map-panel{
-  transform-origin:center;
-  scale:0.67;
-}
-
-/* === 頭像與底部選單 === */
-.bottom-bar{
-  position:fixed;bottom:0;left:0;right:0;
-  height:60px;background:rgba(0,0,0,0.85);
-  display:flex;justify-content:space-around;align-items:center;
-  z-index:100;backdrop-filter:blur(10px);
-  border-top:2px solid rgba(255,255,255,0.1);
-}
-.bottom-bar button{
-  flex:1;height:100%;border:none;
-  background:transparent;color:white;
-  font-size:12px;font-weight:bold;
-  cursor:pointer;transition:all .3s ease;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-}
-.bottom-bar button:active{background:rgba(255,255,255,0.1);}
-.bottom-bar button .icon{font-size:24px;}
-.line-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #fff;}
-</style>
-</head>
-<body>
