@@ -597,8 +597,7 @@ async function loadShops() {
   try {
     console.log('📋 開始載入店家資料...');
     
-    // 直接使用 fetch 載入店家資料
-    const response = await fetch(GAS_SHOP_URL);
+    const response = await fetch(`${GAS_BASE}?action=getShops`);
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -607,12 +606,11 @@ async function loadShops() {
     const result = await response.json();
     console.log('🛍️ 店家資料API回應:', result);
     
-    if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-      console.log(`✅ 成功載入 ${result.data.length} 個店家`);
-      return result.data;
+    if (result.status === 'success' && Array.isArray(result.shops)) {
+      console.log(`✅ 成功載入 ${result.shops.length} 個店家`);
+      return result.shops;
     } else {
       console.error('❌ 載入店家資料失敗:', result.message);
-      // 返回預設店家資料作為備份
       return getDefaultShops();
     }
   } catch (error) {
@@ -658,8 +656,8 @@ async function loadCoupons() {
   try {
     console.log('🎫 開始載入優惠券...');
     
-    // 直接使用 GET 請求載入優惠券
-    const couponUrl = `${GAS_BASE}?action=getCoupons&userId=${encodeURIComponent(userId)}`;
+    // 使用 GET 請求載入優惠券
+    const couponUrl = `${GAS_BASE}?action=getUserCoupons&userId=${encodeURIComponent(userId)}`;
     const response = await fetch(couponUrl);
     
     if (!response.ok) {
@@ -669,22 +667,35 @@ async function loadCoupons() {
     const result = await response.json();
     console.log('🎫 優惠券API回應:', result);
     
-    if (result.success && result.data && result.data.length > 0) {
-      couponCount.textContent = result.data.length;
+    if (result.status === 'success' && Array.isArray(result.coupons)) {
+      const coupons = result.coupons;
+      couponCount.textContent = coupons.length;
       
-      couponList.innerHTML = result.data.map(coupon => `
-        <div class="coupon-card">
-          <img src="${coupon.imageUrl || coupon.icon || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}" 
-               onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
-          <div class="coupon-card-info">
-            <h3>${coupon.shopName || '店家名稱'}</h3>
-            <p class="discount">${coupon.discount || '優惠內容'}</p>
-            <p style="font-size:14px;color:#999;margin-top:4px;">
-              ${coupon.createTime ? new Date(coupon.createTime).toLocaleDateString('zh-TW') : '今天'}
-            </p>
+      if (coupons.length > 0) {
+        couponList.innerHTML = coupons.map(coupon => `
+          <div class="coupon-card">
+            <img src="${coupon.imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}" 
+                 onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
+            <div class="coupon-card-info">
+              <h3>${coupon.shopName || '店家名稱'}</h3>
+              <p class="discount">${coupon.discount || '優惠內容'}</p>
+              <p style="font-size:14px;color:#999;margin-top:4px;">
+                ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
+              </p>
+              <p style="font-size:12px;color:#${coupon.used ? 'e53935' : '4caf50'};">
+                ${coupon.used ? '已使用' : '可使用'}
+              </p>
+            </div>
           </div>
-        </div>
-      `).join('');
+        `).join('');
+      } else {
+        couponList.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">🎫</div>
+            <p>還沒有收集任何優惠券<br>快去遊戲中收集吧！</p>
+          </div>
+        `;
+      }
     } else {
       couponCount.textContent = '0';
       couponList.innerHTML = `
