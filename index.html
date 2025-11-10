@@ -43,9 +43,13 @@ body{
 
 /* 中央控制區 */
 .center{
-  position:absolute;top:50%;left:50%;
+  position:absolute;
+  top:65%; /* 從 50% 改為 65%，往下移動 */
+  left:50%;
   transform:translate(-50%,-50%);
-  display:flex;flex-direction:column;align-items:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
   gap:15px;
   z-index:5;
 }
