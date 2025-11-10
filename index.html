@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
-<title>歡樂大富翁</title>
+<title>歡樂大富翁 - 3D 骰子版</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>  
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -75,14 +75,15 @@ body{
 }
 .player{
   position:absolute;
-  width: 80px;    /* 從 150px 改小 */
-  height: 85px;   /* 從 160px 改小 */
+  width:80px;
+  height:85px;
   transition:all .4s ease-in-out;
   z-index:10;
 }
 .player img{width:100%;height:100%;object-fit:contain;}
 @keyframes walk{0%,100%{transform:rotate(0);}25%{transform:rotate(-4deg);}75%{transform:rotate(4deg);}}
 .walking{animation:walk .45s infinite ease-in-out;}
+
 .center{
   position:absolute;top:50%;left:50%;
   transform:translate(-50%,-50%);
@@ -91,39 +92,131 @@ body{
 }
 .msg{
   color:#000;
-  font-size: 20px;  /* 從 28px 改小 */
+  font-size:20px;
   font-weight:bold;
   text-shadow:1px 1px 2px rgba(255,255,255,.6);
   margin-bottom:5px;
   min-height:24px;
   transition:opacity .5s ease;
 }
-.dice-box{display:flex;gap:40px;}
+
+/* === ✨ 全新 3D 立體骰子樣式 === */
+.dice-box{
+  display:flex;
+  gap:25px;
+  perspective:1000px;
+}
+
 .dice{
-  width: 80px;    /* 從 160px 改小 */
-  height: 80px;   /* 從 160px 改小 */
-  background:white;
-  border-radius:20px;  /* 從 30px 改小 */
-  box-shadow:0 5px 15px rgba(0,0,0,.3);  /* 陰影也改小 */
+  width:90px;
+  height:90px;
+  background:linear-gradient(145deg, #ffffff 0%, #f5f5f5 100%);
+  border-radius:18px;
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.3),
+    0 5px 15px rgba(0,0,0,0.2),
+    inset 0 -3px 8px rgba(0,0,0,0.15),
+    inset 0 3px 8px rgba(255,255,255,0.9);
   position:relative;
   display:flex;
   justify-content:center;
   align-items:center;
+  transform-style:preserve-3d;
+  transition:transform 0.1s ease;
+  border:3px solid rgba(220,220,220,0.6);
 }
 
+/* 高光效果 */
+.dice::before{
+  content:'';
+  position:absolute;
+  top:6px;left:6px;right:6px;bottom:6px;
+  background:linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 50%);
+  border-radius:14px;
+  pointer-events:none;
+  opacity:0.7;
+}
+
+/* 🎲 滾動動畫 */
+.dice.rolling{
+  animation:diceRoll3D 0.08s infinite;
+}
+
+@keyframes diceRoll3D{
+  0%{
+    transform:rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
+  }
+  16%{
+    transform:rotateX(60deg) rotateY(30deg) rotateZ(45deg) scale(1.08);
+  }
+  33%{
+    transform:rotateX(120deg) rotateY(60deg) rotateZ(90deg) scale(1.05);
+  }
+  50%{
+    transform:rotateX(180deg) rotateY(90deg) rotateZ(135deg) scale(1.1);
+  }
+  66%{
+    transform:rotateX(240deg) rotateY(120deg) rotateZ(180deg) scale(1.05);
+  }
+  83%{
+    transform:rotateX(300deg) rotateY(150deg) rotateZ(225deg) scale(1.08);
+  }
+  100%{
+    transform:rotateX(360deg) rotateY(180deg) rotateZ(270deg) scale(1);
+  }
+}
+
+/* 🎯 停止時的震動效果 */
+.dice.shake{
+  animation:diceShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes diceShake{
+  0%,100%{
+    transform:translateY(0) translateX(0) scale(1) rotate(0deg);
+  }
+  10%{
+    transform:translateY(-15px) translateX(-3px) scale(1.12) rotate(-8deg);
+  }
+  20%{
+    transform:translateY(-10px) translateX(3px) scale(1.08) rotate(8deg);
+  }
+  30%{
+    transform:translateY(-12px) translateX(-2px) scale(1.1) rotate(-5deg);
+  }
+  40%{
+    transform:translateY(-8px) translateX(2px) scale(1.06) rotate(5deg);
+  }
+  50%{
+    transform:translateY(-10px) translateX(-1px) scale(1.08) rotate(-3deg);
+  }
+  60%{
+    transform:translateY(-6px) translateX(1px) scale(1.04) rotate(3deg);
+  }
+  70%{
+    transform:translateY(-7px) translateX(0) scale(1.05) rotate(-2deg);
+  }
+  80%{
+    transform:translateY(-4px) translateX(0) scale(1.02) rotate(2deg);
+  }
+  90%{
+    transform:translateY(-3px) translateX(0) scale(1.01) rotate(-1deg);
+  }
+}
+
+/* 🔴 骰子點數樣式 */
 .dot{
-  width: 12px;    /* 從 22px 改小 */
-  height: 12px;   /* 從 22px 改小 */
-  background:black;
+  width:15px;
+  height:15px;
+  background:radial-gradient(circle at 35% 35%, #444, #000);
   border-radius:50%;
   position:absolute;
+  box-shadow:
+    inset 0 2px 3px rgba(0,0,0,0.4),
+    0 1px 3px rgba(255,255,255,0.3),
+    0 2px 5px rgba(0,0,0,0.3);
 }
 
-.dice-box{
-  display:flex;
-  gap: 20px;      /* 從 40px 改小 */
-}
-.dot{width:22px;height:22px;background:black;border-radius:50%;position:absolute;}
 .face-1 .dot:nth-child(1){top:50%;left:50%;transform:translate(-50%,-50%);}
 .face-2 .dot:nth-child(1){top:25%;left:25%;}
 .face-2 .dot:nth-child(2){bottom:25%;right:25%;}
@@ -145,16 +238,32 @@ body{
 .face-6 .dot:nth-child(4){top:50%;right:25%;transform:translateY(-50%);}
 .face-6 .dot:nth-child(5){bottom:25%;left:25%;}
 .face-6 .dot:nth-child(6){bottom:25%;right:25%;}
+
 .roll-btn{
-  padding: 15px 30px;    /* 從 25px 60px 改小 */
+  padding:15px 30px;
   background:linear-gradient(135deg,#667eea,#764ba2);
   color:white;
-  font-size: 20px;       /* 從 34px 改小 */
+  font-size:20px;
   font-weight:bold;
   border:none;
-  border-radius: 25px;   /* 從 40px 改小 */
-  box-shadow:0 4px 10px rgba(0,0,0,.3);  /* 從 8px 20px 改小 */
+  border-radius:25px;
+  box-shadow:0 4px 10px rgba(0,0,0,.3);
   cursor:pointer;
+  transition:all 0.3s ease;
+}
+
+.roll-btn:hover:not(:disabled){
+  transform:translateY(-2px);
+  box-shadow:0 6px 15px rgba(0,0,0,.4);
+}
+
+.roll-btn:active:not(:disabled){
+  transform:translateY(0);
+}
+
+.roll-btn:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
 }
 
 /* === 上圖下文 名片版彈窗 === */
@@ -197,8 +306,7 @@ body{
 .shop-buttons .claim{background:#764ba2;}
 .shop-buttons .close{background:#888;}
 
-/* === 底部功能區（圖示放大2倍）=== */
-/* === 底部功能區（圖標縮小）=== */
+/* === 底部功能區 === */
 .bottom-bar{
   position:fixed;bottom:0;left:0;right:0;
   height:60px;background:rgba(0,0,0,0.85);
@@ -215,7 +323,7 @@ body{
   gap:2px;
 }
 .bottom-bar button:active{background:rgba(255,255,255,0.1);}
-.bottom-bar button .icon{font-size:24px;} /* 從56px縮小到24px */
+.bottom-bar button .icon{font-size:24px;}
 .bottom-bar button.logged-in{color:#4caf50;}
 
 /* === 優惠券收集區彈窗 === */
@@ -332,7 +440,7 @@ body{
       <div class="dice face-1" id="dice1"><div class="dot"></div></div>
       <div class="dice face-1" id="dice2"><div class="dot"></div></div>
     </div>
-    <button class="roll-btn" onclick="startGame()" id="rollBtn">投擲骰子</button>
+    <button class="roll-btn" onclick="startGame()" id="rollBtn">🎲 投擲骰子</button>
   </div>
 </div>
 
@@ -390,7 +498,6 @@ body{
     <span class="icon">🗺️</span>
     <span>店家地圖</span>
   </button>
-  <!-- 添加 SVG 版本按鈕 -->
   <button onclick="switchToSVGVersion()">
     <span class="icon">🎮</span>
     <span>SVG版本</span>
@@ -404,12 +511,7 @@ body{
 
 <script>
 // 🎮 遊戲核心變數與設定
-// ============================================
 const GAS_BASE = 'https://richman.fangwl591021.workers.dev/';
-
-// ✅ 簡化 GAS URL - 使用預設的參數設定
-const GAS_SHOP_URL = `${GAS_BASE}?action=getShops`;
-const GAS_COUPON_BASE = `${GAS_BASE}?action=getCoupons`;
 
 const player = document.getElementById('player');
 const board = document.getElementById('board');
@@ -485,8 +587,15 @@ function updateDiceFace(el, v) {
   }
 }
 
+// ✨ 改進的骰子投擲函數 - 添加 3D 滾動效果
 async function rollDice() {
   rollBtn.disabled = true;
+  rollBtn.textContent = '🎲 投擲中...';
+  
+  // 添加滾動 class
+  dice1.classList.add('rolling');
+  dice2.classList.add('rolling');
+  
   sDice.currentTime = 0;
   sDice.play();
   
@@ -498,11 +607,25 @@ async function rollDice() {
     updateDiceFace(dice2, v2);
     count++;
     
-    if (count > 15) {
+    if (count > 20) {
       clearInterval(interval);
       sDice.pause();
+      
+      // 移除滾動 class，添加震動 class
+      dice1.classList.remove('rolling');
+      dice2.classList.remove('rolling');
+      dice1.classList.add('shake');
+      dice2.classList.add('shake');
+      
+      // 震動結束後移除 class
+      setTimeout(() => {
+        dice1.classList.remove('shake');
+        dice2.classList.remove('shake');
+      }, 500);
+      
       const total = v1 + v2;
-      showMsg(`前進 ${total} 步！`);
+      showMsg(`🎲 擲出 ${v1} + ${v2} = ${total} 點！`);
+      rollBtn.textContent = '🎲 投擲骰子';
       movePlayer(total);
     }
   }, 80);
@@ -530,14 +653,13 @@ async function movePlayer(steps) {
 }
 
 // ============================================
-// 🏪 店家與優惠功能 - 修正載入邏輯
+// 🏪 店家與優惠功能
 // ============================================
 async function checkEvent() {
   const cell = path[pos];
   
-  // 懲罰格邏輯
   if (cell.x === 0 && cell.y === 0) {
-    showMsg("踩到懲罰格！退回7步！");
+    showMsg("💥 踩到懲罰格！退回7步！");
     for (let i = 0; i < 7; i++) {
       pos = (pos - 1 + path.length) % path.length;
       updatePlayer();
@@ -546,7 +668,6 @@ async function checkEvent() {
     return;
   }
   
-  // ✅ 修正：載入店家資料
   try {
     const shops = await loadShops();
     console.log('🛍️ 載入到的店家資料:', shops);
@@ -568,12 +689,10 @@ async function checkEvent() {
 function showShopPopup(shop) {
   console.log('🏪 顯示店家彈窗:', shop);
   
-  // 修正欄位對應 - 根據 GAS 回傳的實際欄位名稱
-  const imgUrl = shop["圖片網址"] || shop.icon || shop["圖示"] || shop.imageUrl || "";
+  const imgUrl = shop["圖片網址"] || shop.icon || shop.imageUrl || "";
   const shopNameText = shop["店家名稱"] || shop.name || shop.shopName || "神秘店家";
   const shopDescText = shop["優惠內容"] || shop.discount || shop.description || "限時優惠，趕快來看看！";
   
-  // 安全設置圖片
   if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
     shopImg.src = imgUrl;
     shopImg.onerror = function() {
@@ -594,7 +713,6 @@ function closeShop() {
   shopPopup.style.display = 'none';
 }
 
-// ✅ 修正：載入店家資料函數
 async function loadShops() {
   try {
     console.log('📋 開始載入店家資料...');
@@ -608,12 +726,10 @@ async function loadShops() {
     const result = await response.json();
     console.log('🛍️ 店家資料API回應:', result);
     
-    // 修正：更嚴謹的錯誤處理
     if (result && result.success === true && Array.isArray(result.data)) {
       console.log(`✅ 成功載入 ${result.data.length} 個店家`);
       return result.data;
     } else {
-      // 如果沒有明確的錯誤訊息，提供默認訊息
       const errorMsg = result.message || '載入店家資料失敗';
       console.error('❌ 載入店家資料失敗:', errorMsg);
       return getDefaultShops();
@@ -624,26 +740,25 @@ async function loadShops() {
   }
 }
 
-// ✅ 備用店家資料
 function getDefaultShops() {
   return [
     {
       "店家名稱": "板橋咖啡廳",
       "優惠內容": "拿鐵第二杯半價",
-      "圖片網址": "https://example.com/coffee.jpg",
+      "圖片網址": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400",
       "地址": "板橋區中山路一段123號"
     },
     {
       "店家名稱": "商圈服飾店", 
       "優惠內容": "全館8折優惠",
-      "圖片網址": "https://example.com/clothing.jpg",
+      "圖片網址": "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=400",
       "地址": "板橋區文化路二段456號"
     }
   ];
 }
 
 // ============================================
-// 🎫 優惠券收集區功能 - 修正載入邏輯
+// 🎫 優惠券功能
 // ============================================
 function openCouponPanel() {
   document.getElementById('couponPanel').classList.add('show');
@@ -661,7 +776,6 @@ async function loadCoupons() {
   try {
     console.log('🎫 開始載入優惠券...');
     
-    // 使用 GET 請求載入優惠券
     const couponUrl = `${GAS_BASE}?action=getUserCoupons&userId=${encodeURIComponent(userId)}`;
     const response = await fetch(couponUrl);
     
@@ -672,7 +786,6 @@ async function loadCoupons() {
     const result = await response.json();
     console.log('🎫 優惠券API回應:', result);
     
-    // 修正：更嚴謹的條件判斷
     if (result && result.status === 'success' && Array.isArray(result.coupons)) {
       const coupons = result.coupons;
       couponCount.textContent = coupons.length;
@@ -704,8 +817,6 @@ async function loadCoupons() {
       }
     } else {
       couponCount.textContent = '0';
-      const errorMsg = result && result.message ? result.message : '載入優惠券失敗';
-      console.error('❌ 優惠券載入失敗:', errorMsg);
       couponList.innerHTML = `
         <div class="empty-state">
           <div class="icon">🎫</div>
@@ -723,50 +834,12 @@ async function loadCoupons() {
     `;
   }
 }
-// 除錯函數：檢查 GAS 回應結構
-async function debugGASResponse() {
-  try {
-    console.log('🔍 開始除錯 GAS 回應結構...');
-    
-    // 測試店家 API
-    const shopResponse = await fetch(`${GAS_BASE}?action=getShops`);
-    const shopResult = await shopResponse.json();
-    console.log('🏪 店家 API 回應結構:', shopResult);
-    
-    // 測試優惠券 API
-    const couponResponse = await fetch(`${GAS_BASE}?action=getUserCoupons&userId=test`);
-    const couponResult = await couponResponse.json();
-    console.log('🎫 優惠券 API 回應結構:', couponResult);
-    
-    // 測試 POST 請求
-    const formData = new FormData();
-    formData.append('action', 'saveCoupon');
-    formData.append('userId', 'test_user');
-    formData.append('shopName', '測試店家');
-    formData.append('discount', '測試優惠');
-    
-    const postResponse = await fetch(GAS_BASE, {
-      method: 'POST',
-      body: formData
-    });
-    const postResult = await postResponse.json();
-    console.log('📨 POST 請求回應結構:', postResult);
-    
-  } catch (error) {
-    console.error('❌ 除錯失敗:', error);
-  }
-}
 
-// 在頁面載入時執行除錯（可選）
-// window.addEventListener('DOMContentLoaded', function() {
-//   setTimeout(debugGASResponse, 1000);
-// });
 // ============================================
-// 📱 LINE 登入功能 - 使用 LIFF 內建登入
+// 📱 LINE 登入功能
 // ============================================
 let liffInitialized = false;
 
-// 初始化 LIFF
 async function initLiff() {
     try {
         if (typeof liff === 'undefined') {
@@ -775,7 +848,7 @@ async function initLiff() {
         }
         
         await liff.init({ 
-            liffId: '2008231249-7DlMkygo' // 您的 LIFF ID
+            liffId: '2008231249-7DlMkygo'
         });
         liffInitialized = true;
         console.log('✅ LIFF 初始化成功');
@@ -790,7 +863,6 @@ async function startLineLogin() {
   try {
     console.log('=== 🔐 開始 LINE 登入流程 ===');
     
-    // 確保 LIFF 已初始化
     if (!liffInitialized) {
       const initialized = await initLiff();
       if (!initialized) {
@@ -799,7 +871,6 @@ async function startLineLogin() {
       }
     }
     
-    // 使用 LIFF 內建的登入功能
     if (!liff.isLoggedIn()) {
       console.log('🔐 執行 LIFF 登入...');
       liff.login();
@@ -813,18 +884,15 @@ async function startLineLogin() {
   }
 }
 
-// 使用 LIFF 取得用戶資料
 async function getLineProfile() {
   try {
     console.log('📱 取得 LINE 用戶資料...');
     const profile = await liff.getProfile();
     
-    // 儲存用戶資料
     localStorage.setItem('lineUserId', profile.userId);
     localStorage.setItem('lineDisplayName', profile.displayName);
     localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
     
-    // 更新 UI
     updateUserInterface({
       userId: profile.userId,
       displayName: profile.displayName,
@@ -839,34 +907,6 @@ async function getLineProfile() {
   }
 }
 
-// 檢查登入狀態
-// 檢查登入狀態
-async function checkLoginStatus() {
-  try {
-    // 如果使用 LIFF，檢查 LIFF 登入狀態
-    if (typeof liff !== 'undefined' && liff.isInClient()) {
-      if (liff.isLoggedIn()) {
-        await getLineProfile();
-      }
-    } else {
-      // 檢查 localStorage 中的登入狀態
-      const params = new URLSearchParams({
-        action: 'checkLoginStatus',
-        userId: localStorage.getItem('lineUserId') || 'temp'
-      });
-      
-      const response = await safeFetch(`${GAS_BASE}?${params}`);
-      
-      if (response.success && response.loggedIn) {
-        updateUserInterface(response.userInfo);
-      }
-    }
-  } catch (error) {
-    console.error('檢查登入狀態失敗:', error);
-  }
-}
-
-// 更新用戶界面
 function updateUserInterface(userInfo) {
   if (userInfo && userInfo.userId) {
     localStorage.setItem('lineUserId', userInfo.userId);
@@ -877,20 +917,17 @@ function updateUserInterface(userInfo) {
     document.getElementById('lineLoginBtn').classList.add('logged-in');
     userId = userInfo.userId;
     
-    // 隱藏登入畫面
     loginScreen.classList.add('hidden');
     
     alert(`歡迎，${userInfo.displayName}！\n\n您的優惠券已綁定到 LINE 帳號。`);
   }
 }
 
-// 底部功能列的 LINE 登入/登出按鈕
 async function lineLogin() {
   const lineLoginBtn = document.getElementById('lineLoginBtn');
   const lineLoginText = document.getElementById('lineLoginText');
   
   if (localStorage.getItem('lineUserId')) {
-    // 已登入，顯示登出選項
     if (confirm('確定要登出 LINE 帳號嗎？')) {
       localStorage.removeItem('lineUserId');
       localStorage.removeItem('lineDisplayName');
@@ -902,7 +939,6 @@ async function lineLogin() {
       
       alert('已登出！');
       
-      // 顯示登入畫面
       loginScreen.classList.remove('hidden');
       
       if (document.getElementById('couponPanel').classList.contains('show')) {
@@ -910,13 +946,12 @@ async function lineLogin() {
       }
     }
   } else {
-    // 未登入，執行登入
     startLineLogin();
   }
 }
 
 // ============================================
-// 🗺️ 店家地圖功能 - 修正載入邏輯
+// 🗺️ 店家地圖功能
 // ============================================
 function openMapPanel() {
   document.getElementById('mapPanel').classList.add('show');
@@ -956,34 +991,8 @@ async function loadShopMap() {
 }
 
 // ============================================
-// 🔧 工具函數 - 加強錯誤處理
+// 收藏按鈕事件
 // ============================================
-// 安全請求函數
-async function safeFetch(url, options = {}) {
-  try {
-    console.log(`🌐 發送請求: ${url}`);
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    const result = await response.json();
-    console.log(`✅ 請求成功:`, result);
-    return result;
-  } catch (error) {
-    console.error('❌ 請求失敗:', error);
-    return { success: false, message: error.message };
-  }
-}
-
-// 在收藏按鈕事件中，修正店家資料的取得
 claimBtn.addEventListener('click', async () => {
   if (!currentShop) return;
   
@@ -991,17 +1000,11 @@ claimBtn.addEventListener('click', async () => {
   claimBtn.textContent = "🎉 收藏中...";
   
   try {
-    console.log('🛍️ 當前店家資料:', currentShop);
+    const shopName = currentShop["店家名稱"] || currentShop.name || '';
+    const discount = currentShop["優惠內容"] || currentShop.discount || '';
+    const imageUrl = currentShop["圖片網址"] || currentShop.icon || '';
+    const shopId = currentShop.id || 'shop_' + Date.now();
     
-    // 修正欄位對應 - 根據 GAS 回傳的實際結構
-    const shopName = currentShop["店家名稱"] || currentShop.name || currentShop.shopName || '';
-    const discount = currentShop["優惠內容"] || currentShop.discount || currentShop.description || '';
-    const imageUrl = currentShop["圖片網址"] || currentShop.icon || currentShop.imageUrl || '';
-    const shopId = currentShop.id || currentShop["店家ID"] || 'shop_' + Date.now();
-    
-    console.log('📦 準備收藏的資料:', { shopName, discount, shopId, userId });
-    
-    // 使用 FormData
     const formData = new FormData();
     formData.append('action', 'saveCoupon');
     formData.append('userId', userId);
@@ -1032,7 +1035,6 @@ claimBtn.addEventListener('click', async () => {
       }, 1500);
     } else {
       claimBtn.textContent = "⚠️ 收藏失敗";
-      console.error('收藏失敗:', result.message);
       setTimeout(() => {
         claimBtn.textContent = "收藏優惠";
         claimBtn.disabled = false;
@@ -1048,9 +1050,7 @@ claimBtn.addEventListener('click', async () => {
     }, 2000);
   }
 });
-// ============================================
-// 📱 底部功能列 - 添加 SVG 版本切換
-// ============================================
+
 function switchToSVGVersion() {
   if (confirm('要切換到 SVG 版本遊戲嗎？')) {
     window.location.href = 'game.html';
@@ -1058,21 +1058,19 @@ function switchToSVGVersion() {
 }
 
 // ============================================
-// 🔍 頁面載入時檢查 LINE 登入狀態
+// 頁面載入初始化
 // ============================================
 window.addEventListener('DOMContentLoaded', async function() {
   console.log('=== 📱 初始化應用程式 ===');
+  console.log('🎲 3D 骰子版本已啟用！');
   
-  // 嘗試初始化 LIFF（非強制）
   try {
     await initLiff();
     
-    // 如果 LIFF 初始化成功且用戶已登入，自動取得資料
     if (liffInitialized && liff.isLoggedIn()) {
       console.log('✅ LIFF 用戶已登入，自動取得資料');
       await getLineProfile();
       
-      // 如果成功取得 LINE 資料，就隱藏登入畫面
       if (localStorage.getItem('lineUserId')) {
         loginScreen.classList.add('hidden');
         return;
@@ -1082,63 +1080,39 @@ window.addEventListener('DOMContentLoaded', async function() {
     console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF，繼續其他登入方式');
   }
   
-  // 原有的檢查邏輯
-  console.log('=== 📱 檢查頁面參數 ===');
   const urlParams = new URLSearchParams(window.location.search);
   const lineUserId = urlParams.get('lineUserId');
   const lineDisplayName = urlParams.get('lineDisplayName');
   
   if (lineUserId && lineDisplayName) {
-    console.log('🎉 偵測到 LINE 登入成功！');
-    console.log('   User ID:', lineUserId);
-    console.log('   顯示名稱:', decodeURIComponent(lineDisplayName));
-    
-    // 儲存到 localStorage
     localStorage.setItem('lineUserId', lineUserId);
     localStorage.setItem('lineDisplayName', decodeURIComponent(lineDisplayName));
-    localStorage.setItem('linePictureUrl', decodeURIComponent(linePictureUrl || ''));
     
-    // 更新 UI
     document.getElementById('lineLoginText').textContent = decodeURIComponent(lineDisplayName);
     document.getElementById('lineLoginBtn').classList.add('logged-in');
     userId = lineUserId;
     
-    // 隱藏登入畫面，進入遊戲
     loginScreen.classList.add('hidden');
     
-    console.log('✅ LINE 登入資料已儲存');
-    
-    // 顯示歡迎訊息
     setTimeout(() => {
-      alert(`歡迎，${decodeURIComponent(lineDisplayName)}！\n\n您的優惠券已綁定到 LINE 帳號。`);
+      alert(`歡迎，${decodeURIComponent(lineDisplayName)}！`);
     }, 500);
     
-    // 清除 URL 參數
     window.history.replaceState({}, document.title, window.location.pathname);
   } else {
-    // 檢查 localStorage 是否有登入資料
     const storedUserId = localStorage.getItem('lineUserId');
     const storedDisplayName = localStorage.getItem('lineDisplayName');
     
     if (storedUserId) {
-      console.log('✅ 用戶已登入（從 localStorage）');
-      console.log('   User ID:', storedUserId);
-      console.log('   顯示名稱:', storedDisplayName);
-      
       document.getElementById('lineLoginText').textContent = storedDisplayName || '已登入';
       document.getElementById('lineLoginBtn').classList.add('logged-in');
       userId = storedUserId;
-      
-      // 隱藏登入畫面，進入遊戲
       loginScreen.classList.add('hidden');
     } else {
-      console.log('⚪ 用戶未登入，顯示登入畫面');
-      // 顯示登入畫面
       loginScreen.classList.remove('hidden');
     }
   }
   
-  // 初始化角色位置
   updatePlayer();
 });
 </script>
