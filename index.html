@@ -313,19 +313,73 @@ body{
 .coupon-list{display:grid;gap:8px;}
 .coupon-card{
   border:1px solid #ddd;border-radius:8px;
-  padding:8px;display:flex;gap:8px;
+  padding:12px;display:flex;gap:12px;
   background:white;box-shadow:0 1px 3px rgba(0,0,0,0.1);
+  position:relative;
+}
+.coupon-card.used{
+  background:#f9f9f9;
+  opacity:0.7;
 }
 .coupon-card img{
-  width:50px;height:50px;object-fit:cover;
-  border-radius:4px;flex-shrink:0;
+  width:60px;height:60px;object-fit:cover;
+  border-radius:6px;flex-shrink:0;
 }
 .coupon-card-info{flex:1;}
-.coupon-card-info h3{font-size:14px;margin-bottom:2px;color:#333;}
-.coupon-card-info p{font-size:12px;color:#666;}
-.coupon-card-info .discount{color:#e53935;font-weight:bold;line-height:1.2;font-size:11px;}
-.coupon-card-info .date{font-size:10px;color:#999;margin-top:2px;}
-.coupon-card-info .status{font-size:10px;color:#4caf50;margin-top:1px;}
+.coupon-card-info h3{font-size:16px;margin-bottom:4px;color:#333;}
+.coupon-card-info .discount{
+  color:#e53935;font-weight:bold;
+  line-height:1.3;
+  font-size:14px;
+  margin-bottom:4px;
+}
+.coupon-card-info .date{
+  font-size:12px;color:#999;margin-bottom:8px;
+}
+.coupon-card-info .status{
+  font-size:12px;font-weight:bold;
+  padding:2px 8px;
+  border-radius:4px;
+  display:inline-block;
+}
+.coupon-card-info .status.available{
+  color:#4caf50;
+  background:#e8f5e8;
+}
+.coupon-card-info .status.used{
+  color:#999;
+  background:#f0f0f0;
+}
+.coupon-actions{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+.coupon-actions button{
+  padding:6px 12px;
+  border:none;
+  border-radius:4px;
+  font-size:12px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+.coupon-actions .verify-btn{
+  background:#4caf50;
+  color:white;
+}
+.coupon-actions .verify-btn:active{
+  background:#45a049;
+  transform:scale(0.95);
+}
+.coupon-actions .cancel-btn{
+  background:#f44336;
+  color:white;
+}
+.coupon-actions .cancel-btn:active{
+  background:#e53935;
+  transform:scale(0.95);
+}
 .empty-state{text-align:center;padding:30px 15px;color:#999;}
 .empty-state .icon{font-size:36px;margin-bottom:10px;}
 .empty-state p{font-size:14px;}
@@ -768,7 +822,7 @@ function getDefaultShops() {
 }
 
 // ============================================
-// 🎫 優惠券功能
+// 🎫 優惠券功能 - 新增核銷功能
 // ============================================
 function openCouponPanel() {
   document.getElementById('couponPanel').classList.add('show');
@@ -798,25 +852,40 @@ async function loadCoupons() {
     
     if (result && result.status === 'success' && Array.isArray(result.coupons)) {
       const coupons = result.coupons;
+      
+      // 排序：未使用的在前，已使用的在後
+      coupons.sort((a, b) => {
+        if (a.used && !b.used) return 1;
+        if (!a.used && b.used) return -1;
+        return 0;
+      });
+      
       couponCount.textContent = coupons.length;
       
       if (coupons.length > 0) {
         couponList.innerHTML = coupons.map(coupon => {
-          const discountText = (coupon.discount || '優惠內容').replace(/\\n/g, '');
+          const discountText = (coupon.discount || '優惠內容').replace(/\\n/g, '<br>');
+          const isUsed = coupon.used || false;
+          const statusClass = isUsed ? 'used' : 'available';
+          const statusText = isUsed ? '已使用' : '可使用';
           
           return `
-          <div class="coupon-card">
+          <div class="coupon-card ${isUsed ? 'used' : ''}">
             <img src="${coupon.imageUrl || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'}" 
                  onerror="this.src='https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'">
             <div class="coupon-card-info">
               <h3>${coupon.shopName || '店家名稱'}</h3>
-              <p class="discount">${discountText}</p>
-              <p class="date">
+              <div class="discount">${discountText}</div>
+              <div class="date">
                 ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
-              </p>
-              <p class="status">
-                ${coupon.used ? '已使用' : '可使用'}
-              </p>
+              </div>
+              <div class="status ${statusClass}">${statusText}</div>
+              ${!isUsed ? `
+              <div class="coupon-actions">
+                <button class="verify-btn" onclick="verifyCoupon('${coupon.id || coupon._id}')">核銷使用</button>
+                <button class="cancel-btn" onclick="cancelCoupon('${coupon.id || coupon._id}')">取消</button>
+              </div>
+              ` : ''}
             </div>
           </div>
         `}).join('');
@@ -846,6 +915,47 @@ async function loadCoupons() {
       </div>
     `;
   }
+}
+
+// 核銷優惠券
+async function verifyCoupon(couponId) {
+  try {
+    console.log('✅ 核銷優惠券:', couponId);
+    
+    const formData = new FormData();
+    formData.append('action', 'verifyCoupon');
+    formData.append('userId', userId);
+    formData.append('couponId', couponId);
+    
+    const response = await fetch(GAS_BASE, {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('✅ 核銷回應:', result);
+    
+    if (result.status === 'success') {
+      alert('優惠券已成功核銷！');
+      loadCoupons(); // 重新載入優惠券列表
+    } else {
+      alert('核銷失敗，請稍後再試');
+    }
+    
+  } catch (error) {
+    console.error('❌ 核銷錯誤:', error);
+    alert('核銷失敗，請檢查網路連線');
+  }
+}
+
+// 取消核銷
+function cancelCoupon(couponId) {
+  console.log('❌ 取消核銷:', couponId);
+  // 這裡可以添加取消邏輯，如果需要
 }
 
 // ============================================
@@ -988,7 +1098,7 @@ async function loadShopMap() {
     
     if (shops && shops.length > 0) {
       shopList.innerHTML = shops.map(shop => {
-        const discountText = (shop['優惠內容'] || '優惠內容').replace(/\\n/g, '');
+        const discountText = (shop['優惠內容'] || '優惠內容').replace(/\\n/g, '<br>');
         
         return `
         <div class="shop-item">
