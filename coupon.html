@@ -325,7 +325,7 @@ async function loadCouponList() {
   }
 }
 
-// 在 loadCouponList 函數中修改優惠券 HTML 生成
+// 創建優惠券 HTML 的輔助函數
 function createCouponHTML(coupon) {
   const discountText = (coupon.discount || '優惠內容').replace(/\\n/g, '<br>');
   const isUsed = coupon.used === true || coupon.used === 'TRUE';
@@ -342,7 +342,7 @@ function createCouponHTML(coupon) {
     statusText = '已放棄';
   }
   
-  const couponId = coupon.id || coupon._id || coupon.couponId || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const couponId = coupon.couponId || coupon.id || `temp_${Date.now()}`;
   
   return `
   <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}">
