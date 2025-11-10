@@ -217,46 +217,45 @@ body{
 .bottom-bar button .icon{font-size:56px;} /* 從28px放大到56px (2倍) */
 .bottom-bar button.logged-in{color:#4caf50;}
 
-/* === 優惠券收集區彈窗 === */
-/* === 優惠券收集區彈窗 === */
+/* === 優惠券收集區彈窗 - 進一步縮小三分之一 === */
 .coupon-panel{
   position:fixed;top:0;left:0;right:0;bottom:70px;
   background:white;z-index:200;display:none;
-  overflow-y:auto;padding:15px; /* 從 20px 改小 */
+  overflow-y:auto;padding:10px; /* 再縮小 */
 }
 
 .coupon-panel-header{
   display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:15px; /* 從 20px 改小 */
-  padding-bottom:12px; /* 從 15px 改小 */
+  margin-bottom:10px; /* 再縮小 */
+  padding-bottom:8px; /* 再縮小 */
   border-bottom:2px solid #eee;
 }
 
 .coupon-panel-header h2{
-  font-size:21px; /* 從 28px 改小 */
+  font-size:18px; /* 再縮小 */
   color:#333;
 }
 
 .coupon-list{
   display:grid;
-  gap:12px; /* 從 15px 改小 */
+  gap:8px; /* 再縮小 */
 }
 
 .coupon-card{
   border:1px solid #ddd;
-  border-radius:10px; /* 從 12px 改小 */
-  padding:12px; /* 從 15px 改小 */
+  border-radius:8px; /* 再縮小 */
+  padding:8px; /* 再縮小 */
   display:flex;
-  gap:12px; /* 從 15px 改小 */
+  gap:8px; /* 再縮小 */
   background:white;
-  box-shadow:0 1px 5px rgba(0,0,0,0.1); /* 從 2px 8px 改小 */
+  box-shadow:0 1px 3px rgba(0,0,0,0.1); /* 再縮小 */
 }
 
 .coupon-card img{
-  width:60px; /* 從 80px 改小 */
-  height:60px; /* 從 80px 改小 */
+  width:50px; /* 再縮小 */
+  height:50px; /* 再縮小 */
   object-fit:cover;
-  border-radius:6px; /* 從 8px 改小 */
+  border-radius:5px; /* 再縮小 */
   flex-shrink:0;
 }
 
@@ -265,14 +264,17 @@ body{
 }
 
 .coupon-card-info h3{
-  font-size:16px; /* 從 20px 改小 */
-  margin-bottom:4px; /* 從 5px 改小 */
+  font-size:14px; /* 再縮小 */
+  margin-bottom:3px; /* 再縮小 */
   color:#333;
 }
 
 .coupon-card-info p{
-  font-size:13px; /* 從 16px 改小 */
+  font-size:12px; /* 再縮小 */
   color:#666;
+  line-height: 1.3; /* 添加行高 */
+  white-space: pre-line; /* 支持換行 */
+  word-break: break-word; /* 自動換行 */
 }
 
 .coupon-card-info .discount{
@@ -282,17 +284,17 @@ body{
 
 .empty-state{
   text-align:center;
-  padding:45px 15px; /* 從 60px 20px 改小 */
+  padding:30px 10px; /* 再縮小 */
   color:#999;
 }
 
 .empty-state .icon{
-  font-size:48px; /* 從 64px 改小 */
-  margin-bottom:15px; /* 從 20px 改小 */
+  font-size:36px; /* 再縮小 */
+  margin-bottom:10px; /* 再縮小 */
 }
 
 .empty-state p{
-  font-size:15px; /* 從 18px 改小 */
+  font-size:12px; /* 再縮小 */
 }
 
 /* === 店家地圖彈窗 === */
