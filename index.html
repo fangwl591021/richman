@@ -101,6 +101,9 @@ body{
 }
 
 /* === 🎲 真實 3D 骰子樣式 === */
+/* === 🎲 圓潤現代風格 3D 骰子 === */
+/* 在您的 CSS 中找到骰子相關部分，替換為以下代碼 */
+
 .dice-box{
   display:flex;
   gap:25px;
@@ -114,6 +117,7 @@ body{
   position:relative;
   transform-style:preserve-3d;
   transition:transform 0.1s ease;
+  filter:drop-shadow(0 8px 15px rgba(0,0,0,0.25));
 }
 
 /* 骰子立方體 */
@@ -125,64 +129,77 @@ body{
   transform:rotateX(-20deg) rotateY(-25deg);
 }
 
-/* 骰子的六個面 */
+/* 骰子的六個面 - 圓潤現代風格 */
 .dice-face{
   position:absolute;
   width:60px;
   height:60px;
-  background:linear-gradient(145deg, #e8e8e8 0%, #d0d0d0 100%);
-  border:2px solid #999;
+  /* 關鍵：淺紫灰色漸層 + 大圓角 */
+  background:linear-gradient(145deg, #e8e4f0 0%, #d8d4e8 50%, #c8c4d8 100%);
+  border:none;
   display:flex;
   justify-content:center;
   align-items:center;
   flex-wrap:wrap;
-  border-radius:8px;
-  box-shadow:inset 0 2px 4px rgba(255,255,255,0.5);
+  border-radius:12px; /* 大圓角！ */
+  box-shadow:
+    inset 0 2px 6px rgba(255,255,255,0.8),
+    inset 0 -2px 4px rgba(0,0,0,0.1);
 }
 
 /* 前面 */
 .dice-face.front{
   transform:translateZ(30px);
+  background:linear-gradient(145deg, #ebe7f2 0%, #dbd7ea 50%, #cbc7da 100%);
 }
 
 /* 後面 */
 .dice-face.back{
   transform:rotateY(180deg) translateZ(30px);
+  background:linear-gradient(145deg, #d8d4e8 0%, #c8c4d8 50%, #b8b4c8 100%);
 }
 
 /* 右面 */
 .dice-face.right{
   transform:rotateY(90deg) translateZ(30px);
-  background:linear-gradient(145deg, #d8d8d8 0%, #c0c0c0 100%);
+  background:linear-gradient(145deg, #e0dce8 0%, #d0ccd8 50%, #c0bcc8 100%);
 }
 
 /* 左面 */
 .dice-face.left{
   transform:rotateY(-90deg) translateZ(30px);
-  background:linear-gradient(145deg, #c8c8c8 0%, #b0b0b0 100%);
+  background:linear-gradient(145deg, #dad6e8 0%, #cac6d8 50%, #bab6c8 100%);
 }
 
-/* 上面 */
+/* 上面 - 最亮 */
 .dice-face.top{
   transform:rotateX(90deg) translateZ(30px);
-  background:linear-gradient(145deg, #f0f0f0 0%, #e0e0e0 100%);
+  background:linear-gradient(145deg, #f0ecf8 0%, #e0dcf0 50%, #d0cce0 100%);
 }
 
-/* 下面 */
+/* 下面 - 最暗 */
 .dice-face.bottom{
   transform:rotateX(-90deg) translateZ(30px);
-  background:linear-gradient(145deg, #c0c0c0 0%, #a8a8a8 100%);
+  background:linear-gradient(145deg, #d0ccd8 0%, #c0bcc8 50%, #b0acb8 100%);
 }
 
-/* 骰子的點 */
+/* 骰子的點 - 基礎樣式（深藍色）*/
 .dot{
   width:9px;
   height:9px;
-  background:radial-gradient(circle at 30% 30%, #444, #000);
+  background:radial-gradient(circle at 30% 30%, #5a4d7e, #3a2d5e);
   border-radius:50%;
   box-shadow:
-    inset 0 1px 2px rgba(0,0,0,0.6),
-    0 1px 2px rgba(255,255,255,0.3);
+    inset 0 1px 2px rgba(0,0,0,0.5),
+    0 1px 2px rgba(255,255,255,0.2);
+}
+
+/* 🔴 特殊：1點是粉紅色 */
+.face-1 .dot{
+  background:radial-gradient(circle at 30% 30%, #ff8ba7, #ff6b8a);
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,0.3),
+    0 1px 3px rgba(255,107,138,0.4);
 }
 
 /* 骰子點數布局 */
@@ -238,31 +255,20 @@ body{
   90%{transform:translateY(-2px) scale(1.01);}
 }
 
-.roll-btn{
-  padding:15px 30px;
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  color:white;
-  font-size:20px;
-  font-weight:bold;
-  border:none;
-  border-radius:25px;
-  box-shadow:0 4px 10px rgba(0,0,0,.3);
-  cursor:pointer;
-  transition:all 0.3s ease;
-}
-
-.roll-btn:hover:not(:disabled){
-  transform:translateY(-2px);
-  box-shadow:0 6px 15px rgba(0,0,0,.4);
-}
-
-.roll-btn:active:not(:disabled){
-  transform:translateY(0);
-}
-
-.roll-btn:disabled{
-  opacity:0.6;
-  cursor:not-allowed;
+/* ✨ 額外的光澤效果 */
+.dice-face::after{
+  content:'';
+  position:absolute;
+  top:5px;
+  left:5px;
+  right:5px;
+  bottom:50%;
+  background:linear-gradient(180deg, 
+    rgba(255,255,255,0.4) 0%, 
+    rgba(255,255,255,0.1) 50%,
+    transparent 100%);
+  border-radius:8px 8px 0 0;
+  pointer-events:none;
 }
 
 /* === 上圖下文 名片版彈窗 === */
