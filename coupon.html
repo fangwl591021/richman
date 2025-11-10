@@ -298,30 +298,42 @@ function getCurrentUser() {
   return null;
 }
 
-// 優化的 loadCouponList 函數 - 修正版
+// 優化的 loadCouponList 函數 - 添加調試
 async function loadCouponList() {
   const couponList = document.getElementById('couponList');
   
   try {
     const coupons = await loadCoupons();
-    console.log('載入的優惠券:', coupons);
+    console.log('🔍 載入的優惠券詳細資訊:');
+    coupons.forEach((coupon, index) => {
+      console.log(`優惠券 ${index + 1}:`, {
+        couponId: coupon.couponId,
+        shopName: coupon.shopName,
+        used: coupon.used,
+        usedType: typeof coupon.used,
+        usedValue: coupon.used
+      });
+    });
     
     if (coupons.length > 0) {
       // 分組：未使用、已使用、已放棄
       const availableCoupons = coupons.filter(coupon => {
         const used = coupon.used;
-        return used === false || used === 'false' || !used;
+        const isAvailable = !(used === true || used === 'TRUE' || used === 'true' || used === 'abandoned' || used === '已使用');
+        console.log(`優惠券 ${coupon.couponId} 可用性:`, { used, isAvailable });
+        return isAvailable;
       });
       
-      const usedCoupons = coupons.filter(coupon => 
-        coupon.used === true || coupon.used === 'TRUE'
-      );
+      const usedCoupons = coupons.filter(coupon => {
+        const used = coupon.used;
+        return used === true || used === 'TRUE' || used === 'true' || used === '已使用';
+      });
       
       const abandonedCoupons = coupons.filter(coupon => 
         coupon.used === 'abandoned'
       );
       
-      console.log('分組結果:', {
+      console.log('📊 分組結果:', {
         可使用: availableCoupons.length,
         已使用: usedCoupons.length,
         已放棄: abandonedCoupons.length
