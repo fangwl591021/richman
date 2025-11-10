@@ -941,50 +941,70 @@ async function safeFetch(url, options = {}) {
 // 🎯 事件監聽器 - 修正收藏優惠功能
 // ============================================
 // 收藏優惠按鈕事件
-claimBtn.addEventListener('click', () => {
+claimBtn.addEventListener('click', async () => {
   if (!currentShop) return;
   
   claimBtn.disabled = true;
   claimBtn.textContent = "🎉 收藏中...";
   
-  const shopId = currentShop.ID || currentShop['店家名稱'] || '';
-  const shopName = currentShop["店家名稱"] || currentShop.name || '';
-  const discount = currentShop["優惠內容"] || currentShop.discount || '';
-  const category = currentShop["分類"] || currentShop.category || "一般";
-  const icon = currentShop.icon || currentShop["圖示"] || "🏪";
-  const imageUrl = currentShop["圖片網址"] || currentShop.icon || '';
-  
-  const params = new URLSearchParams({
-    action: "saveCoupon",
-    userId: userId,
-    couponId: 'CPN' + Date.now(),
-    shopId: encodeURIComponent(shopId),
-    shopName: encodeURIComponent(shopName),
-    discount: encodeURIComponent(discount),
-    category: encodeURIComponent(category),
-    icon: encodeURIComponent(icon),
-    imageUrl: encodeURIComponent(imageUrl),
-    status: "active",
-    sheetName: COUPON_SHEET_NAME
-  });
-  
-  fetch(`${GAS_BASE}?${params.toString()}`)
-    .then(r => r.json())
-    .then(res => {
-      if (res.success) {
-        claimBtn.textContent = "✅ 收藏成功！";
-        setTimeout(() => closeShop(), 1500);
-      } else {
-        claimBtn.textContent = "⚠️ 收藏失敗";
-        console.error('收藏失敗:', res.message);
-      }
-    })
-    .catch(err => {
-      claimBtn.textContent = "⚠️ 網路錯誤";
-      console.error('收藏錯誤:', err);
+  try {
+    // 從當前店家獲取資料
+    const shopName = currentShop["店家名稱"] || currentShop.name || '';
+    const discount = currentShop["優惠內容"] || currentShop.discount || '';
+    const imageUrl = currentShop["圖片網址"] || currentShop.icon || '';
+    
+    console.log('💾 準備收藏優惠券:', { shopName, discount, userId });
+    
+    // 使用 FormData 發送 POST 請求
+    const formData = new FormData();
+    formData.append('action', 'saveCoupon');
+    formData.append('userId', userId);
+    formData.append('couponId', 'CPN' + Date.now());
+    formData.append('shopName', shopName);
+    formData.append('discount', discount);
+    formData.append('imageUrl', imageUrl);
+    formData.append('status', 'active');
+    
+    const response = await fetch(GAS_BASE, {
+      method: 'POST',
+      body: formData
     });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('💾 收藏優惠券回應:', result);
+    
+    if (result.success) {
+      claimBtn.textContent = "✅ 收藏成功！";
+      // 重新載入優惠券列表
+      setTimeout(() => {
+        closeShop();
+        // 如果優惠券面板是打開的，重新載入
+        if (document.getElementById('couponPanel').classList.contains('show')) {
+          loadCoupons();
+        }
+      }, 1500);
+    } else {
+      claimBtn.textContent = "⚠️ 收藏失敗";
+      console.error('收藏失敗:', result.message);
+      setTimeout(() => {
+        claimBtn.textContent = "收藏優惠";
+        claimBtn.disabled = false;
+      }, 2000);
+    }
+    
+  } catch (error) {
+    console.error('❌ 收藏錯誤:', error);
+    claimBtn.textContent = "⚠️ 網路錯誤";
+    setTimeout(() => {
+      claimBtn.textContent = "收藏優惠";
+      claimBtn.disabled = false;
+    }, 2000);
+  }
 });
-
 // ============================================
 // 📱 底部功能列 - 添加 SVG 版本切換
 // ============================================
