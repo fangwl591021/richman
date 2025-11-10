@@ -569,7 +569,12 @@ async function checkEvent() {
 }
 
 function showShopPopup(shop) {
-  const imgUrl = shop["圖片網址"] || shop.icon || shop["圖示"] || "";
+  console.log('🏪 顯示店家彈窗:', shop);
+  
+  // 修正欄位對應 - 根據 GAS 回傳的實際欄位名稱
+  const imgUrl = shop["圖片網址"] || shop.icon || shop["圖示"] || shop.imageUrl || "";
+  const shopNameText = shop["店家名稱"] || shop.name || shop.shopName || "神秘店家";
+  const shopDescText = shop["優惠內容"] || shop.discount || shop.description || "限時優惠，趕快來看看！";
   
   // 安全設置圖片
   if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
@@ -581,8 +586,8 @@ function showShopPopup(shop) {
     shopImg.src = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
   }
   
-  shopName.textContent = shop["店家名稱"] || shop.name || "神秘店家";
-  shopDesc.textContent = shop["優惠內容"] || shop.discount || "限時優惠，趕快來看看！";
+  shopName.textContent = shopNameText;
+  shopDesc.textContent = shopDescText;
   shopPopup.style.display = 'block';
   claimBtn.disabled = false;
   claimBtn.textContent = "收藏優惠";
@@ -606,9 +611,10 @@ async function loadShops() {
     const result = await response.json();
     console.log('🛍️ 店家資料API回應:', result);
     
-    if (result.status === 'success' && Array.isArray(result.shops)) {
-      console.log(`✅ 成功載入 ${result.shops.length} 個店家`);
-      return result.shops;
+    // 修正：根據實際的 GAS 回傳結構處理
+    if (result.success && Array.isArray(result.data)) {
+      console.log(`✅ 成功載入 ${result.data.length} 個店家`);
+      return result.data;  // 使用 result.data 而不是 result.shops
     } else {
       console.error('❌ 載入店家資料失敗:', result.message);
       return getDefaultShops();
@@ -938,7 +944,7 @@ async function safeFetch(url, options = {}) {
   }
 }
 
-// 恢復使用 FormData 發送請求
+// 在收藏按鈕事件中，修正店家資料的取得
 claimBtn.addEventListener('click', async () => {
   if (!currentShop) return;
   
@@ -946,16 +952,21 @@ claimBtn.addEventListener('click', async () => {
   claimBtn.textContent = "🎉 收藏中...";
   
   try {
-    const shopName = currentShop["店家名稱"] || currentShop.name || '';
-    const discount = currentShop["優惠內容"] || currentShop.discount || '';
-    const imageUrl = currentShop["圖片網址"] || currentShop.icon || '';
+    console.log('🛍️ 當前店家資料:', currentShop);
     
-    console.log('💾 準備收藏優惠券:', { shopName, discount, userId });
+    // 修正欄位對應 - 根據 GAS 回傳的實際結構
+    const shopName = currentShop["店家名稱"] || currentShop.name || currentShop.shopName || '';
+    const discount = currentShop["優惠內容"] || currentShop.discount || currentShop.description || '';
+    const imageUrl = currentShop["圖片網址"] || currentShop.icon || currentShop.imageUrl || '';
+    const shopId = currentShop.id || currentShop["店家ID"] || 'shop_' + Date.now();
     
-    // 使用 FormData（之前成功的方式）
+    console.log('📦 準備收藏的資料:', { shopName, discount, shopId, userId });
+    
+    // 使用 FormData
     const formData = new FormData();
     formData.append('action', 'saveCoupon');
     formData.append('userId', userId);
+    formData.append('shopId', shopId);
     formData.append('shopName', shopName);
     formData.append('discount', discount);
     formData.append('imageUrl', imageUrl);
@@ -976,7 +987,6 @@ claimBtn.addEventListener('click', async () => {
       claimBtn.textContent = "✅ 收藏成功！";
       setTimeout(() => {
         closeShop();
-        // 如果優惠券面板是打開的，重新載入
         if (document.getElementById('couponPanel').classList.contains('show')) {
           loadCoupons();
         }
