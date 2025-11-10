@@ -929,40 +929,139 @@
         // ==================== ✅ 簡化的登入檢查 ====================
         
         // 檢查登入狀態（只檢查 localStorage）
+// 讀取用戶資料（多來源嘗試）
+function getUserData() {
+    // 方法 1: 從完整的 JSON 讀取
+    try {
+        const userData = JSON.parse(localStorage.getItem('lineUser') || '{}');
+        if (userData.userId) {
+            console.log('✅ 從 lineUser JSON 讀取');
+            return userData;
+        }
+    } catch (e) {
+        console.log('⚠️ lineUser JSON 解析失敗');
+    }
+    
+    // 方法 2: 從個別欄位讀取
+    let userId = localStorage.getItem('lineUserId');
+    let displayName = localStorage.getItem('lineDisplayName');
+    let pictureUrl = localStorage.getItem('linePictureUrl');
+    
+    if (userId) {
+        console.log('✅ 從 localStorage 個別欄位讀取');
+        return { userId, displayName, pictureUrl };
+    }
+    
+    // 方法 3: 從 sessionStorage 讀取
+    try {
+        const sessionData = JSON.parse(sessionStorage.getItem('lineUser') || '{}');
+        if (sessionData.userId) {
+            console.log('✅ 從 sessionStorage 讀取');
+            // 恢復到 localStorage
+            localStorage.setItem('lineUser', JSON.stringify(sessionData));
+            localStorage.setItem('lineUserId', sessionData.userId);
+            localStorage.setItem('lineDisplayName', sessionData.displayName);
+            localStorage.setItem('linePictureUrl', sessionData.pictureUrl);
+            return sessionData;
+        }
+    } catch (e) {
+        console.log('⚠️ sessionStorage 解析失敗');
+    }
+    
+    // 方法 4: 從 Cookie 讀取（僅 userId）
+    const cookies = document.cookie.split(';');
+    const userIdCookie = cookies.find(c => c.trim().startsWith('lineUserId='));
+    if (userIdCookie) {
+        userId = userIdCookie.split('=')[1];
+        console.log('✅ 從 Cookie 讀取 userId');
+        return { userId, displayName: '玩家', pictureUrl: '' };
+    }
+    
+    return null;
+}
+
+// 檢查登入狀態
 function checkLogin() {
     console.log('🔍 檢查登入狀態...');
+    console.log('📊 localStorage 大小:', Object.keys(localStorage).length);
+    console.log('📊 sessionStorage 大小:', Object.keys(sessionStorage).length);
     
-    const userId = localStorage.getItem('lineUserId');
-    const displayName = localStorage.getItem('lineDisplayName');
-    const pictureUrl = localStorage.getItem('linePictureUrl');
+    const userData = getUserData();
     
-    console.log('localStorage 資料:');
-    console.log('- userId:', userId);
-    console.log('- displayName:', displayName);
-    console.log('- pictureUrl:', pictureUrl);
-    
-    if (!userId) {
-        // 未登入，跳轉到登入頁面
-        console.log('❌ 未登入，跳轉到 login.html');
+    if (!userData || !userData.userId) {
+        console.log('❌ 未登入或資料遺失');
+        console.log('📋 localStorage 內容:', {
+            lineUserId: localStorage.getItem('lineUserId'),
+            lineUser: localStorage.getItem('lineUser')
+        });
         
-        // ✅ 添加參數，防止無限循環
-        window.location.href = 'login.html?from=index';
+        // ✅ 延遲跳轉，給予檢查時間
+        setTimeout(() => {
+            console.log('↩️ 跳轉到登入頁面');
+            window.location.href = 'login.html?from=index';
+        }, 500);
+        
         return false;
     }
     
-    // 已登入，更新遊戲狀態
-    gameState.userId = userId;
-    gameState.displayName = displayName || '玩家';
-    gameState.pictureUrl = pictureUrl || '';
+    // 更新遊戲狀態
+    gameState.userId = userData.userId;
+    gameState.displayName = userData.displayName || '玩家';
+    gameState.pictureUrl = userData.pictureUrl || '';
     
-    console.log('✅ 已登入:', gameState.displayName);
-    console.log('✅ 用戶ID:', gameState.userId);
+    console.log('✅ 登入驗證成功');
+    console.log('👤 用戶:', gameState.displayName);
+    console.log('🆔 ID:', gameState.userId);
     
     // 更新介面
     updateUserInterface();
     
     return true;
 }
+
+window.onload = async function() {
+    console.log('🎮 遊戲頁面載入...');
+    console.log('🕐 時間:', new Date().toLocaleString());
+    
+    // ✅ 先等待一下，確保從 login 跳轉過來的資料已寫入
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    try {
+        // 檢查登入
+        if (!checkLogin()) {
+            console.log('❌ 登入檢查失敗，停止載入');
+            return;
+        }
+        
+        console.log('✅ 登入檢查通過，開始載入遊戲');
+        showStatusMessage('載入遊戲資料中...');
+        
+        // 載入資料
+        await loadShopDataFromAPI();
+        initializeGameData();
+        await loadCouponsFromSheet();
+        
+        renderBoard();
+        updateStats();
+        
+        // 播放背景音樂
+        setTimeout(() => {
+            if (gameState.musicEnabled) {
+                backgroundMusic.volume = 0.3;
+                backgroundMusic.play().catch(e => {
+                    console.log('背景音樂需要用戶交互後才能播放');
+                });
+            }
+        }, 1000);
+        
+        hideStatusMessage();
+        console.log('✅ 遊戲載入完成！');
+        
+    } catch (error) {
+        console.error('❌ 初始化失敗:', error);
+        showStatusMessage('初始化失敗，請重新整理頁面', 3000);
+    }
+};
         
         // 更新用戶介面
         function updateUserInterface() {
