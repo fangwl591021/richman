@@ -967,7 +967,7 @@ async function safeFetch(url, options = {}) {
   }
 }
 
-// 收藏優惠按鈕事件
+// 收藏優惠按鈕事件 - 簡化版本
 claimBtn.addEventListener('click', async () => {
   if (!currentShop) return;
   
@@ -975,57 +975,58 @@ claimBtn.addEventListener('click', async () => {
   claimBtn.textContent = "🎉 收藏中...";
   
   try {
-    // 從當前店家獲取資料
     const shopName = currentShop["店家名稱"] || currentShop.name || '';
     const discount = currentShop["優惠內容"] || currentShop.discount || '';
-    const imageUrl = currentShop["圖片網址"] || currentShop.icon || '';
     
     console.log('💾 準備收藏優惠券:', { shopName, discount, userId });
     
-    // 使用 JSONP 或代理方式繞過 CORS
-    // 方法：使用動態創建 script 標籤
+    // 只傳遞必要的三個欄位
     const couponId = 'CPN' + Date.now();
-    const callbackName = 'couponCallback_' + couponId;
     
-    // 創建全局回調函數
-    window[callbackName] = function(result) {
-      console.log('💾 收藏優惠券回應:', result);
-      
-      if (result.success) {
-        claimBtn.textContent = "✅ 收藏成功！";
-        setTimeout(() => {
-          closeShop();
-          if (document.getElementById('couponPanel').classList.contains('show')) {
-            loadCoupons();
-          }
-        }, 1500);
-      } else {
-        claimBtn.textContent = "⚠️ 收藏失敗";
-        console.error('收藏失敗:', result.message);
-        setTimeout(() => {
-          claimBtn.textContent = "收藏優惠";
-          claimBtn.disabled = false;
-        }, 2000);
-      }
-      
-      // 清理
-      delete window[callbackName];
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
+    // 創建隱藏的表單
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = GAS_BASE;
+    form.target = '_blank';
+    form.style.display = 'none';
+    
+    const addField = (name, value) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
     };
     
-    // 構建 URL（使用 JSONP）
-    const url = `${GAS_BASE}?action=saveCoupon&userId=${encodeURIComponent(userId)}&couponId=${couponId}&shopName=${encodeURIComponent(shopName)}&discount=${encodeURIComponent(discount)}&imageUrl=${encodeURIComponent(imageUrl)}&status=active&callback=${callbackName}`;
+    // 只傳遞三個必要欄位
+    addField('action', 'saveCoupon');
+    addField('userId', userId);
+    addField('couponId', couponId);
+    addField('shopName', shopName);
+    addField('discount', discount);
     
-    // 動態添加 script 標籤
-    const script = document.createElement('script');
-    script.src = url;
-    document.head.appendChild(script);
+    document.body.appendChild(form);
+    form.submit();
+    
+    setTimeout(() => {
+      document.body.removeChild(form);
+    }, 1000);
+    
+    // 成功處理
+    claimBtn.textContent = "✅ 收藏成功！";
+    setTimeout(() => {
+      closeShop();
+      claimBtn.disabled = false;
+      claimBtn.textContent = "收藏優惠";
+      
+      if (document.getElementById('couponPanel').classList.contains('show')) {
+        loadCoupons();
+      }
+    }, 1500);
     
   } catch (error) {
     console.error('❌ 收藏錯誤:', error);
-    claimBtn.textContent = "⚠️ 網路錯誤";
+    claimBtn.textContent = "⚠️ 收藏失敗";
     setTimeout(() => {
       claimBtn.textContent = "收藏優惠";
       claimBtn.disabled = false;
