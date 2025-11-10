@@ -685,36 +685,20 @@ async function loadCoupons() {
 // ============================================
 // 📱 LINE 登入功能
 // ============================================
+// ============================================
+// 📱 LINE 登入功能 - 使用 LIFF 內建登入
+// ============================================
 async function startLineLogin() {
   try {
     console.log('=== 🔐 開始 LINE 登入流程 ===');
     
-    const apiUrl = `${GAS_BASE}?action=getLineLoginUrl&timestamp=${Date.now()}`;
-    const response = await fetch(apiUrl);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const result = await response.json();
-    
-    if (result.success && result.loginUrl) {
-      console.log('✅ 成功取得登入網址，準備跳轉...');
-      // 使用 window.open 而不是在 iframe 中打開
-      const loginWindow = window.open(result.loginUrl, '_blank', 'width=500,height=600');
-      
-      // 監聽登入完成
-      if (loginWindow) {
-        const checkLogin = setInterval(() => {
-          if (loginWindow.closed) {
-            clearInterval(checkLogin);
-            checkLoginStatus();
-          }
-        }, 1000);
-      }
+    // 使用 LIFF 內建的登入功能
+    if (!liff.isLoggedIn()) {
+      console.log('🔐 執行 LIFF 登入...');
+      liff.login();
     } else {
-      console.error('❌ 後端回傳失敗:', result.message);
-      alert('LINE 登入失敗：' + (result.message || '無法取得登入網址'));
+      console.log('✅ 用戶已登入，取得用戶資料');
+      await getLineProfile();
     }
   } catch (error) {
     console.error('❌ LINE 登入發生錯誤:', error);
@@ -722,19 +706,53 @@ async function startLineLogin() {
   }
 }
 
+// 使用 LIFF 取得用戶資料
+async function getLineProfile() {
+  try {
+    console.log('📱 取得 LINE 用戶資料...');
+    const profile = await liff.getProfile();
+    
+    // 儲存用戶資料
+    localStorage.setItem('lineUserId', profile.userId);
+    localStorage.setItem('lineDisplayName', profile.displayName);
+    localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
+    
+    // 更新 UI
+    updateUserInterface({
+      userId: profile.userId,
+      displayName: profile.displayName,
+      pictureUrl: profile.pictureUrl
+    });
+    
+    console.log('✅ LINE 用戶資料取得成功:', profile.displayName);
+    
+  } catch (error) {
+    console.error('❌ 取得 LINE 用戶資料失敗:', error);
+    alert('取得用戶資料失敗，請重試');
+  }
+}
+
+// 檢查登入狀態
 // 檢查登入狀態
 async function checkLoginStatus() {
   try {
-    const params = new URLSearchParams({
-      action: 'checkLoginStatus',
-      userId: localStorage.getItem('lineUserId') || 'temp'
-    });
-    
-    const response = await safeFetch(`${GAS_BASE}?${params}`);
-    
-    if (response.success && response.loggedIn) {
-      // 更新用戶界面
-      updateUserInterface(response.userInfo);
+    // 如果使用 LIFF，檢查 LIFF 登入狀態
+    if (typeof liff !== 'undefined' && liff.isInClient()) {
+      if (liff.isLoggedIn()) {
+        await getLineProfile();
+      }
+    } else {
+      // 檢查 localStorage 中的登入狀態
+      const params = new URLSearchParams({
+        action: 'checkLoginStatus',
+        userId: localStorage.getItem('lineUserId') || 'temp'
+      });
+      
+      const response = await safeFetch(`${GAS_BASE}?${params}`);
+      
+      if (response.success && response.loggedIn) {
+        updateUserInterface(response.userInfo);
+      }
     }
   } catch (error) {
     console.error('檢查登入狀態失敗:', error);
