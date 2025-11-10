@@ -444,17 +444,10 @@ body{
 <audio id="sMove" src="https://aiwe.cc/wp-content/uploads/2025/11/f8bf2fa137503315a28ad81a8aee77a5.mp3"></audio>
 
 <script>
-// ============================================
-// 🎮 遊戲核心變數與設定
-// ============================================
-// ============================================
-// 🎮 遊戲核心變數與設定
-// ============================================
+/* ============================================
+ 🎮 遊戲核心設定
+============================================ */
 const GAS_BASE = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RZzouUbLaiQ/exec';
-
-// ✅ 簡化 GAS URL - 使用預設的參數設定
-const GAS_SHOP_URL = `${GAS_BASE}?action=getShops`;
-const GAS_COUPON_BASE = `${GAS_BASE}?action=getCoupons`;
 
 const player = document.getElementById('player');
 const board = document.getElementById('board');
@@ -475,48 +468,28 @@ const loginScreen = document.getElementById('loginScreen');
 let currentShop = null;
 const rows = 9, cols = 6;
 let pos = 0;
-let userId = "TEMP_USER";
+let userId = localStorage.getItem('lineUserId') || "TEMP_USER";
 
-// 遊戲路徑設定
+/* === 遊戲路徑 === */
 const path = [];
 for (let x = cols - 1; x >= 0; x--) path.push({ x, y: rows - 1 });
 for (let y = rows - 2; y >= 0; y--) path.push({ x: 0, y });
 for (let x = 1; x < cols; x++) path.push({ x, y: 0 });
 for (let y = 1; y < rows - 1; y++) path.push({ x: cols - 1, y });
 
-// ============================================
-// 🎮 遊戲核心功能
-// ============================================
+/* ============================================
+ 🎲 投擲與移動
+============================================ */
 function startGame() {
-  if (bgm.paused) {
-    bgm.volume = 0.3;
-    bgm.play().catch(() => {});
-  }
+  if (bgm.paused) { bgm.volume = 0.3; bgm.play().catch(()=>{}); }
   rollDice();
-}
-
-function showMsg(t) {
-  msg.textContent = t;
-  msg.style.opacity = 1;
-}
-
-function hideMsg() {
-  msg.style.opacity = 0;
-  setTimeout(() => msg.textContent = "", 500);
 }
 
 function updatePlayer() {
   const cell = path[pos];
   const w = board.clientWidth / cols;
   const h = board.clientHeight / rows;
-  let offsetX = 0;
-  
-  if (cell.y === rows - 1) offsetX = -w * 0.05;
-  else if (cell.y === 0) offsetX = w * 0.05;
-  
-  if (cell.x === cols - 1 && cell.y > 0 && cell.y < rows - 1) offsetX -= w * 0.27;
-  
-  player.style.left = `${cell.x * w + w / 2 - player.clientWidth / 2 + offsetX}px`;
+  player.style.left = `${cell.x * w + w / 2 - player.clientWidth / 2}px`;
   player.style.top = `${cell.y * h + h / 2 - player.clientHeight / 2}px`;
 }
 
@@ -532,602 +505,180 @@ function updateDiceFace(el, v) {
 
 async function rollDice() {
   rollBtn.disabled = true;
-  sDice.currentTime = 0;
-  sDice.play();
-  
+  sDice.currentTime = 0; sDice.play();
   let count = 0, v1 = 1, v2 = 1;
   const interval = setInterval(() => {
-    v1 = Math.floor(Math.random() * 6) + 1;
-    v2 = Math.floor(Math.random() * 6) + 1;
-    updateDiceFace(dice1, v1);
-    updateDiceFace(dice2, v2);
+    v1 = Math.floor(Math.random()*6)+1;
+    v2 = Math.floor(Math.random()*6)+1;
+    updateDiceFace(dice1,v1);
+    updateDiceFace(dice2,v2);
     count++;
-    
-    if (count > 15) {
+    if(count>15){
       clearInterval(interval);
       sDice.pause();
-      const total = v1 + v2;
-      showMsg(`前進 ${total} 步！`);
-      movePlayer(total);
+      movePlayer(v1+v2);
     }
-  }, 80);
+  },80);
 }
 
-async function movePlayer(steps) {
+async function movePlayer(steps){
   player.classList.add('walking');
-  sMove.loop = true;
-  sMove.currentTime = 0;
-  sMove.play().catch(() => {});
-  
-  for (let i = 0; i < steps; i++) {
-    pos = (pos + 1) % path.length;
+  sMove.loop = true; sMove.play().catch(()=>{});
+  for(let i=0;i<steps;i++){
+    pos = (pos+1)%path.length;
     updatePlayer();
-    await new Promise(r => setTimeout(r, 450));
+    await new Promise(r=>setTimeout(r,450));
   }
-  
   player.classList.remove('walking');
   sMove.pause();
-  sMove.currentTime = 0;
-  
   await checkEvent();
-  setTimeout(() => hideMsg(), 800);
-  rollBtn.disabled = false;
+  rollBtn.disabled=false;
 }
 
-// ============================================
-// 🏪 店家與優惠功能 - 修正載入邏輯
-// ============================================
-async function checkEvent() {
-  const cell = path[pos];
-  
-  // 懲罰格邏輯
-  if (cell.x === 0 && cell.y === 0) {
-    showMsg("踩到懲罰格！退回7步！");
-    for (let i = 0; i < 7; i++) {
-      pos = (pos - 1 + path.length) % path.length;
-      updatePlayer();
-      await new Promise(r => setTimeout(r, 300));
-    }
-    return;
-  }
-  
-  // ✅ 修正：載入店家資料
+/* ============================================
+ 🏪 店家事件
+============================================ */
+async function checkEvent(){
   try {
-    const shops = await loadShops();
-    console.log('🛍️ 載入到的店家資料:', shops);
-    
-    if (shops && shops.length > 0) {
-      const shop = shops[Math.floor(Math.random() * shops.length)];
-      currentShop = shop;
-      showShopPopup(shop);
+    const res = await fetch(`${GAS_BASE}?action=getShops`);
+    const data = await res.json();
+    if(data.status==="success" && data.shops.length>0){
+      currentShop = data.shops[Math.floor(Math.random()*data.shops.length)];
+      showShopPopup(currentShop);
     } else {
-      console.log('❌ 沒有可用的店家資料');
-      showMsg('暫無店家資料，請稍後再試');
+      msg.textContent="暫無店家資料";
     }
-  } catch (error) {
-    console.error('❌ 載入店家時發生錯誤:', error);
-    showMsg('載入店家失敗');
+  } catch(e){
+    console.error(e);
+    msg.textContent="載入店家失敗";
   }
 }
 
-function showShopPopup(shop) {
+function showShopPopup(shop){
   const imgUrl = shop["圖片網址"] || shop.icon || shop["圖示"] || "";
-  
-  // 安全設置圖片
-  if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
-    shopImg.src = imgUrl;
-    shopImg.onerror = function() {
-      this.src = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
-    };
-  } else {
-    shopImg.src = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
-  }
-  
+  shopImg.src = (imgUrl && imgUrl.startsWith("http")) ? imgUrl : "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
   shopName.textContent = shop["店家名稱"] || shop.name || "神秘店家";
-  shopDesc.textContent = shop["優惠內容"] || shop.discount || "限時優惠，趕快來看看！";
-  shopPopup.style.display = 'block';
-  claimBtn.disabled = false;
-  claimBtn.textContent = "收藏優惠";
+  shopDesc.textContent = shop["優惠內容"] || shop.couponDiscount || "限時優惠中！";
+  shopPopup.style.display='block';
 }
 
-function closeShop() {
-  shopPopup.style.display = 'none';
-}
+/* ============================================
+ 🎫 收藏優惠券 (fetch 版)
+============================================ */
+claimBtn.addEventListener('click', async()=>{
+  if(!currentShop) return;
+  claimBtn.disabled=true;
+  claimBtn.textContent="🎉 收藏中...";
 
-// ✅ 修正：載入店家資料函數
-async function loadShops() {
-  try {
-    console.log('📋 開始載入店家資料...');
-    
-    // 直接使用 fetch 載入店家資料
-    const response = await fetch(GAS_SHOP_URL);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    const result = await response.json();
-    console.log('🛍️ 店家資料API回應:', result);
-    
-    if (result.success && Array.isArray(result.data) && result.data.length > 0) {
-      console.log(`✅ 成功載入 ${result.data.length} 個店家`);
-      return result.data;
-    } else {
-      console.error('❌ 載入店家資料失敗:', result.message);
-      // 返回預設店家資料作為備份
-      return getDefaultShops();
-    }
-  } catch (error) {
-    console.error('❌ 載入店家資料發生錯誤:', error);
-    return getDefaultShops();
-  }
-}
-
-// ✅ 備用店家資料
-function getDefaultShops() {
-  return [
-    {
-      "店家名稱": "板橋咖啡廳",
-      "優惠內容": "拿鐵第二杯半價",
-      "圖片網址": "https://example.com/coffee.jpg",
-      "地址": "板橋區中山路一段123號"
-    },
-    {
-      "店家名稱": "商圈服飾店", 
-      "優惠內容": "全館8折優惠",
-      "圖片網址": "https://example.com/clothing.jpg",
-      "地址": "板橋區文化路二段456號"
-    }
-  ];
-}
-
-// ============================================
-// 🎫 優惠券收集區功能 - 修正載入邏輯
-// ============================================
-function openCouponPanel() {
-  document.getElementById('couponPanel').classList.add('show');
-  loadCoupons();
-}
-
-function closeCouponPanel() {
-  document.getElementById('couponPanel').classList.remove('show');
-}
-
-async function loadCoupons() {
-  const couponList = document.getElementById('couponList');
-  const couponCount = document.getElementById('couponCount');
-  
-  try {
-    console.log('🎫 開始載入優惠券...');
-    
-    // 直接使用 GET 請求載入優惠券
-    const couponUrl = `${GAS_BASE}?action=getCoupons&userId=${encodeURIComponent(userId)}`;
-    const response = await fetch(couponUrl);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    const result = await response.json();
-    console.log('🎫 優惠券API回應:', result);
-    
-    if (result.success && result.data && result.data.length > 0) {
-      couponCount.textContent = result.data.length;
-      
-      couponList.innerHTML = result.data.map(coupon => `
-        <div class="coupon-card">
-          <img src="${coupon.imageUrl || coupon.icon || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}" 
-               onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
-          <div class="coupon-card-info">
-            <h3>${coupon.shopName || '店家名稱'}</h3>
-            <p class="discount">${coupon.discount || '優惠內容'}</p>
-            <p style="font-size:14px;color:#999;margin-top:4px;">
-              ${coupon.createTime ? new Date(coupon.createTime).toLocaleDateString('zh-TW') : '今天'}
-            </p>
-          </div>
-        </div>
-      `).join('');
-    } else {
-      couponCount.textContent = '0';
-      couponList.innerHTML = `
-        <div class="empty-state">
-          <div class="icon">🎫</div>
-          <p>還沒有收集任何優惠券<br>快去遊戲中收集吧！</p>
-        </div>
-      `;
-    }
-  } catch (error) {
-    console.error('❌ 載入優惠券失敗:', error);
-    couponList.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">⚠️</div>
-        <p>載入失敗，請稍後再試</p>
-      </div>
-    `;
-  }
-}
-
-// ============================================
-// 📱 LINE 登入功能 - 使用 LIFF 內建登入
-// ============================================
-let liffInitialized = false;
-
-// 初始化 LIFF
-async function initLiff() {
-    try {
-        if (typeof liff === 'undefined') {
-            console.log('❌ LIFF SDK 未載入');
-            return false;
-        }
-        
-        await liff.init({ 
-            liffId: '2008231249-7DlMkygo' // 您的 LIFF ID
-        });
-        liffInitialized = true;
-        console.log('✅ LIFF 初始化成功');
-        return true;
-    } catch (error) {
-        console.error('❌ LIFF 初始化失敗:', error);
-        return false;
-    }
-}
-
-async function startLineLogin() {
-  try {
-    console.log('=== 🔐 開始 LINE 登入流程 ===');
-    
-    // 確保 LIFF 已初始化
-    if (!liffInitialized) {
-      const initialized = await initLiff();
-      if (!initialized) {
-        alert('LINE 登入功能初始化失敗，請重新整理頁面');
-        return;
-      }
-    }
-    
-    // 使用 LIFF 內建的登入功能
-    if (!liff.isLoggedIn()) {
-      console.log('🔐 執行 LIFF 登入...');
-      liff.login();
-    } else {
-      console.log('✅ 用戶已登入，取得用戶資料');
-      await getLineProfile();
-    }
-  } catch (error) {
-    console.error('❌ LINE 登入發生錯誤:', error);
-    alert('LINE 登入發生錯誤，請稍後再試');
-  }
-}
-
-// 使用 LIFF 取得用戶資料
-async function getLineProfile() {
-  try {
-    console.log('📱 取得 LINE 用戶資料...');
-    const profile = await liff.getProfile();
-    
-    // 儲存用戶資料
-    localStorage.setItem('lineUserId', profile.userId);
-    localStorage.setItem('lineDisplayName', profile.displayName);
-    localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
-    
-    // 更新 UI
-    updateUserInterface({
-      userId: profile.userId,
-      displayName: profile.displayName,
-      pictureUrl: profile.pictureUrl
-    });
-    
-    console.log('✅ LINE 用戶資料取得成功:', profile.displayName);
-    
-  } catch (error) {
-    console.error('❌ 取得 LINE 用戶資料失敗:', error);
-    alert('取得用戶資料失敗，請重試');
-  }
-}
-
-// 檢查登入狀態
-// 檢查登入狀態
-async function checkLoginStatus() {
-  try {
-    // 如果使用 LIFF，檢查 LIFF 登入狀態
-    if (typeof liff !== 'undefined' && liff.isInClient()) {
-      if (liff.isLoggedIn()) {
-        await getLineProfile();
-      }
-    } else {
-      // 檢查 localStorage 中的登入狀態
-      const params = new URLSearchParams({
-        action: 'checkLoginStatus',
-        userId: localStorage.getItem('lineUserId') || 'temp'
-      });
-      
-      const response = await safeFetch(`${GAS_BASE}?${params}`);
-      
-      if (response.success && response.loggedIn) {
-        updateUserInterface(response.userInfo);
-      }
-    }
-  } catch (error) {
-    console.error('檢查登入狀態失敗:', error);
-  }
-}
-
-// 更新用戶界面
-function updateUserInterface(userInfo) {
-  if (userInfo && userInfo.userId) {
-    localStorage.setItem('lineUserId', userInfo.userId);
-    localStorage.setItem('lineDisplayName', userInfo.displayName);
-    localStorage.setItem('linePictureUrl', userInfo.pictureUrl || '');
-    
-    document.getElementById('lineLoginText').textContent = userInfo.displayName;
-    document.getElementById('lineLoginBtn').classList.add('logged-in');
-    userId = userInfo.userId;
-    
-    // 隱藏登入畫面
-    loginScreen.classList.add('hidden');
-    
-    alert(`歡迎，${userInfo.displayName}！\n\n您的優惠券已綁定到 LINE 帳號。`);
-  }
-}
-
-// 底部功能列的 LINE 登入/登出按鈕
-async function lineLogin() {
-  const lineLoginBtn = document.getElementById('lineLoginBtn');
-  const lineLoginText = document.getElementById('lineLoginText');
-  
-  if (localStorage.getItem('lineUserId')) {
-    // 已登入，顯示登出選項
-    if (confirm('確定要登出 LINE 帳號嗎？')) {
-      localStorage.removeItem('lineUserId');
-      localStorage.removeItem('lineDisplayName');
-      localStorage.removeItem('linePictureUrl');
-      
-      lineLoginText.textContent = 'LINE登入';
-      lineLoginBtn.classList.remove('logged-in');
-      userId = 'TEMP_USER';
-      
-      alert('已登出！');
-      
-      // 顯示登入畫面
-      loginScreen.classList.remove('hidden');
-      
-      if (document.getElementById('couponPanel').classList.contains('show')) {
-        loadCoupons();
-      }
-    }
-  } else {
-    // 未登入，執行登入
-    startLineLogin();
-  }
-}
-
-// ============================================
-// 🗺️ 店家地圖功能 - 修正載入邏輯
-// ============================================
-function openMapPanel() {
-  document.getElementById('mapPanel').classList.add('show');
-  loadShopMap();
-}
-
-function closeMapPanel() {
-  document.getElementById('mapPanel').classList.remove('show');
-}
-
-async function loadShopMap() {
-  const shopList = document.getElementById('shopList');
-  
-  try {
-    console.log('🗺️ 開始載入店家地圖...');
-    const shops = await loadShops();
-    
-    if (shops && shops.length > 0) {
-      shopList.innerHTML = shops.map(shop => `
-        <div class="shop-item">
-          <img src="${shop['圖片網址'] || shop.icon || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}"
-               onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
-          <div class="shop-item-info">
-            <h3>${shop['店家名稱'] || '店家名稱'}</h3>
-            <p>${shop['優惠內容'] || '優惠內容'}</p>
-            <p class="address">📍 ${shop['地址'] || '地址未提供'}</p>
-          </div>
-        </div>
-      `).join('');
-    } else {
-      shopList.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">沒有店家資料</p>';
-    }
-  } catch (error) {
-    console.error('❌ 載入店家地圖失敗:', error);
-    shopList.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">載入失敗，請稍後再試</p>';
-  }
-}
-
-// ============================================
-// 🔧 工具函數 - 加強錯誤處理
-// ============================================
-// 安全請求函數
-async function safeFetch(url, options = {}) {
-  try {
-    console.log(`🌐 發送請求: ${url}`);
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    const result = await response.json();
-    console.log(`✅ 請求成功:`, result);
-    return result;
-  } catch (error) {
-    console.error('❌ 請求失敗:', error);
-    return { success: false, message: error.message };
-  }
-}
-
-// 收藏優惠按鈕事件 - 簡化版本
-claimBtn.addEventListener('click', async () => {
-  if (!currentShop) return;
-  
-  claimBtn.disabled = true;
-  claimBtn.textContent = "🎉 收藏中...";
-  
-  try {
-    const shopName = currentShop["店家名稱"] || currentShop.name || '';
-    const discount = currentShop["優惠內容"] || currentShop.discount || '';
-    
-    console.log('💾 準備收藏優惠券:', { shopName, discount, userId });
-    
-    // 只傳遞必要的三個欄位
-    const couponId = 'CPN' + Date.now();
-    
-    // 創建隱藏的表單
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = GAS_BASE;
-    form.target = '_blank';
-    form.style.display = 'none';
-    
-    const addField = (name, value) => {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = name;
-      input.value = value;
-      form.appendChild(input);
+  try{
+    const payload = {
+      action:'saveCoupon',
+      userId:userId,
+      shopId: currentShop.id || '',
+      shopName: currentShop["店家名稱"] || currentShop.name || '未知店家',
+      discount: currentShop["優惠內容"] || currentShop.couponDiscount || '優惠'
     };
-    
-    // 只傳遞三個必要欄位
-    addField('action', 'saveCoupon');
-    addField('userId', userId);
-    addField('couponId', couponId);
-    addField('shopName', shopName);
-    addField('discount', discount);
-    
-    document.body.appendChild(form);
-    form.submit();
-    
-    setTimeout(() => {
-      document.body.removeChild(form);
-    }, 1000);
-    
-    // 成功處理
-    claimBtn.textContent = "✅ 收藏成功！";
-    setTimeout(() => {
-      closeShop();
-      claimBtn.disabled = false;
-      claimBtn.textContent = "收藏優惠";
-      
-      if (document.getElementById('couponPanel').classList.contains('show')) {
-        loadCoupons();
-      }
-    }, 1500);
-    
-  } catch (error) {
-    console.error('❌ 收藏錯誤:', error);
-    claimBtn.textContent = "⚠️ 收藏失敗";
-    setTimeout(() => {
-      claimBtn.textContent = "收藏優惠";
-      claimBtn.disabled = false;
-    }, 2000);
+    console.log("📤 發送優惠券資料:",payload);
+
+    const res = await fetch(GAS_BASE,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const result = await res.json();
+    console.log("📥 回應結果:",result);
+
+    if(result.status==='success'){
+      claimBtn.textContent="✅ 收藏成功！";
+      setTimeout(()=>{
+        claimBtn.textContent="收藏優惠";
+        claimBtn.disabled=false;
+        closeShop();
+        if(document.getElementById('couponPanel')?.classList.contains('show')){
+          loadCoupons();
+        }
+      },1500);
+    } else {
+      throw new Error(result.message);
+    }
+
+  } catch(e){
+    console.error('❌ 收藏錯誤:',e);
+    claimBtn.textContent="⚠️ 收藏失敗";
+    setTimeout(()=>{
+      claimBtn.textContent="收藏優惠";
+      claimBtn.disabled=false;
+    },2000);
   }
 });
-// ============================================
-// 📱 底部功能列 - 添加 SVG 版本切換
-// ============================================
-function switchToSVGVersion() {
-  if (confirm('要切換到 SVG 版本遊戲嗎？')) {
-    window.location.href = 'game.html';
+
+/* ============================================
+ 🎫 優惠券清單
+============================================ */
+async function loadCoupons(){
+  const list=document.getElementById('couponList');
+  const count=document.getElementById('couponCount');
+  list.innerHTML=`<p style="color:#999;text-align:center;">載入中...</p>`;
+  try{
+    const res=await fetch(`${GAS_BASE}?action=getUserCoupons&userId=${encodeURIComponent(userId)}`);
+    const result=await res.json();
+    if(result.status==="success" && result.coupons.length>0){
+      count.textContent=result.coupons.length;
+      list.innerHTML=result.coupons.map(c=>`
+        <div class="coupon-card">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg">
+          <div class="coupon-card-info">
+            <h3>${c.shopName}</h3>
+            <p class="discount">${c.discount}</p>
+            <p style="font-size:12px;color:#999;">${new Date(c.obtainedDate).toLocaleDateString('zh-TW')}</p>
+          </div>
+        </div>`).join('');
+    } else {
+      count.textContent='0';
+      list.innerHTML='<div class="empty-state"><div class="icon">🎫</div><p>尚無優惠券</p></div>';
+    }
+  } catch(e){
+    console.error(e);
+    list.innerHTML='<div class="empty-state"><div class="icon">⚠️</div><p>載入失敗</p></div>';
   }
 }
 
-// ============================================
-// 🔍 頁面載入時檢查 LINE 登入狀態
-// ============================================
-window.addEventListener('DOMContentLoaded', async function() {
-  console.log('=== 📱 初始化應用程式 ===');
-  
-  // 嘗試初始化 LIFF（非強制）
-  try {
-    await initLiff();
-    
-    // 如果 LIFF 初始化成功且用戶已登入，自動取得資料
-    if (liffInitialized && liff.isLoggedIn()) {
-      console.log('✅ LIFF 用戶已登入，自動取得資料');
-      await getLineProfile();
-      
-      // 如果成功取得 LINE 資料，就隱藏登入畫面
-      if (localStorage.getItem('lineUserId')) {
-        loginScreen.classList.add('hidden');
-        return;
-      }
-    }
-  } catch (error) {
-    console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF，繼續其他登入方式');
-  }
-  
-  // 原有的檢查邏輯
-  console.log('=== 📱 檢查頁面參數 ===');
-  const urlParams = new URLSearchParams(window.location.search);
-  const lineUserId = urlParams.get('lineUserId');
-  const lineDisplayName = urlParams.get('lineDisplayName');
-  
-  if (lineUserId && lineDisplayName) {
-    console.log('🎉 偵測到 LINE 登入成功！');
-    console.log('   User ID:', lineUserId);
-    console.log('   顯示名稱:', decodeURIComponent(lineDisplayName));
-    
-    // 儲存到 localStorage
-    localStorage.setItem('lineUserId', lineUserId);
-    localStorage.setItem('lineDisplayName', decodeURIComponent(lineDisplayName));
-    localStorage.setItem('linePictureUrl', decodeURIComponent(linePictureUrl || ''));
-    
-    // 更新 UI
-    document.getElementById('lineLoginText').textContent = decodeURIComponent(lineDisplayName);
-    document.getElementById('lineLoginBtn').classList.add('logged-in');
-    userId = lineUserId;
-    
-    // 隱藏登入畫面，進入遊戲
-    loginScreen.classList.add('hidden');
-    
-    console.log('✅ LINE 登入資料已儲存');
-    
-    // 顯示歡迎訊息
-    setTimeout(() => {
-      alert(`歡迎，${decodeURIComponent(lineDisplayName)}！\n\n您的優惠券已綁定到 LINE 帳號。`);
-    }, 500);
-    
-    // 清除 URL 參數
-    window.history.replaceState({}, document.title, window.location.pathname);
-  } else {
-    // 檢查 localStorage 是否有登入資料
-    const storedUserId = localStorage.getItem('lineUserId');
-    const storedDisplayName = localStorage.getItem('lineDisplayName');
-    
-    if (storedUserId) {
-      console.log('✅ 用戶已登入（從 localStorage）');
-      console.log('   User ID:', storedUserId);
-      console.log('   顯示名稱:', storedDisplayName);
-      
-      document.getElementById('lineLoginText').textContent = storedDisplayName || '已登入';
-      document.getElementById('lineLoginBtn').classList.add('logged-in');
-      userId = storedUserId;
-      
-      // 隱藏登入畫面，進入遊戲
-      loginScreen.classList.add('hidden');
+/* ============================================
+ 🗺️ 地圖載入
+============================================ */
+async function loadShopMap(){
+  const shopList=document.getElementById('shopList');
+  shopList.innerHTML=`<p style="text-align:center;color:#999;">載入中...</p>`;
+  try{
+    const res=await fetch(`${GAS_BASE}?action=getShops`);
+    const result=await res.json();
+    if(result.status==="success"){
+      shopList.innerHTML=result.shops.map(s=>`
+        <div class="shop-item">
+          <img src="${s.icon||'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}">
+          <div class="shop-item-info">
+            <h3>${s.name}</h3>
+            <p>${s.couponDiscount}</p>
+            <p class="address">📍${s.address}</p>
+          </div>
+        </div>`).join('');
     } else {
-      console.log('⚪ 用戶未登入，顯示登入畫面');
-      // 顯示登入畫面
-      loginScreen.classList.remove('hidden');
+      shopList.innerHTML=`<p style="color:#999;">沒有店家資料</p>`;
     }
+  }catch(e){
+    console.error(e);
+    shopList.innerHTML=`<p style="color:#999;">載入失敗</p>`;
   }
-  
-  // 初始化角色位置
+}
+
+/* ============================================
+ ⏯️ 初始化
+============================================ */
+window.addEventListener('DOMContentLoaded',()=>{
   updatePlayer();
+  console.log("✅ 遊戲載入完成");
 });
 </script>
+
 </body>
 </html>
