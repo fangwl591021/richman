@@ -1,477 +1,1700 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
-<title>歡樂大富翁</title>
-<style>
-/* 保持您原有的所有 CSS 樣式不變 */
-*{margin:0;padding:0;box-sizing:border-box;}
-body{
-  font-family:"Microsoft JhengHei",sans-serif;
-  background:#111;
-  height:100vh;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;
-  padding-bottom:70px;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>歡樂大富翁</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Microsoft JhengHei', 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 5px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 放大上方標頭 */
+        .header {
+            background: white;
+            padding: 20px 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            flex-shrink: 0;
+            min-height: 100px;
+        }
+        
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .avatar {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 28px;
+            overflow: hidden;
+        }
 
-/* 保持您原有的所有其他 CSS 樣式... */
-.board{/* 保持不變 */}
-.player{/* 保持不變 */}
-.center{/* 保持不變 */}
-.msg{/* 保持不變 */}
-.dice-box{/* 保持不變 */}
-.dice{/* 保持不變 */}
-.dot{/* 保持不變 */}
-.roll-btn{/* 保持不變 */}
-.shop-popup{/* 保持不變 */}
-.shop-content{/* 保持不變 */}
-.shop-buttons{/* 保持不變 */}
-.bottom-bar{/* 保持不變 */}
-.coupon-panel{/* 保持不變 */}
-.map-panel{/* 保持不變 */}
-/* ... 複製您原有的所有遊戲 CSS ... */
-</style>
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            font-size: 24px;
+        }
+        
+        .player-level {
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-icon {
+            font-size: 36px;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #333;
+            font-size: 22px;
+        }
+        
+        .game-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 5px 0;
+            position: relative;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        /* 棋盤：橫6格×直7格 */
+        .board {
+            width: 100%;
+            background: #f5deb3;
+            position: relative;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            aspect-ratio: 6 / 7;
+        }
+        
+        /* 正方形格子：16.666% 寬度 (100/6) */
+        .cell {
+            position: absolute;
+            width: 16.666%;
+            aspect-ratio: 1;
+            background: white;
+            border: 1px solid #8b4513;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .cell:active {
+            transform: scale(0.95);
+            background: #fffacd;
+        }
+        
+        .cell-icon {
+            font-size: 50px;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        
+        .cell-name {
+            font-size: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #333;
+            line-height: 1.1;
+            padding: 0 2px;
+        }
+        
+        /* 角落格子 */
+        .corner {
+            background: linear-gradient(135deg, #2a9d8f, #3dbb9f);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .corner .cell-icon {
+            font-size: 55px;
+        }
+        
+        .corner .cell-name {
+            font-size: 11px;
+            color: white;
+        }
+        
+        /* 不同的房子顏色 */
+        .house-red { background: linear-gradient(135deg, #ffadad, #ffd6a5); }
+        .house-blue { background: linear-gradient(135deg, #a2d2ff, #bde0fe); }
+        .house-green { background: linear-gradient(135deg, #caffbf, #9bf6ff); }
+        .house-pink { background: linear-gradient(135deg, #ffc8dd, #ffafcc); }
+        .house-yellow { background: linear-gradient(135deg, #fdffb6, #ffd6a5); }
+        .house-purple { background: linear-gradient(135deg, #cdb4db, #ffc6ff); }
+        .house-orange { background: linear-gradient(135deg, #ffd6a5, #fdffb6); }
+        
+        /* 特殊格子 */
+        .chance { 
+            background: linear-gradient(135deg, #fff3cd, #ffe69c);
+        }
+        
+        .fate { 
+            background: linear-gradient(135deg, #e7d9ff, #d4bbff);
+        }
+        
+        /* 中央區域：超大！ */
+        .center-area {
+            position: absolute;
+            left: 16.666%;
+            top: 14.285%;
+            width: 66.666%;
+            height: 71.43%;
+            background: linear-gradient(135deg, #ffe4b5, #ffd700);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+            border: 4px solid #8b4513;
+            z-index: 1;
+        }
+        
+        .center-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .center-subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        /* 雙骰子容器 */
+        .dice-container {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        /* ✅ 立體骰子樣式 */
+        .dice {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 
+                0 5px 15px rgba(0,0,0,0.2),
+                inset 0 -3px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            border: 2px solid #f0f0f0;
+        }
+        
+        .dice.rolling {
+            animation: roll 0.5s infinite;
+        }
+        
+        @keyframes roll {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(90deg); }
+            50% { transform: rotate(180deg); }
+            75% { transform: rotate(270deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .dice-dot {
+            width: 18px;
+            height: 18px;
+            background: #333;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        /* 骰子點數位置 */
+        .dice-face-1 .dice-dot:nth-child(1) { 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); 
+        }
+        
+        .dice-face-2 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+        .dice-face-2 .dice-dot:nth-child(2) { bottom: 25%; right: 25%; }
+        
+        .dice-face-3 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+        .dice-face-3 .dice-dot:nth-child(2) { 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); 
+        }
+        .dice-face-3 .dice-dot:nth-child(3) { bottom: 25%; right: 25%; }
+        
+        .dice-face-4 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+        .dice-face-4 .dice-dot:nth-child(2) { top: 25%; right: 25%; }
+        .dice-face-4 .dice-dot:nth-child(3) { bottom: 25%; left: 25%; }
+        .dice-face-4 .dice-dot:nth-child(4) { bottom: 25%; right: 25%; }
+        
+        .dice-face-5 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+        .dice-face-5 .dice-dot:nth-child(2) { top: 25%; right: 25%; }
+        .dice-face-5 .dice-dot:nth-child(3) { 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); 
+        }
+        .dice-face-5 .dice-dot:nth-child(4) { bottom: 25%; left: 25%; }
+        .dice-face-5 .dice-dot:nth-child(5) { bottom: 25%; right: 25%; }
+        
+        .dice-face-6 .dice-dot:nth-child(1) { top: 25%; left: 25%; }
+        .dice-face-6 .dice-dot:nth-child(2) { top: 25%; right: 25%; }
+        .dice-face-6 .dice-dot:nth-child(3) { 
+            top: 50%; left: 25%; 
+            transform: translateY(-50%); 
+        }
+        .dice-face-6 .dice-dot:nth-child(4) { 
+            top: 50%; right: 25%; 
+            transform: translateY(-50%); 
+        }
+        .dice-face-6 .dice-dot:nth-child(5) { bottom: 25%; left: 25%; }
+        .dice-face-6 .dice-dot:nth-child(6) { bottom: 25%; right: 25%; }
+        
+        /* 超超大按鈕 */
+        .roll-button {
+            padding: 25px 60px;
+            border: none;
+            border-radius: 35px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        
+        .roll-button:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        
+        .roll-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .dice-info {
+            margin-top: 20px;
+            color: #666;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .player-marker {
+            position: absolute;
+            width: 150px;
+            height: 180px;
+            background: transparent;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: none;
+            z-index: 100;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        /* 放大底部導航 */
+        .bottom-nav {
+            background: white;
+            border-radius: 15px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            margin-top: 5px;
+            flex-shrink: 0;
+            min-height: 100px;
+        }
+        
+        .nav-item {
+            padding: 20px 15px;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            transition: all 0.3s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .nav-item.active {
+            color: #667eea;
+        }
+        
+        .nav-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+        
+        .nav-label {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .badge {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            background: #ff4757;
+            color: white;
+            border-radius: 10px;
+            padding: 4px 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        /* 優惠券彈出視窗 - 覆蓋中央區域 */
+        .coupon-modal {
+            display: none;
+            position: absolute;
+            left: 16.666%;
+            top: 14.285%;
+            width: 66.666%;
+            height: 71.43%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            text-align: center;
+            border: 5px solid #ffd700;
+            animation: popUp 0.5s;
+        }
+        
+        .coupon-modal.show {
+            display: flex;
+        }
+        
+        .coupon-icon {
+            font-size: 120px;
+            margin-bottom: 20px;
+        }
+        
+        .coupon-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .coupon-category {
+            font-size: 28px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .coupon-card {
+            background: linear-gradient(135deg, #fff5f5, #ffe5e5);
+            border-radius: 20px;
+            padding: 25px;
+            margin: 20px 0;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .coupon-reward-title {
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+        
+        .coupon-reward-content {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .coupon-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+            width: 90%;
+            max-width: 400px;
+        }
+        
+        .coupon-button {
+            padding: 22px;
+            border: none;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+        
+        .save-button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+        
+        .close-button {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .coupon-button:active {
+            transform: scale(0.95);
+        }
+        
+        /* 放大優惠券列表 */
+        .coupon-list-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .coupon-list-modal.show {
+            display: flex;
+        }
+        
+        .coupon-list-content {
+            background: white;
+            border-radius: 25px;
+            padding: 30px;
+            width: 70%;
+            max-width: 500px;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: popUp 0.3s;
+            text-align: center;
+        }
+        
+        .coupon-list-title {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            color: #333;
+        }
+        
+        .coupon-list-items {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-top: 25px;
+        }
+        
+        .coupon-list-item {
+            background: linear-gradient(135deg, #f3e7ff, #ffd6ff);
+            border-radius: 20px;
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .coupon-list-info h3 {
+            font-size: 26px;
+            margin-bottom: 10px;
+        }
+        
+        .coupon-list-category {
+            font-size: 22px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .coupon-list-discount {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 24px;
+        }
+        
+        .coupon-list-expiry {
+            font-size: 18px;
+            color: #666;
+            margin-top: 10px;
+        }
+        
+        .use-coupon-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 22px;
+        }
+        
+        .empty-coupons {
+            text-align: center;
+            padding: 50px;
+        }
+        
+        .empty-coupons-icon {
+            font-size: 100px;
+            margin-bottom: 25px;
+        }
+        
+        .empty-coupons-text {
+            color: #999;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+        
+        .empty-coupons-subtext {
+            font-size: 22px;
+            color: #ccc;
+            margin-top: 15px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: popUp 0.3s;
+            text-align: center;
+        }
+        
+        @keyframes popUp {
+            from {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .modal-icon {
+            font-size: 80px;
+            margin-bottom: 15px;
+        }
+        
+        .modal-title {
+            font-size: 26px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .modal-category {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .reward-card {
+            background: linear-gradient(135deg, #fff5f5, #ffe5e5);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .reward-title {
+            color: #ff6b6b;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .reward-content {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .action-button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        
+        .status-message {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-weight: bold;
+            pointer-events: none;
+        }
+        
+        .status-message.show {
+            opacity: 1;
+        }
+        
+        .cell.highlight {
+            animation: pulse 0.5s;
+            box-shadow: 0 0 20px rgba(255,215,0,0.9) inset;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        /* 音樂控制按鈕 */
+        .music-control {
+            position: fixed;
+            bottom: 120px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 100;
+            font-size: 28px;
+            transition: all 0.3s;
+        }
+        
+        .music-control:hover {
+            transform: scale(1.1);
+        }
+        
+        .music-control.muted {
+            background: #f0f0f0;
+            color: #999;
+        }
+
+        .nav-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+
+        .nav-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
 </head>
 <body>
-
-<!-- ❌ 移除登入畫面，改由 login.html 處理 -->
-
-<!-- 遊戲主畫面 -->
-<div class="board" id="board">
-  <div class="player" id="player">
-    <img src="https://aiwe.cc/wp-content/uploads/2025/11/897cb201ac922a1f9ed6e6f9082e84f5.png">
-  </div>
-
-  <div class="center">
-    <div class="msg" id="msg"></div>
-    <div class="dice-box">
-      <div class="dice face-1" id="dice1"><div class="dot"></div></div>
-      <div class="dice face-1" id="dice2"><div class="dot"></div></div>
+    <div class="header">
+        <div class="player-info">
+            <div class="avatar" id="headerAvatar">P</div>
+            <div>
+                <div class="player-name" id="headerPlayerName">玩家</div>
+                <div class="player-level">Lv.5</div>
+            </div>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value" id="coins">1000</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon">🎲</div>
+                <div class="stat-value" id="diceCount">10</div>
+            </div>
+        </div>
     </div>
-    <button class="roll-btn" onclick="startGame()" id="rollBtn">投擲骰子</button>
-  </div>
-</div>
 
-<!-- ... 保持您原有的所有其他 HTML ... -->
-
-<script>
-// ============================================
-// 🎮 遊戲核心設定
-// ============================================
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwwO2pMBDAADUEZ8NKYbicrB3_LlcL2u3-bZZF5xXjrgBxNlHLbXXLT_N7uorJgYhPB/exec';
-
-const player = document.getElementById('player');
-const board = document.getElementById('board');
-const msg = document.getElementById('msg');
-const dice1 = document.getElementById('dice1');
-const dice2 = document.getElementById('dice2');
-const rollBtn = document.getElementById('rollBtn');
-const bgm = document.getElementById('bgm');
-const sDice = document.getElementById('sDice');
-const sMove = document.getElementById('sMove');
-const shopPopup = document.getElementById('shopPopup');
-const shopImg = document.getElementById('shopImg');
-const shopName = document.getElementById('shopName');
-const shopDesc = document.getElementById('shopDesc');
-const claimBtn = document.getElementById('claimBtn');
-
-let currentShop = null;
-const rows = 9, cols = 6;
-let pos = 0;
-let userId = "TEMP_USER";
-let userDisplayName = "訪客";
-
-// 遊戲路徑設定（保持不變）
-const path = [];
-for (let x = cols - 1; x >= 0; x--) path.push({ x, y: rows - 1 });
-for (let y = rows - 2; y >= 0; y--) path.push({ x: 0, y });
-for (let x = 1; x < cols; x++) path.push({ x, y: 0 });
-for (let y = 1; y < rows - 1; y++) path.push({ x: cols - 1, y });
-
-// ============================================
-// ✅ 簡化的登入檢查（只檢查 localStorage）
-// ============================================
-function checkLogin() {
-  const storedUserId = localStorage.getItem('lineUserId');
-  const storedDisplayName = localStorage.getItem('lineDisplayName');
-  
-  if (!storedUserId) {
-    // 未登入，跳轉到登入頁面
-    console.log('❌ 未登入，跳轉到 login.html');
-    window.location.href = 'login.html';
-    return false;
-  }
-  
-  // 已登入
-  userId = storedUserId;
-  userDisplayName = storedDisplayName || '已登入用戶';
-  console.log('✅ 已登入:', userDisplayName);
-  
-  // 更新底部按鈕顯示
-  const lineLoginText = document.getElementById('lineLoginText');
-  if (lineLoginText) {
-    lineLoginText.textContent = userDisplayName;
-  }
-  
-  return true;
-}
-
-// 底部功能列的登出按鈕
-async function lineLogin() {
-  if (localStorage.getItem('lineUserId')) {
-    // 已登入，顯示登出選項
-    if (confirm('確定要登出嗎？')) {
-      localStorage.clear();
-      window.location.href = 'login.html';
-    }
-  } else {
-    // 未登入，跳轉到登入頁面
-    window.location.href = 'login.html';
-  }
-}
-
-// ============================================
-// 🎮 遊戲核心功能（保持您原有的所有程式碼）
-// ============================================
-function startGame() {
-  if (bgm.paused) {
-    bgm.volume = 0.3;
-    bgm.play().catch(() => {});
-  }
-  rollDice();
-}
-
-function showMsg(t) {
-  msg.textContent = t;
-  msg.style.opacity = 1;
-}
-
-function hideMsg() {
-  msg.style.opacity = 0;
-  setTimeout(() => msg.textContent = "", 500);
-}
-
-function updatePlayer() {
-  const cell = path[pos];
-  const w = board.clientWidth / cols;
-  const h = board.clientHeight / rows;
-  let offsetX = 0;
-  
-  if (cell.y === rows - 1) offsetX = -w * 0.05;
-  else if (cell.y === 0) offsetX = w * 0.05;
-  
-  if (cell.x === cols - 1 && cell.y > 0 && cell.y < rows - 1) offsetX -= w * 0.27;
-  
-  player.style.left = `${cell.x * w + w / 2 - player.clientWidth / 2 + offsetX}px`;
-  player.style.top = `${cell.y * h + h / 2 - player.clientHeight / 2}px`;
-}
-
-function updateDiceFace(el, v) {
-  el.className = 'dice face-' + v;
-  el.innerHTML = '';
-  for (let i = 0; i < v; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'dot';
-    el.appendChild(dot);
-  }
-}
-
-async function rollDice() {
-  rollBtn.disabled = true;
-  sDice.currentTime = 0;
-  sDice.play();
-  
-  let count = 0, v1 = 1, v2 = 1;
-  const interval = setInterval(() => {
-    v1 = Math.floor(Math.random() * 6) + 1;
-    v2 = Math.floor(Math.random() * 6) + 1;
-    updateDiceFace(dice1, v1);
-    updateDiceFace(dice2, v2);
-    count++;
-    
-    if (count > 15) {
-      clearInterval(interval);
-      sDice.pause();
-      const total = v1 + v2;
-      showMsg(`前進 ${total} 步！`);
-      movePlayer(total);
-    }
-  }, 80);
-}
-
-async function movePlayer(steps) {
-  player.classList.add('walking');
-  sMove.loop = true;
-  sMove.currentTime = 0;
-  sMove.play().catch(() => {});
-  
-  for (let i = 0; i < steps; i++) {
-    pos = (pos + 1) % path.length;
-    updatePlayer();
-    await new Promise(r => setTimeout(r, 450));
-  }
-  
-  player.classList.remove('walking');
-  sMove.pause();
-  sMove.currentTime = 0;
-  
-  await checkEvent();
-  setTimeout(() => hideMsg(), 800);
-  rollBtn.disabled = false;
-}
-
-// ============================================
-// 🏪 店家與優惠功能（保持不變）
-// ============================================
-async function checkEvent() {
-  const cell = path[pos];
-  
-  // 懲罰格邏輯
-  if (cell.x === 0 && cell.y === 0) {
-    showMsg("踩到懲罰格！退回7步！");
-    for (let i = 0; i < 7; i++) {
-      pos = (pos - 1 + path.length) % path.length;
-      updatePlayer();
-      await new Promise(r => setTimeout(r, 300));
-    }
-    return;
-  }
-  
-  // 載入店家資料
-  try {
-    const shops = await loadShops();
-    if (shops.length > 0) {
-      const shop = shops[Math.floor(Math.random() * shops.length)];
-      currentShop = shop;
-      showShopPopup(shop);
-    }
-  } catch (error) {
-    console.error('載入店家時發生錯誤:', error);
-  }
-}
-
-function showShopPopup(shop) {
-  const imgUrl = shop["圖片網址"] || shop.icon || shop["圖示"] || "";
-  
-  if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
-    shopImg.src = imgUrl;
-    shopImg.onerror = function() {
-      this.src = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
-    };
-  } else {
-    shopImg.src = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
-  }
-  
-  shopName.textContent = shop["店家名稱"] || shop.name || "神秘店家";
-  shopDesc.textContent = shop["優惠內容"] || shop.discount || "限時優惠，趕快來看看！";
-  shopPopup.style.display = 'block';
-  claimBtn.disabled = false;
-  claimBtn.textContent = "收藏優惠";
-}
-
-function closeShop() {
-  shopPopup.style.display = 'none';
-}
-
-// ============================================
-// 🎫 優惠券收集區功能（保持不變）
-// ============================================
-function openCouponPanel() {
-  document.getElementById('couponPanel').classList.add('show');
-  loadCoupons();
-}
-
-function closeCouponPanel() {
-  document.getElementById('couponPanel').classList.remove('show');
-}
-
-async function loadCoupons() {
-  const couponList = document.getElementById('couponList');
-  const couponCount = document.getElementById('couponCount');
-  
-  try {
-    const params = new URLSearchParams({
-      action: 'getCoupons',
-      userId: userId,
-      sheetName: '2025/11'
-    });
-    
-    const response = await safeFetch(`${GAS_URL}?${params}`);
-    
-    if (response.success && response.data && response.data.length > 0) {
-      couponCount.textContent = response.data.length;
-      
-      couponList.innerHTML = response.data.map(coupon => `
-        <div class="coupon-card">
-          <img src="${coupon.imageUrl || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}" 
-               onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
-          <div class="coupon-card-info">
-            <h3>${coupon.shopName || '店家名稱'}</h3>
-            <p class="discount">${coupon.discount || '優惠內容'}</p>
-            <p style="font-size:14px;color:#999;margin-top:4px;">${coupon.createTime ? new Date(coupon.createTime).toLocaleDateString() : ''}</p>
-          </div>
+    <div class="game-container">
+        <div class="board" id="board"></div>
+        <div class="status-message" id="statusMessage"></div>
+        
+        <!-- 優惠券彈出視窗 -->
+        <div class="coupon-modal" id="couponModal">
+            <div class="coupon-icon" id="couponIcon">🎫</div>
+            <div class="coupon-title" id="couponShopName">初熟的果子</div>
+            <div class="coupon-category" id="couponCategory">美食</div>
+            
+            <div class="coupon-card">
+                <div class="coupon-reward-title">限時優惠</div>
+                <div class="coupon-reward-content" id="couponDiscount">9折</div>
+            </div>
+            
+            <div class="coupon-actions">
+                <button class="coupon-button save-button" onclick="saveCoupon()">儲存優惠券</button>
+                <button class="coupon-button close-button" onclick="closeCouponModal()">關閉</button>
+            </div>
         </div>
-      `).join('');
-    } else {
-      couponCount.textContent = '0';
-      couponList.innerHTML = `
-        <div class="empty-state">
-          <div class="icon">🎫</div>
-          <p>還沒有收集任何優惠券<br>快去遊戲中收集吧！</p>
+        
+        <!-- 優惠券列表視窗 -->
+        <div class="coupon-list-modal" id="couponListModal">
+            <div class="coupon-list-content" id="couponListContent"></div>
         </div>
-      `;
-    }
-  } catch (error) {
-    console.error('❌ 載入優惠券失敗:', error);
-    couponList.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">⚠️</div>
-        <p>載入失敗，請稍後再試</p>
-      </div>
-    `;
-  }
-}
+    </div>
 
-// ============================================
-// 🗺️ 店家地圖功能（保持不變）
-// ============================================
-function openMapPanel() {
-  document.getElementById('mapPanel').classList.add('show');
-  loadShopMap();
-}
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('game')">
+            <div class="nav-icon">🎮</div>
+            <div class="nav-label">遊戲</div>
+        </button>
+        <button class="nav-item" onclick="switchTab('coupons')">
+            <div class="nav-icon">🎫</div>
+            <div class="nav-label">優惠券</div>
+            <span class="badge" id="couponBadge">0</span>
+        </button>
+        <button class="nav-item" onclick="switchTab('map')">
+            <div class="nav-icon">🗺️</div>
+            <div class="nav-label">地圖</div>
+        </button>
+        <button class="nav-item" onclick="switchTab('profile')">
+            <div class="nav-icon" id="profileNavIcon">👤</div>
+            <div class="nav-label">我的</div>
+        </button>
+    </div>
 
-function closeMapPanel() {
-  document.getElementById('mapPanel').classList.remove('show');
-}
+    <!-- 音樂控制按鈕 -->
+    <div class="music-control" id="musicControl" onclick="toggleMusic()">
+        <span id="musicIcon">🎵</span>
+    </div>
 
-async function loadShopMap() {
-  const shopList = document.getElementById('shopList');
-  
-  try {
-    const shops = await loadShops();
-    
-    if (shops.length > 0) {
-      shopList.innerHTML = shops.map(shop => `
-        <div class="shop-item">
-          <img src="${shop['圖片網址'] || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}"
-               onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
-          <div class="shop-item-info">
-            <h3>${shop['店家名稱'] || '店家名稱'}</h3>
-            <p>${shop['優惠內容'] || '優惠內容'}</p>
-            <p class="address">📍 ${shop['地址'] || '地址未提供'}</p>
-          </div>
-        </div>
-      `).join('');
-    } else {
-      shopList.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">沒有店家資料</p>';
-    }
-  } catch (error) {
-    console.error('❌ 載入店家地圖失敗:', error);
-    shopList.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">載入失敗，請稍後再試</p>';
-  }
-}
+    <div class="modal" id="modal">
+        <div class="modal-content" id="modalContent"></div>
+    </div>
 
-// ============================================
-// 🔧 工具函數（保持不變）
-// ============================================
-async function safeFetch(url, options = {}) {
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('請求失敗:', error);
-    return { success: false, message: error.message };
-  }
-}
+    <!-- 音效 -->
+    <audio id="backgroundMusic" loop>
+        <source src="https://aiwe.cc/wp-content/uploads/2025/11/901cd11beb7b52aea3f9011f2d3d33bb.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="diceSound">
+        <source src="https://aiwe.cc/wp-content/uploads/2025/11/77b2287cce9574aeb82a8dbbcf200050.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="moveSound">
+        <source src="https://aiwe.cc/wp-content/uploads/2025/11/f8bf2fa137503315a28ad81a8aee77a5.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="couponSound">
+        <source src="https://aiwe.cc/wp-content/uploads/2025/11/96b7a2f24b8df785169c1671eae6618c.mp3" type="audio/mpeg">
+    </audio>
 
-async function loadShops() {
-  const result = await safeFetch(`${GAS_URL}?action=getShops&sheet=店家資料`);
-  if (result.success && Array.isArray(result.data)) {
-    return result.data;
-  } else {
-    console.error('載入店家資料失敗:', result.message);
-    return [];
-  }
-}
+    <script>
+        // ==================== 設定 ====================
+        // Google Sheets 設定
+        const SHEET_CONFIG = {
+            SHEET_ID: '1-qvp5x8VJa_vFULJy8dfT3FjQwLDkGV8ECyeCiwJpkU',
+            SHEET_NAME: '2025/11',
+            API_URL: 'https://script.google.com/macros/s/AKfycbwwO2pMBDAADUEZ8NKYbicrB3_LlcL2u3-bZZF5xXjrgBxNlHLbXXLT_N7uorJgYhPB/exec'
+        };
 
-// ============================================
-// 🎯 事件監聽器（保持不變）
-// ============================================
-claimBtn.addEventListener('click', () => {
-  if (!currentShop) return;
-  
-  claimBtn.disabled = true;
-  claimBtn.textContent = "🎉 收藏中...";
-  
-  const shopId = currentShop.ID || '';
-  const shopName = currentShop["店家名稱"] || currentShop.name || '';
-  const discount = currentShop["優惠內容"] || currentShop.discount || '';
-  const category = currentShop["分類"] || currentShop.category || "一般";
-  const icon = currentShop.icon || currentShop["圖示"] || "🏪";
-  const imageUrl = currentShop["圖片網址"] || currentShop.icon || '';
-  
-  const params = new URLSearchParams({
-    action: "saveCoupon",
-    userId: userId,
-    couponId: 'CPN' + Date.now(),
-    shopId: encodeURIComponent(shopId),
-    shopName: encodeURIComponent(shopName),
-    discount: encodeURIComponent(discount),
-    category: encodeURIComponent(category),
-    icon: encodeURIComponent(icon),
-    imageUrl: encodeURIComponent(imageUrl),
-    status: "active",
-    sheetName: "2025/11"
-  });
-  
-  fetch(`${GAS_URL}?${params.toString()}`)
-    .then(r => r.json())
-    .then(res => {
-      if (res.success) {
-        claimBtn.textContent = "✅ 收藏成功！";
-        setTimeout(() => closeShop(), 1500);
-      } else {
-        claimBtn.textContent = "⚠️ 收藏失敗";
-      }
-    })
-    .catch(err => {
-      claimBtn.textContent = "⚠️ 網路錯誤";
-    });
-});
+        // 遊戲狀態
+        const gameState = {
+            playerPosition: 0,
+            diceValue1: 1,
+            diceValue2: 1,
+            isRolling: false,
+            coins: 1000,
+            diceCount: 10,
+            boardData: [],
+            coupons: [],
+            userId: 'TEMP_USER',
+            displayName: '玩家',
+            pictureUrl: '',
+            isMoving: false,
+            shopData: [],
+            apiLoaded: false,
+            currentCoupon: null,
+            musicEnabled: true,
+            soundEnabled: true
+        };
 
-// ============================================
-// ✅ 頁面載入時只檢查登入狀態
-// ============================================
-window.addEventListener('DOMContentLoaded', function() {
-  console.log('=== 📱 檢查登入狀態 ===');
-  
-  // 檢查登入
-  if (!checkLogin()) {
-    // 會自動跳轉到 login.html
-    return;
-  }
-  
-  // 已登入，顯示歡迎訊息
-  setTimeout(() => {
-    showMsg(`歡迎，${userDisplayName}！`);
-    setTimeout(() => hideMsg(), 2000);
-  }, 500);
-  
-  // 初始化角色位置
-  updatePlayer();
-});
-</script>
+        // 音效元素
+        const backgroundMusic = document.getElementById('backgroundMusic');
+        const diceSound = document.getElementById('diceSound');
+        const moveSound = document.getElementById('moveSound');
+        const couponSound = document.getElementById('couponSound');
+
+        const houseIcons = ['🏪', '🏬', '🏢', '🏨', '🏩', '🏫', '🏦', '🏛️', '🏗️', '🏤', '🏣', '🏥', '⛪', '🕌'];
+        const houseColors = ['house-red', 'house-blue', 'house-green', 'house-pink', 'house-yellow', 'house-purple', 'house-orange'];
+
+        // 22格位置
+        const cellPositions = [
+            { left: '83.333%', top: '85.714%', class: 'corner' },
+            { left: '66.666%', top: '85.714%', class: 'cell' },
+            { left: '50%', top: '85.714%', class: 'cell' },
+            { left: '33.333%', top: '85.714%', class: 'cell' },
+            { left: '16.666%', top: '85.714%', class: 'cell' },
+            { left: '0%', top: '85.714%', class: 'corner' },
+            { left: '0%', top: '71.428%', class: 'cell' },
+            { left: '0%', top: '57.142%', class: 'cell' },
+            { left: '0%', top: '42.857%', class: 'cell' },
+            { left: '0%', top: '28.571%', class: 'cell' },
+            { left: '0%', top: '14.285%', class: 'cell' },
+            { left: '0%', top: '0%', class: 'corner' },
+            { left: '16.666%', top: '0%', class: 'cell' },
+            { left: '33.333%', top: '0%', class: 'cell' },
+            { left: '50%', top: '0%', class: 'cell' },
+            { left: '66.666%', top: '0%', class: 'cell' },
+            { left: '83.333%', top: '0%', class: 'corner' },
+            { left: '83.333%', top: '14.285%', class: 'cell' },
+            { left: '83.333%', top: '28.571%', class: 'cell' },
+            { left: '83.333%', top: '42.857%', class: 'cell' },
+            { left: '83.333%', top: '57.142%', class: 'cell' },
+            { left: '83.333%', top: '71.428%', class: 'cell' }
+        ];
+
+        // ==================== ✅ 簡化的登入檢查 ====================
+        
+        // 檢查登入狀態（只檢查 localStorage）
+        function checkLogin() {
+            const userId = localStorage.getItem('lineUserId');
+            const displayName = localStorage.getItem('lineDisplayName');
+            const pictureUrl = localStorage.getItem('linePictureUrl');
+            
+            if (!userId) {
+                // 未登入，跳轉到登入頁面
+                console.log('❌ 未登入，跳轉到 login.html');
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            // 已登入，更新遊戲狀態
+            gameState.userId = userId;
+            gameState.displayName = displayName || '玩家';
+            gameState.pictureUrl = pictureUrl || '';
+            
+            console.log('✅ 已登入:', gameState.displayName);
+            
+            // 更新介面
+            updateUserInterface();
+            
+            return true;
+        }
+        
+        // 更新用戶介面
+        function updateUserInterface() {
+            // 更新頭像
+            const headerAvatar = document.getElementById('headerAvatar');
+            const headerPlayerName = document.getElementById('headerPlayerName');
+            
+            if (gameState.pictureUrl) {
+                headerAvatar.innerHTML = `<img src="${gameState.pictureUrl}" alt="頭像">`;
+            } else {
+                headerAvatar.textContent = gameState.displayName.charAt(0);
+            }
+            
+            headerPlayerName.textContent = gameState.displayName;
+            
+            // 更新底部導航
+            const profileNavIcon = document.getElementById('profileNavIcon');
+            if (gameState.pictureUrl) {
+                profileNavIcon.innerHTML = `<div class="nav-avatar"><img src="${gameState.pictureUrl}" alt="頭像"></div>`;
+            } else {
+                profileNavIcon.innerHTML = `<div class="nav-avatar" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px;">${gameState.displayName.charAt(0)}</div>`;
+            }
+        }
+        
+        // 登出函數
+        function logout() {
+            if (confirm('確定要登出嗎？')) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+
+        // ==================== 初始化 ====================
+
+        window.onload = async function() {
+            console.log('🎮 遊戲載入中...');
+            showStatusMessage('載入遊戲資料中...');
+            
+            try {
+                // ✅ 檢查登入狀態
+                if (!checkLogin()) {
+                    // 會自動跳轉到 login.html
+                    return;
+                }
+                
+                // 載入資料
+                await loadShopDataFromAPI();
+                initializeGameData();
+                await loadCouponsFromSheet();
+                
+                renderBoard();
+                updateStats();
+                
+                setTimeout(() => {
+                    if (gameState.musicEnabled) {
+                        backgroundMusic.volume = 0.3;
+                        backgroundMusic.play().catch(e => {
+                            console.log('背景音樂需要用戶交互後才能播放');
+                        });
+                    }
+                }, 1000);
+                
+                setTimeout(() => {
+                    hideStatusMessage();
+                }, 500);
+                
+            } catch (error) {
+                console.error('初始化失敗:', error);
+                showStatusMessage('初始化失敗，請重新整理頁面', 3000);
+            }
+        };
+
+        // ==================== 遊戲邏輯函數（保持不變）====================
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+
+            gameState.boardData.forEach((cell) => {
+                const pos = cellPositions[cell.id];
+                const cellDiv = document.createElement('div');
+                cellDiv.className = `${pos.class}`;
+                
+                if (cell.color) cellDiv.classList.add(cell.color);
+                if (cell.type === 'chance') cellDiv.classList.add('chance');
+                if (cell.type === 'fate') cellDiv.classList.add('fate');
+                
+                cellDiv.style.left = pos.left;
+                cellDiv.style.top = pos.top;
+                cellDiv.id = `cell-${cell.id}`;
+                cellDiv.onclick = () => showCellInfo(cell);
+
+                cellDiv.innerHTML = `
+                    <div class="cell-icon">${cell.icon || '❓'}</div>
+                    ${cell.name ? `<div class="cell-name">${cell.name}</div>` : ''}
+                `;
+                board.appendChild(cellDiv);
+            });
+
+            const centerDiv = document.createElement('div');
+            centerDiv.className = 'center-area';
+            centerDiv.innerHTML = `
+                <div class="center-title">圖標大富翁</div>
+                <div class="center-subtitle">收集優惠券，贏得獎勵！</div>
+                <div class="dice-container">
+                    <div class="dice dice-face-1" id="dice1">
+                        <div class="dice-dot"></div>
+                    </div>
+                    <div class="dice dice-face-1" id="dice2">
+                        <div class="dice-dot"></div>
+                    </div>
+                </div>
+                <button class="roll-button" id="rollButton" onclick="rollDice()">
+                    投擲骰子
+                </button>
+                <div class="dice-info">剩餘: <span id="remainingDice">${gameState.diceCount}</span> 次</div>
+            `;
+            board.appendChild(centerDiv);
+
+            createPlayerMarker();
+        }
+
+        function createPlayerMarker() {
+            const board = document.getElementById('board');
+            const marker = document.createElement('div');
+            marker.className = 'player-marker';
+            marker.id = 'playerMarker';
+            
+            marker.innerHTML = `
+                <img src="https://aiwe.cc/wp-content/uploads/2025/11/897cb201ac922a1f9ed6e6f9082e84f5.png" 
+                     alt="玩家" 
+                     style="width: 100%; height: 100%; object-fit: contain; border-radius: 50%;"
+                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\'font-size:80px;\\'>🎮</div>';">
+            `;
+            
+            board.appendChild(marker);
+            updatePlayerPosition();
+        }
+
+        function updatePlayerPosition() {
+            const marker = document.getElementById('playerMarker');
+            const cell = gameState.boardData.find(c => c.id === gameState.playerPosition);
+            if (!marker || !cell) return;
+
+            const pos = cellPositions[cell.id];
+            const board = document.getElementById('board');
+            const boardWidth = board.offsetWidth;
+            const boardHeight = board.offsetHeight;
+
+            const leftPercent = parseFloat(pos.left);
+            const topPercent = parseFloat(pos.top);
+            
+            const cellSize = boardWidth * 0.16666;
+            
+            let offsetX = 0;
+            let offsetY = 0;
+            
+            if (cell.id >= 0 && cell.id <= 4) {
+                offsetY = -cellSize * 0.3;
+            } else if (cell.id >= 6 && cell.id <= 10) {
+                offsetX = cellSize * 0.3;
+            } else if (cell.id >= 12 && cell.id <= 15) {
+                offsetY = cellSize * 0.3;
+            } else if (cell.id >= 17 && cell.id <= 21) {
+                offsetX = -cellSize * 0.3;
+            } else {
+                const cornerOffset = cellSize * 0.3;
+                if (cell.id === 0) {
+                    offsetX = -cornerOffset;
+                    offsetY = -cornerOffset;
+                } else if (cell.id === 5) {
+                    offsetX = cornerOffset;
+                    offsetY = -cornerOffset;
+                } else if (cell.id === 11) {
+                    offsetX = cornerOffset;
+                    offsetY = cornerOffset;
+                } else if (cell.id === 16) {
+                    offsetX = -cornerOffset;
+                    offsetY = cornerOffset;
+                }
+            }
+
+            const finalLeft = (leftPercent / 100) * boardWidth + (cellSize / 2) + offsetX;
+            const finalTop = (topPercent / 100) * boardHeight + (cellSize / 2) + offsetY;
+
+            marker.style.left = `${finalLeft}px`;
+            marker.style.top = `${finalTop}px`;
+        }
+
+        async function loadCouponsFromSheet() {
+            try {
+                const params = new URLSearchParams({
+                    action: 'getCoupons',
+                    userId: gameState.userId,
+                    sheetName: SHEET_CONFIG.SHEET_NAME,
+                    t: Date.now()
+                });
+
+                const url = `${SHEET_CONFIG.API_URL}?${params.toString()}`;
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    console.log('回應不是 JSON:', text);
+                    return;
+                }
+                
+                if (result.success && result.data) {
+                    gameState.coupons = result.data.map(row => ({
+                        couponId: row[1],
+                        shopName: row[2],
+                        discount: row[3],
+                        category: row[4],
+                        icon: row[5],
+                        createTime: row[6],
+                        expiry: formatDate(new Date(parseInt(row[7]))),
+                        status: row[9]
+                    }));
+                    console.log(`從 Google Sheets 載入 ${gameState.coupons.length} 張優惠券`);
+                }
+            } catch (error) {
+                console.error('從 Google Sheets 載入優惠券失敗:', error);
+            }
+        }
+
+        async function saveCouponToSheet(coupon) {
+            try {
+                const params = new URLSearchParams({
+                    action: 'saveCoupon',
+                    userId: gameState.userId,
+                    couponId: coupon.couponId,
+                    shopName: encodeURIComponent(coupon.shopName),
+                    discount: encodeURIComponent(coupon.discount),
+                    category: encodeURIComponent(coupon.category),
+                    icon: encodeURIComponent(coupon.icon),
+                    createTime: coupon.createTime,
+                    expiryDate: coupon.expiryDate,
+                    usedTime: '',
+                    status: 'active',
+                    usedShop: '',
+                    sheetName: SHEET_CONFIG.SHEET_NAME,
+                    t: Date.now()
+                });
+
+                const url = `${SHEET_CONFIG.API_URL}?${params.toString()}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const text = await response.text();
+                
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    return true;
+                }
+                
+                return result.success;
+            } catch (error) {
+                console.error('儲存到 Google Sheets 失敗:', error);
+                return false;
+            }
+        }
+
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${year}/${month}/${day}`;
+        }
+
+        async function loadShopDataFromAPI() {
+            if (!SHEET_CONFIG.API_URL) {
+                useDefaultShopData();
+                return;
+            }
+
+            try {
+                const params = new URLSearchParams({
+                    action: 'getShops',
+                    t: Date.now()
+                });
+
+                const url = `${SHEET_CONFIG.API_URL}?${params.toString()}`;
+                const response = await fetch(url);
+                const text = await response.text();
+                
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (e) {
+                    useDefaultShopData();
+                    return;
+                }
+                
+                if (result.success && result.data) {
+                    gameState.shopData = result.data;
+                    gameState.apiLoaded = true;
+                    console.log(`載入 ${result.data.length} 間店家`);
+                } else {
+                    useDefaultShopData();
+                }
+            } catch (error) {
+                useDefaultShopData();
+            }
+        }
+
+        function useDefaultShopData() {
+            gameState.shopData = [
+                {ID: 'SHOP0001', '店家名稱': '初熟的果子', '分類': '美食', '圖示': '🍎', '優惠內容': '9折'},
+                {ID: 'SHOP0002', '店家名稱': '咖啡小館', '分類': '咖啡廳', '圖示': '☕', '優惠內容': '第二杯半價'},
+                {ID: 'SHOP0003', '店家名稱': '時尚沙龍', '分類': '美髮', '圖示': '✂️', '優惠內容': '洗加剪8折'},
+                {ID: 'SHOP0004', '店家名稱': '服飾店', '分類': '服飾', '圖示': '👕', '優惠內容': '85折優惠'},
+                {ID: 'SHOP0005', '店家名稱': '超市', '分類': '超市', '圖示': '🛒', '優惠內容': '滿百折20'},
+                {ID: 'SHOP0006', '店家名稱': '書店', '分類': '書店', '圖示': '📚', '優惠內容': '買二送一'},
+                {ID: 'SHOP0007', '店家名稱': '3C賣場', '分類': '3C', '圖示': '📱', '優惠內容': '配件8折'},
+                {ID: 'SHOP0008', '店家名稱': '家居賣場', '分類': '家居', '圖示': '🏠', '優惠內容': '滿千送百'},
+                {ID: 'SHOP0009', '店家名稱': '娛樂中心', '分類': '娛樂', '圖示': '🎮', '優惠內容': '買一小時送半小時'},
+                {ID: 'SHOP0010', '店家名稱': '壽司店', '分類': '美食', '圖示': '🍣', '優惠內容': '套餐9折'}
+            ];
+        }
+
+        function initializeGameData() {
+            gameState.boardData = [
+                { id: 0, type: 'start', name: '起點', icon: '🏁' },
+                { id: 5, type: 'jail', name: '監獄', icon: '🚓' },
+                { id: 11, type: 'goback', name: '倒退3步', icon: '⏪' },
+                { id: 16, type: 'gotojail', name: '進監獄', icon: '🚨' },
+                { id: 1, type: 'shop', icon: houseIcons[0], color: houseColors[0] },
+                { id: 2, type: 'shop', icon: houseIcons[1], color: houseColors[1] },
+                { id: 3, type: 'shop', icon: houseIcons[2], color: houseColors[2] },
+                { id: 4, type: 'shop', icon: houseIcons[3], color: houseColors[3] },
+                { id: 6, type: 'shop', icon: houseIcons[4], color: houseColors[4] },
+                { id: 7, type: 'shop', icon: houseIcons[5], color: houseColors[5] },
+                { id: 8, type: 'shop', icon: houseIcons[6], color: houseColors[6] },
+                { id: 9, type: 'shop', icon: houseIcons[7], color: houseColors[0] },
+                { id: 10, type: 'shop', icon: houseIcons[8], color: houseColors[1] },
+                { id: 12, type: 'shop', icon: houseIcons[9], color: houseColors[2] },
+                { id: 13, type: 'shop', icon: houseIcons[10], color: houseColors[3] },
+                { id: 14, type: 'shop', icon: houseIcons[11], color: houseColors[4] },
+                { id: 15, type: 'shop', icon: houseIcons[12], color: houseColors[5] },
+                { id: 17, type: 'chance', name: '機會', icon: '🎁' },
+                { id: 18, type: 'fate', name: '命運', icon: '⭐' },
+                { id: 19, type: 'shop', icon: houseIcons[13], color: houseColors[6] },
+                { id: 20, type: 'shop', icon: houseIcons[0], color: houseColors[0] },
+                { id: 21, type: 'shop', icon: houseIcons[1], color: houseColors[1] }
+            ];
+        }
+
+        function rollDice() {
+            if (gameState.isRolling || gameState.diceCount === 0 || gameState.isMoving) return;
+
+            gameState.isRolling = true;
+            gameState.diceCount--;
+            
+            const dice1 = document.getElementById('dice1');
+            const dice2 = document.getElementById('dice2');
+            const button = document.getElementById('rollButton');
+            
+            if (!dice1 || !dice2 || !button) return;
+            
+            dice1.classList.add('rolling');
+            dice2.classList.add('rolling');
+            button.disabled = true;
+            button.textContent = '投擲中...';
+            updateStats();
+
+            if (gameState.soundEnabled) {
+                diceSound.currentTime = 0;
+                diceSound.play().catch(e => console.log('骰子音效播放失敗'));
+            }
+
+            let count = 0;
+            const interval = setInterval(() => {
+                gameState.diceValue1 = Math.floor(Math.random() * 6) + 1;
+                gameState.diceValue2 = Math.floor(Math.random() * 6) + 1;
+                updateDiceFace(1, gameState.diceValue1);
+                updateDiceFace(2, gameState.diceValue2);
+                count++;
+
+                if (count > 10) {
+                    clearInterval(interval);
+                    dice1.classList.remove('rolling');
+                    dice2.classList.remove('rolling');
+                    setTimeout(() => movePlayer(gameState.diceValue1 + gameState.diceValue2), 300);
+                }
+            }, 100);
+        }
+
+        function updateDiceFace(diceNum, value) {
+            const dice = document.getElementById(`dice${diceNum}`);
+            if (!dice) return;
+            
+            dice.className = `dice dice-face-${value}`;
+            dice.innerHTML = '';
+            for (let i = 0; i < value; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dice-dot';
+                dice.appendChild(dot);
+            }
+        }
+
+        async function movePlayer(steps) {
+            if (gameState.isMoving) return;
+            
+            gameState.isMoving = true;
+            const button = document.getElementById('rollButton');
+            if (button) button.disabled = true;
+            
+            showStatusMessage(`移動 ${steps} 步...`);
+
+            for (let i = 0; i < steps; i++) {
+                gameState.playerPosition = (gameState.playerPosition + 1) % 22;
+                updatePlayerPosition();
+                highlightCell(gameState.playerPosition);
+                
+                if (gameState.soundEnabled) {
+                    moveSound.currentTime = 0;
+                    moveSound.play().catch(e => console.log('移動音效播放失敗'));
+                    
+                    setTimeout(() => {
+                        if (!moveSound.paused) {
+                            moveSound.pause();
+                            moveSound.currentTime = 0;
+                        }
+                    }, 300);
+                }
+                
+                await sleep(500);
+            }
+
+            const cell = gameState.boardData.find(c => c.id === gameState.playerPosition);
+            if (cell) await handleCell(cell);
+
+            gameState.isRolling = false;
+            gameState.isMoving = false;
+            if (button) {
+                button.disabled = gameState.diceCount === 0;
+                button.textContent = gameState.diceCount === 0 ? '骰子用完了' : '投擲骰子';
+            }
+            hideStatusMessage();
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function highlightCell(cellId) {
+            document.querySelectorAll('.cell, .corner').forEach(c => c.classList.remove('highlight'));
+            const cell = document.getElementById(`cell-${cellId}`);
+            if (cell) cell.classList.add('highlight');
+        }
+
+        async function handleCell(cell) {
+            switch(cell.type) {
+                case 'shop':
+                    gameState.coins += 50;
+                    const randomShop = gameState.shopData[Math.floor(Math.random() * gameState.shopData.length)];
+                    if (randomShop) {
+                        showCouponModal(cell, randomShop);
+                        gameState.currentCoupon = randomShop;
+                        
+                        if (gameState.soundEnabled) {
+                            couponSound.currentTime = 0;
+                            couponSound.play().catch(e => console.log('優惠券音效播放失敗'));
+                        }
+                    }
+                    break;
+                case 'chance':
+                    gameState.coins += 100;
+                    gameState.diceCount += 2;
+                    showCellInfo(cell);
+                    break;
+                case 'fate':
+                    const bonus = Math.random() > 0.5 ? 200 : -100;
+                    gameState.coins = Math.max(0, gameState.coins + bonus);
+                    showCellInfo(cell);
+                    break;
+                case 'start':
+                    gameState.coins += 100;
+                    showCellInfo(cell);
+                    break;
+                case 'goback':
+                    showStatusMessage('倒退3步！');
+                    await sleep(1000);
+                    for (let i = 0; i < 3; i++) {
+                        gameState.playerPosition = (gameState.playerPosition - 1 + 22) % 22;
+                        updatePlayerPosition();
+                        highlightCell(gameState.playerPosition);
+                        await sleep(500);
+                    }
+                    showCellInfo(cell);
+                    break;
+                case 'gotojail':
+                    gameState.playerPosition = 5;
+                    updatePlayerPosition();
+                    showCellInfo(cell);
+                    break;
+                default:
+                    showCellInfo(cell);
+            }
+            
+            updateStats();
+        }
+
+        function showCouponModal(cell, shop) {
+            const modal = document.getElementById('couponModal');
+            const icon = document.getElementById('couponIcon');
+            const shopName = document.getElementById('couponShopName');
+            const category = document.getElementById('couponCategory');
+            const discount = document.getElementById('couponDiscount');
+            
+            if (icon) icon.textContent = shop['圖示'] || cell.icon;
+            if (shopName) shopName.textContent = shop['店家名稱'];
+            if (category) category.textContent = shop['分類'];
+            if (discount) discount.textContent = shop['優惠內容'];
+            
+            if (modal) modal.classList.add('show');
+        }
+
+        async function saveCoupon() {
+            if (gameState.currentCoupon) {
+                const success = await issueCouponToAPI(gameState.currentCoupon);
+                if (success) {
+                    showStatusMessage('優惠券已儲存到 Google Sheets！', 2000);
+                } else {
+                    showStatusMessage('儲存失敗，請檢查網路連線', 2000);
+                }
+                closeCouponModal();
+            }
+        }
+
+        function closeCouponModal() {
+            const modal = document.getElementById('couponModal');
+            if (modal) modal.classList.remove('show');
+            gameState.currentCoupon = null;
+        }
+
+        async function issueCouponToAPI(shop) {
+            const coupon = {
+                couponId: 'CPN' + Date.now(),
+                shopName: shop['店家名稱'],
+                discount: shop['優惠內容'],
+                category: shop['分類'],
+                shopId: shop['ID'],
+                icon: shop['圖示'],
+                createTime: Date.now(),
+                expiryDate: formatDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000))
+            };
+            
+            const success = await saveCouponToSheet(coupon);
+            
+            if (success) {
+                coupon.expiry = coupon.expiryDate;
+                gameState.coupons.push(coupon);
+                updateStats();
+            }
+            
+            return success;
+        }
+
+        function showCellInfo(cell) {
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modalContent');
+            
+            if (!modal || !content) return;
+            
+            let html = `<div class="modal-icon">${cell.icon}</div>`;
+
+            const cardStyles = {
+                chance: { bg: 'linear-gradient(135deg, #fff3cd, #ffe69c)', color: '#856404', title: '🎉 機會卡！', text: '獲得 100 金幣 + 2 個骰子' },
+                fate: { bg: 'linear-gradient(135deg, #e7d9ff, #d4bbff)', color: '#6f42c1', title: '⭐ 命運卡！', text: '隨機事件觸發中...' },
+                start: { bg: 'linear-gradient(135deg, #d4edda, #c3e6cb)', color: '#155724', title: '🏁 起點！', text: '獲得 100 金幣' },
+                jail: { bg: 'linear-gradient(135deg, #f8d7da, #f5c6cb)', color: '#721c24', title: '🚓 監獄！', text: '只是參觀，下次小心！' },
+                goback: { bg: 'linear-gradient(135deg, #fff3cd, #ffeaa7)', color: '#856404', title: '⏪ 倒退3步！', text: '往回走3步' },
+                gotojail: { bg: 'linear-gradient(135deg, #f8d7da, #f5c6cb)', color: '#721c24', title: '🚨 進監獄！', text: '直接送往監獄！' }
+            };
+
+            const style = cardStyles[cell.type];
+            if (style) {
+                html += `
+                    <div class="modal-title">${cell.name}</div>
+                    <div class="reward-card" style="background: ${style.bg};">
+                        <div class="reward-title" style="color: ${style.color};">${style.title}</div>
+                        <div class="reward-content">${style.text}</div>
+                    </div>
+                `;
+            }
+
+            html += `<button class="action-button close-button" onclick="closeModal()">關閉</button>`;
+            content.innerHTML = html;
+            modal.classList.add('show');
+        }
+
+        function showCouponList() {
+            const modal = document.getElementById('couponListModal');
+            const content = document.getElementById('couponListContent');
+            
+            if (!modal || !content) return;
+            
+            let html = `<div class="coupon-list-title">我的優惠券</div>`;
+
+            if (gameState.coupons.length === 0) {
+                html += `
+                    <div class="empty-coupons">
+                        <div class="empty-coupons-icon">🎫</div>
+                        <div class="empty-coupons-text">還沒有優惠券</div>
+                        <div class="empty-coupons-subtext">繼續遊戲收集更多優惠吧！</div>
+                    </div>
+                `;
+            } else {
+                html += '<div class="coupon-list-items">';
+                gameState.coupons.forEach(coupon => {
+                    html += `
+                        <div class="coupon-list-item">
+                            <div class="coupon-list-info">
+                                <h3>${coupon.icon} ${coupon.shopName}</h3>
+                                <div class="coupon-list-category">${coupon.category}</div>
+                                <div class="coupon-list-discount">${coupon.discount}</div>
+                                <div class="coupon-list-expiry">有效期限: ${coupon.expiry}</div>
+                            </div>
+                            <button class="use-coupon-button" onclick="useCoupon('${coupon.couponId}')">使用</button>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            html += `<button class="action-button close-button" onclick="closeCouponListModal()" style="margin-top: 20px; font-size: 22px; padding: 18px;">關閉</button>`;
+            content.innerHTML = html;
+            modal.classList.add('show');
+        }
+
+        function closeCouponListModal() {
+            const modal = document.getElementById('couponListModal');
+            if (modal) modal.classList.remove('show');
+        }
+
+        function useCoupon(couponId) {
+            const coupon = gameState.coupons.find(c => c.couponId === couponId);
+            if (coupon) {
+                alert(`請到 ${coupon.shopName} 出示此優惠券！\n\n優惠內容：${coupon.discount}\n優惠券ID：${couponId}`);
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            if (modal) modal.classList.remove('show');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            if (event && event.target) {
+                const navItem = event.target.closest('.nav-item');
+                if (navItem) navItem.classList.add('active');
+            }
+
+            switch(tab) {
+                case 'coupons':
+                    showCouponList();
+                    break;
+                case 'map':
+                    alert('地圖功能開發中');
+                    break;
+                case 'profile':
+                    if (confirm(`用戶資料\n\n名稱：${gameState.displayName}\nLINE ID：${gameState.userId}\n\n要登出嗎？`)) {
+                        logout();
+                    }
+                    break;
+            }
+        }
+
+        function updateStats() {
+            const coinsEl = document.getElementById('coins');
+            const diceCountEl = document.getElementById('diceCount');
+            const remainingDiceEl = document.getElementById('remainingDice');
+            const couponBadgeEl = document.getElementById('couponBadge');
+            
+            if (coinsEl) coinsEl.textContent = gameState.coins;
+            if (diceCountEl) diceCountEl.textContent = gameState.diceCount;
+            if (remainingDiceEl) remainingDiceEl.textContent = gameState.diceCount;
+            if (couponBadgeEl) couponBadgeEl.textContent = gameState.coupons.length;
+        }
+
+        function showStatusMessage(msg, duration = 3000) {
+            const statusMsg = document.getElementById('statusMessage');
+            if (!statusMsg) return;
+            
+            statusMsg.textContent = msg;
+            statusMsg.classList.add('show');
+            
+            if (duration > 0) {
+                setTimeout(() => hideStatusMessage(), duration);
+            }
+        }
+
+        function hideStatusMessage() {
+            const statusMsg = document.getElementById('statusMessage');
+            if (!statusMsg) return;
+            
+            statusMsg.classList.remove('show');
+            setTimeout(() => {
+                statusMsg.textContent = '';
+            }, 300);
+        }
+
+        function toggleMusic() {
+            const musicControl = document.getElementById('musicControl');
+            const musicIcon = document.getElementById('musicIcon');
+            
+            if (!musicControl || !musicIcon) return;
+            
+            if (gameState.musicEnabled) {
+                backgroundMusic.pause();
+                musicControl.classList.add('muted');
+                musicIcon.textContent = '🔇';
+                gameState.musicEnabled = false;
+                gameState.soundEnabled = false;
+            } else {
+                backgroundMusic.play().catch(e => console.log('背景音樂播放失敗'));
+                musicControl.classList.remove('muted');
+                musicIcon.textContent = '🎵';
+                gameState.musicEnabled = true;
+                gameState.soundEnabled = true;
+            }
+        }
+
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        document.getElementById('couponListModal').addEventListener('click', function(e) {
+            if (e.target === this) closeCouponListModal();
+        });
+
+        window.addEventListener('resize', updatePlayerPosition);
+    </script>
 </body>
 </html>
