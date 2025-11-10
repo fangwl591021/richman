@@ -1,4 +1,337 @@
-<!-- 在底部功能列添加這個按鈕 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
+<title>歡樂大富翁</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"Microsoft JhengHei",sans-serif;
+  background:#111;
+  height:100vh;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  padding-bottom:70px;
+}
+
+/* === LINE 登入歡迎頁面 === */
+.login-screen{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:999;padding:20px;
+}
+.login-screen.hidden{display:none;}
+.login-box{
+  background:white;border-radius:30px;
+  padding:50px 40px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  max-width:450px;width:100%;
+  animation:slideIn 0.5s ease;
+}
+@keyframes slideIn{
+  from{opacity:0;transform:translateY(-30px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.login-box .logo{
+  font-size:80px;margin-bottom:20px;
+  animation:bounce 1s infinite ease-in-out;
+}
+@keyframes bounce{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-10px);}
+}
+.login-box h1{
+  font-size:36px;color:#333;margin-bottom:15px;
+}
+.login-box p{
+  font-size:18px;color:#666;margin-bottom:40px;
+  line-height:1.6;
+}
+.login-box .line-login-btn{
+  width:100%;padding:20px;
+  background:#06C755;color:white;
+  border:none;border-radius:15px;
+  font-size:24px;font-weight:bold;
+  cursor:pointer;transition:all 0.3s ease;
+  display:flex;align-items:center;justify-content:center;
+  gap:15px;box-shadow:0 8px 20px rgba(6,199,85,0.3);
+}
+.login-box .line-login-btn:hover{
+  background:#05b04b;transform:translateY(-2px);
+  box-shadow:0 12px 30px rgba(6,199,85,0.4);
+}
+.login-box .line-login-btn .icon{
+  font-size:32px;
+}
+
+.board{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%) translateY(-35px);
+  width:95%;aspect-ratio:2/3;
+  background:url("https://aiwe.cc/wp-content/uploads/2025/11/c4ca4238a0b923820dcc509a6f75849b-2.png") center/contain no-repeat;
+  background-color:#000;border-radius:10px;overflow:hidden;
+}
+.player{position:absolute;width:150px;height:160px;transition:all .4s ease-in-out;z-index:10;}
+.player img{width:100%;height:100%;object-fit:contain;}
+@keyframes walk{0%,100%{transform:rotate(0);}25%{transform:rotate(-4deg);}75%{transform:rotate(4deg);}}
+.walking{animation:walk .45s infinite ease-in-out;}
+.center{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:25px;
+  z-index:5;
+}
+.msg{color:#000;font-size:28px;font-weight:bold;text-shadow:1px 1px 3px rgba(255,255,255,.6);margin-bottom:10px;min-height:32px;transition:opacity .5s ease;}
+.dice-box{display:flex;gap:40px;}
+.dice{width:160px;height:160px;background:white;border-radius:30px;box-shadow:0 10px 30px rgba(0,0,0,.4);position:relative;display:flex;justify-content:center;align-items:center;}
+.dot{width:22px;height:22px;background:black;border-radius:50%;position:absolute;}
+.face-1 .dot:nth-child(1){top:50%;left:50%;transform:translate(-50%,-50%);}
+.face-2 .dot:nth-child(1){top:25%;left:25%;}
+.face-2 .dot:nth-child(2){bottom:25%;right:25%;}
+.face-3 .dot:nth-child(1){top:25%;left:25%;}
+.face-3 .dot:nth-child(2){top:50%;left:50%;transform:translate(-50%,-50%);}
+.face-3 .dot:nth-child(3){bottom:25%;right:25%;}
+.face-4 .dot:nth-child(1){top:25%;left:25%;}
+.face-4 .dot:nth-child(2){top:25%;right:25%;}
+.face-4 .dot:nth-child(3){bottom:25%;left:25%;}
+.face-4 .dot:nth-child(4){bottom:25%;right:25%;}
+.face-5 .dot:nth-child(1){top:25%;left:25%;}
+.face-5 .dot:nth-child(2){top:25%;right:25%;}
+.face-5 .dot:nth-child(3){top:50%;left:50%;transform:translate(-50%,-50%);}
+.face-5 .dot:nth-child(4){bottom:25%;left:25%;}
+.face-5 .dot:nth-child(5){bottom:25%;right:25%;}
+.face-6 .dot:nth-child(1){top:25%;left:25%;}
+.face-6 .dot:nth-child(2){top:25%;right:25%;}
+.face-6 .dot:nth-child(3){top:50%;left:25%;transform:translateY(-50%);}
+.face-6 .dot:nth-child(4){top:50%;right:25%;transform:translateY(-50%);}
+.face-6 .dot:nth-child(5){bottom:25%;left:25%;}
+.face-6 .dot:nth-child(6){bottom:25%;right:25%;}
+.roll-btn{
+  padding:25px 60px;background:linear-gradient(135deg,#667eea,#764ba2);
+  color:white;font-size:34px;font-weight:bold;border:none;border-radius:40px;
+  box-shadow:0 8px 20px rgba(0,0,0,.4);cursor:pointer;
+}
+
+/* === 上圖下文 名片版彈窗 === */
+.shop-popup{
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:85%;max-width:520px;
+  background:white;color:#222;
+  border-radius:20px;box-shadow:0 15px 40px rgba(0,0,0,.4);
+  overflow-y:auto;text-align:center;
+  max-height:90vh;
+  z-index:50;display:none;
+  animation:fadeIn .4s ease;
+}
+@keyframes fadeIn{from{opacity:0;transform:translate(-50%,-45%);}to{opacity:1;transform:translate(-50%,-50%);}}
+.shop-popup img{
+  width:100%;height:auto;object-fit:cover;
+  display:block;
+  background:#eee;
+}
+.shop-content{
+  padding:15px 20px 25px;
+}
+.shop-content h2{
+  font-size:32px;color:#222;margin-bottom:8px;
+}
+.shop-content p{
+  font-size:22px;color:#555;margin-bottom:20px;
+}
+.shop-buttons{
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.shop-buttons button{
+  width:95%;
+  border:none;border-radius:12px;
+  padding:16px 20px;font-size:36px;font-weight:bold;cursor:pointer;
+  color:white;transition:transform .2s ease;
+}
+.shop-buttons button:active{transform:scale(0.95);}
+.shop-buttons .claim{background:#764ba2;}
+.shop-buttons .close{background:#888;}
+
+/* === 底部功能區（圖示放大2倍）=== */
+.bottom-bar{
+  position:fixed;bottom:0;left:0;right:0;
+  height:70px;background:rgba(0,0,0,0.85);
+  display:flex;justify-content:space-around;align-items:center;
+  z-index:100;backdrop-filter:blur(10px);
+  border-top:2px solid rgba(255,255,255,0.1);
+}
+.bottom-bar button{
+  flex:1;height:100%;border:none;
+  background:transparent;color:white;
+  font-size:14px;font-weight:bold;
+  cursor:pointer;transition:all .3s ease;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;
+}
+.bottom-bar button:active{background:rgba(255,255,255,0.1);}
+.bottom-bar button .icon{font-size:56px;} /* 從28px放大到56px (2倍) */
+.bottom-bar button.logged-in{color:#4caf50;}
+
+/* === 優惠券收集區彈窗 === */
+.coupon-panel{
+  position:fixed;top:0;left:0;right:0;bottom:70px;
+  background:white;z-index:200;display:none;
+  overflow-y:auto;padding:20px;
+}
+.coupon-panel.show{display:block;}
+.coupon-panel-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:20px;padding-bottom:15px;
+  border-bottom:2px solid #eee;
+}
+.coupon-panel-header h2{font-size:28px;color:#333;}
+.coupon-panel-header .close-btn{
+  width:40px;height:40px;border:none;
+  background:#ddd;border-radius:50%;
+  font-size:24px;cursor:pointer;
+}
+.coupon-list{display:grid;gap:15px;}
+.coupon-card{
+  border:1px solid #ddd;border-radius:12px;
+  padding:15px;display:flex;gap:15px;
+  background:white;box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+.coupon-card img{
+  width:80px;height:80px;object-fit:cover;
+  border-radius:8px;flex-shrink:0;
+}
+.coupon-card-info{flex:1;}
+.coupon-card-info h3{font-size:20px;margin-bottom:5px;color:#333;}
+.coupon-card-info p{font-size:16px;color:#666;}
+.coupon-card-info .discount{color:#e53935;font-weight:bold;}
+.empty-state{
+  text-align:center;padding:60px 20px;color:#999;
+}
+.empty-state .icon{font-size:64px;margin-bottom:20px;}
+.empty-state p{font-size:18px;}
+
+/* === 店家地圖彈窗 === */
+.map-panel{
+  position:fixed;top:0;left:0;right:0;bottom:70px;
+  background:white;z-index:200;display:none;
+  overflow-y:auto;
+}
+.map-panel.show{display:block;}
+.map-panel-header{
+  padding:15px 20px;background:#764ba2;color:white;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.map-panel-header h2{font-size:24px;}
+.map-panel-header .close-btn{
+  width:40px;height:40px;border:none;
+  background:rgba(255,255,255,0.2);border-radius:50%;
+  color:white;font-size:24px;cursor:pointer;
+}
+.map-container{
+  padding:20px;
+}
+.shop-list{display:grid;gap:12px;}
+.shop-item{
+  border:1px solid #ddd;border-radius:10px;
+  padding:12px;display:flex;gap:12px;
+  background:white;
+}
+.shop-item img{
+  width:60px;height:60px;object-fit:cover;
+  border-radius:6px;flex-shrink:0;
+}
+.shop-item-info{flex:1;}
+.shop-item-info h3{font-size:18px;margin-bottom:4px;}
+.shop-item-info p{font-size:14px;color:#666;}
+.shop-item-info .address{font-size:13px;color:#999;margin-top:4px;}
+
+/* === 載入動畫 === */
+.loading {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255,255,255,.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+
+<!-- 🔐 LINE 登入歡迎頁面 -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="logo">🎲</div>
+    <h1>歡樂大富翁</h1>
+    <p>歡迎來到板橋商圈！<br>請先使用 LINE 登入開始遊戲，<br>收集專屬優惠券吧！</p>
+    <button class="line-login-btn" onclick="startLineLogin()">
+      <span class="icon">📱</span>
+      <span>使用 LINE 登入</span>
+    </button>
+  </div>
+</div>
+
+<div class="board" id="board">
+  <div class="player" id="player">
+    <img src="https://aiwe.cc/wp-content/uploads/2025/11/897cb201ac922a1f9ed6e6f9082e84f5.png">
+  </div>
+
+  <div class="center">
+    <div class="msg" id="msg"></div>
+    <div class="dice-box">
+      <div class="dice face-1" id="dice1"><div class="dot"></div></div>
+      <div class="dice face-1" id="dice2"><div class="dot"></div></div>
+    </div>
+    <button class="roll-btn" onclick="startGame()" id="rollBtn">投擲骰子</button>
+  </div>
+</div>
+
+<!-- 🧧 店家優惠卡片 -->
+<div class="shop-popup" id="shopPopup">
+  <img id="shopImg" src="">
+  <div class="shop-content">
+    <h2 id="shopName"></h2>
+    <p id="shopDesc"></p>
+    <div class="shop-buttons">
+      <button class="claim" id="claimBtn">收藏優惠</button>
+      <button class="close" onclick="closeShop()">放棄收藏</button>
+    </div>
+  </div>
+</div>
+
+<!-- 🎫 優惠券收集區 -->
+<div class="coupon-panel" id="couponPanel">
+  <div class="coupon-panel-header">
+    <h2>我的優惠券 (<span id="couponCount">0</span>)</h2>
+    <button class="close-btn" onclick="closeCouponPanel()">×</button>
+  </div>
+  <div class="coupon-list" id="couponList">
+    <div class="empty-state">
+      <div class="icon">🎫</div>
+      <p>還沒有收集任何優惠券<br>快去遊戲中收集吧！</p>
+    </div>
+  </div>
+</div>
+
+<!-- 🗺️ 店家地圖 -->
+<div class="map-panel" id="mapPanel">
+  <div class="map-panel-header">
+    <h2>店家地圖</h2>
+    <button class="close-btn" onclick="closeMapPanel()">×</button>
+  </div>
+  <div class="map-container">
+    <div class="shop-list" id="shopList">
+      <p style="text-align:center;color:#999;padding:20px;">載入中...</p>
+    </div>
+  </div>
+</div>
+
+<!-- 📱 底部功能列 -->
 <div class="bottom-bar">
   <button onclick="openCouponPanel()">
     <span class="icon">🎫</span>
@@ -12,26 +345,608 @@
     <span class="icon">🗺️</span>
     <span>店家地圖</span>
   </button>
-  <!-- 添加切換到 SVG 版本的按鈕 -->
+  <!-- 添加 SVG 版本按鈕 -->
   <button onclick="switchToSVGVersion()">
     <span class="icon">🎮</span>
     <span>SVG版本</span>
   </button>
 </div>
 
+<!-- 音效 -->
+<audio id="bgm" loop src="https://aiwe.cc/wp-content/uploads/2025/11/901cd11beb7b52aea3f9011f2d3d33bb.mp3"></audio>
+<audio id="sDice" src="https://aiwe.cc/wp-content/uploads/2025/11/77b2287cce9574aeb82a8dbbcf200050.mp3"></audio>
+<audio id="sMove" src="https://aiwe.cc/wp-content/uploads/2025/11/f8bf2fa137503315a28ad81a8aee77a5.mp3"></audio>
+
 <script>
-// 添加切換函數
-function switchToSVGVersion() {
-    if (confirm('要切換到 SVG 版本遊戲嗎？')) {
-        window.location.href = 'game.html';
-    }
+// ============================================
+// 🎮 遊戲核心變數與設定
+// ============================================
+const GAS_BASE = 'https://script.google.com/macros/s/AKfycbwXJn0qM-qt5VJyiV87i84ax6XTq3jEUC8buFpTWeniP83Pu5suQET-2RZzouUbLaiQ/exec';
+
+// ✅ 修正店家資料和優惠券資料的 Google Sheets ID
+const SHOP_SHEET_ID = '1-qvp5x8VJa_vFULJy8dfT3FjQwLDkGV8ECyeCiwJpkU';
+const COUPON_SHEET_NAME = '2025/11';
+
+// ✅ 修正 GAS URL
+const GAS_SHOP_URL = `${GAS_BASE}?action=getShops&sheetId=${SHOP_SHEET_ID}&sheetName=店家資料`;
+const GAS_COUPON_URL = `${GAS_BASE}?action=getCoupons&sheetName=${COUPON_SHEET_NAME}`;
+
+const player = document.getElementById('player');
+const board = document.getElementById('board');
+const msg = document.getElementById('msg');
+const dice1 = document.getElementById('dice1');
+const dice2 = document.getElementById('dice2');
+const rollBtn = document.getElementById('rollBtn');
+const bgm = document.getElementById('bgm');
+const sDice = document.getElementById('sDice');
+const sMove = document.getElementById('sMove');
+const shopPopup = document.getElementById('shopPopup');
+const shopImg = document.getElementById('shopImg');
+const shopName = document.getElementById('shopName');
+const shopDesc = document.getElementById('shopDesc');
+const claimBtn = document.getElementById('claimBtn');
+const loginScreen = document.getElementById('loginScreen');
+
+let currentShop = null;
+const rows = 9, cols = 6;
+let pos = 0;
+let userId = "TEMP_USER";
+
+// 遊戲路徑設定
+const path = [];
+for (let x = cols - 1; x >= 0; x--) path.push({ x, y: rows - 1 });
+for (let y = rows - 2; y >= 0; y--) path.push({ x: 0, y });
+for (let x = 1; x < cols; x++) path.push({ x, y: 0 });
+for (let y = 1; y < rows - 1; y++) path.push({ x: cols - 1, y });
+
+// ============================================
+// 🎮 遊戲核心功能
+// ============================================
+function startGame() {
+  if (bgm.paused) {
+    bgm.volume = 0.3;
+    bgm.play().catch(() => {});
+  }
+  rollDice();
 }
 
-// 在 DOMContentLoaded 事件中添加
-window.addEventListener('DOMContentLoaded', function() {
-    // ... 您現有的程式碼 ...
+function showMsg(t) {
+  msg.textContent = t;
+  msg.style.opacity = 1;
+}
+
+function hideMsg() {
+  msg.style.opacity = 0;
+  setTimeout(() => msg.textContent = "", 500);
+}
+
+function updatePlayer() {
+  const cell = path[pos];
+  const w = board.clientWidth / cols;
+  const h = board.clientHeight / rows;
+  let offsetX = 0;
+  
+  if (cell.y === rows - 1) offsetX = -w * 0.05;
+  else if (cell.y === 0) offsetX = w * 0.05;
+  
+  if (cell.x === cols - 1 && cell.y > 0 && cell.y < rows - 1) offsetX -= w * 0.27;
+  
+  player.style.left = `${cell.x * w + w / 2 - player.clientWidth / 2 + offsetX}px`;
+  player.style.top = `${cell.y * h + h / 2 - player.clientHeight / 2}px`;
+}
+
+function updateDiceFace(el, v) {
+  el.className = 'dice face-' + v;
+  el.innerHTML = '';
+  for (let i = 0; i < v; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot';
+    el.appendChild(dot);
+  }
+}
+
+async function rollDice() {
+  rollBtn.disabled = true;
+  sDice.currentTime = 0;
+  sDice.play();
+  
+  let count = 0, v1 = 1, v2 = 1;
+  const interval = setInterval(() => {
+    v1 = Math.floor(Math.random() * 6) + 1;
+    v2 = Math.floor(Math.random() * 6) + 1;
+    updateDiceFace(dice1, v1);
+    updateDiceFace(dice2, v2);
+    count++;
     
-    // 添加版本資訊顯示
-    console.log('🎮 主要遊戲版本載入完成');
+    if (count > 15) {
+      clearInterval(interval);
+      sDice.pause();
+      const total = v1 + v2;
+      showMsg(`前進 ${total} 步！`);
+      movePlayer(total);
+    }
+  }, 80);
+}
+
+async function movePlayer(steps) {
+  player.classList.add('walking');
+  sMove.loop = true;
+  sMove.currentTime = 0;
+  sMove.play().catch(() => {});
+  
+  for (let i = 0; i < steps; i++) {
+    pos = (pos + 1) % path.length;
+    updatePlayer();
+    await new Promise(r => setTimeout(r, 450));
+  }
+  
+  player.classList.remove('walking');
+  sMove.pause();
+  sMove.currentTime = 0;
+  
+  await checkEvent();
+  setTimeout(() => hideMsg(), 800);
+  rollBtn.disabled = false;
+}
+
+// ============================================
+// 🏪 店家與優惠功能 - 修正載入邏輯
+// ============================================
+async function checkEvent() {
+  const cell = path[pos];
+  
+  // 懲罰格邏輯
+  if (cell.x === 0 && cell.y === 0) {
+    showMsg("踩到懲罰格！退回7步！");
+    for (let i = 0; i < 7; i++) {
+      pos = (pos - 1 + path.length) % path.length;
+      updatePlayer();
+      await new Promise(r => setTimeout(r, 300));
+    }
+    return;
+  }
+  
+  // ✅ 修正：載入店家資料
+  try {
+    const shops = await loadShops();
+    console.log('🛍️ 載入到的店家資料:', shops);
+    
+    if (shops && shops.length > 0) {
+      const shop = shops[Math.floor(Math.random() * shops.length)];
+      currentShop = shop;
+      showShopPopup(shop);
+    } else {
+      console.log('❌ 沒有可用的店家資料');
+      showMsg('暫無店家資料，請稍後再試');
+    }
+  } catch (error) {
+    console.error('❌ 載入店家時發生錯誤:', error);
+    showMsg('載入店家失敗');
+  }
+}
+
+function showShopPopup(shop) {
+  const imgUrl = shop["圖片網址"] || shop.icon || shop["圖示"] || "";
+  
+  // 安全設置圖片
+  if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
+    shopImg.src = imgUrl;
+    shopImg.onerror = function() {
+      this.src = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
+    };
+  } else {
+    shopImg.src = "https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg";
+  }
+  
+  shopName.textContent = shop["店家名稱"] || shop.name || "神秘店家";
+  shopDesc.textContent = shop["優惠內容"] || shop.discount || "限時優惠，趕快來看看！";
+  shopPopup.style.display = 'block';
+  claimBtn.disabled = false;
+  claimBtn.textContent = "收藏優惠";
+}
+
+function closeShop() {
+  shopPopup.style.display = 'none';
+}
+
+// ✅ 修正：載入店家資料函數
+async function loadShops() {
+  try {
+    console.log('📋 開始載入店家資料...');
+    const result = await safeFetch(GAS_SHOP_URL);
+    
+    if (result.success && Array.isArray(result.data)) {
+      console.log(`✅ 成功載入 ${result.data.length} 個店家`);
+      return result.data;
+    } else {
+      console.error('❌ 載入店家資料失敗:', result.message);
+      // 返回預設店家資料作為備份
+      return getDefaultShops();
+    }
+  } catch (error) {
+    console.error('❌ 載入店家資料發生錯誤:', error);
+    return getDefaultShops();
+  }
+}
+
+// ✅ 備用店家資料
+function getDefaultShops() {
+  return [
+    {
+      "店家名稱": "板橋咖啡廳",
+      "優惠內容": "拿鐵第二杯半價",
+      "圖片網址": "https://example.com/coffee.jpg",
+      "地址": "板橋區中山路一段123號"
+    },
+    {
+      "店家名稱": "商圈服飾店", 
+      "優惠內容": "全館8折優惠",
+      "圖片網址": "https://example.com/clothing.jpg",
+      "地址": "板橋區文化路二段456號"
+    }
+  ];
+}
+
+// ============================================
+// 🎫 優惠券收集區功能 - 修正載入邏輯
+// ============================================
+function openCouponPanel() {
+  document.getElementById('couponPanel').classList.add('show');
+  loadCoupons();
+}
+
+function closeCouponPanel() {
+  document.getElementById('couponPanel').classList.remove('show');
+}
+
+async function loadCoupons() {
+  const couponList = document.getElementById('couponList');
+  const couponCount = document.getElementById('couponCount');
+  
+  try {
+    console.log('🎫 開始載入優惠券...');
+    
+    const params = new URLSearchParams({
+      action: 'getCoupons',
+      userId: userId,
+      sheetName: COUPON_SHEET_NAME
+    });
+    
+    const response = await safeFetch(`${GAS_BASE}?${params}`);
+    console.log('📋 優惠券API回應:', response);
+    
+    if (response.success && response.data && response.data.length > 0) {
+      couponCount.textContent = response.data.length;
+      
+      couponList.innerHTML = response.data.map(coupon => `
+        <div class="coupon-card">
+          <img src="${coupon.imageUrl || coupon.icon || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}" 
+               onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
+          <div class="coupon-card-info">
+            <h3>${coupon.shopName || '店家名稱'}</h3>
+            <p class="discount">${coupon.discount || '優惠內容'}</p>
+            <p style="font-size:14px;color:#999;margin-top:4px;">${coupon.createTime ? new Date(coupon.createTime).toLocaleDateString() : ''}</p>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      couponCount.textContent = '0';
+      couponList.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">🎫</div>
+          <p>還沒有收集任何優惠券<br>快去遊戲中收集吧！</p>
+        </div>
+      `;
+    }
+  } catch (error) {
+    console.error('❌ 載入優惠券失敗:', error);
+    couponList.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <p>載入失敗，請稍後再試</p>
+      </div>
+    `;
+  }
+}
+
+// ============================================
+// 📱 LINE 登入功能
+// ============================================
+async function startLineLogin() {
+  try {
+    console.log('=== 🔐 開始 LINE 登入流程 ===');
+    
+    const apiUrl = `${GAS_BASE}?action=getLineLoginUrl&timestamp=${Date.now()}`;
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const result = await response.json();
+    
+    if (result.success && result.loginUrl) {
+      console.log('✅ 成功取得登入網址，準備跳轉...');
+      // 使用 window.open 而不是在 iframe 中打開
+      const loginWindow = window.open(result.loginUrl, '_blank', 'width=500,height=600');
+      
+      // 監聽登入完成
+      if (loginWindow) {
+        const checkLogin = setInterval(() => {
+          if (loginWindow.closed) {
+            clearInterval(checkLogin);
+            checkLoginStatus();
+          }
+        }, 1000);
+      }
+    } else {
+      console.error('❌ 後端回傳失敗:', result.message);
+      alert('LINE 登入失敗：' + (result.message || '無法取得登入網址'));
+    }
+  } catch (error) {
+    console.error('❌ LINE 登入發生錯誤:', error);
+    alert('LINE 登入發生錯誤，請稍後再試');
+  }
+}
+
+// 檢查登入狀態
+async function checkLoginStatus() {
+  try {
+    const params = new URLSearchParams({
+      action: 'checkLoginStatus',
+      userId: localStorage.getItem('lineUserId') || 'temp'
+    });
+    
+    const response = await safeFetch(`${GAS_BASE}?${params}`);
+    
+    if (response.success && response.loggedIn) {
+      // 更新用戶界面
+      updateUserInterface(response.userInfo);
+    }
+  } catch (error) {
+    console.error('檢查登入狀態失敗:', error);
+  }
+}
+
+// 更新用戶界面
+function updateUserInterface(userInfo) {
+  if (userInfo && userInfo.userId) {
+    localStorage.setItem('lineUserId', userInfo.userId);
+    localStorage.setItem('lineDisplayName', userInfo.displayName);
+    localStorage.setItem('linePictureUrl', userInfo.pictureUrl || '');
+    
+    document.getElementById('lineLoginText').textContent = userInfo.displayName;
+    document.getElementById('lineLoginBtn').classList.add('logged-in');
+    userId = userInfo.userId;
+    
+    // 隱藏登入畫面
+    loginScreen.classList.add('hidden');
+    
+    alert(`歡迎，${userInfo.displayName}！\n\n您的優惠券已綁定到 LINE 帳號。`);
+  }
+}
+
+// 底部功能列的 LINE 登入/登出按鈕
+async function lineLogin() {
+  const lineLoginBtn = document.getElementById('lineLoginBtn');
+  const lineLoginText = document.getElementById('lineLoginText');
+  
+  if (localStorage.getItem('lineUserId')) {
+    // 已登入，顯示登出選項
+    if (confirm('確定要登出 LINE 帳號嗎？')) {
+      localStorage.removeItem('lineUserId');
+      localStorage.removeItem('lineDisplayName');
+      localStorage.removeItem('linePictureUrl');
+      
+      lineLoginText.textContent = 'LINE登入';
+      lineLoginBtn.classList.remove('logged-in');
+      userId = 'TEMP_USER';
+      
+      alert('已登出！');
+      
+      // 顯示登入畫面
+      loginScreen.classList.remove('hidden');
+      
+      if (document.getElementById('couponPanel').classList.contains('show')) {
+        loadCoupons();
+      }
+    }
+  } else {
+    // 未登入，執行登入
+    startLineLogin();
+  }
+}
+
+// ============================================
+// 🗺️ 店家地圖功能 - 修正載入邏輯
+// ============================================
+function openMapPanel() {
+  document.getElementById('mapPanel').classList.add('show');
+  loadShopMap();
+}
+
+function closeMapPanel() {
+  document.getElementById('mapPanel').classList.remove('show');
+}
+
+async function loadShopMap() {
+  const shopList = document.getElementById('shopList');
+  
+  try {
+    console.log('🗺️ 開始載入店家地圖...');
+    const shops = await loadShops();
+    
+    if (shops && shops.length > 0) {
+      shopList.innerHTML = shops.map(shop => `
+        <div class="shop-item">
+          <img src="${shop['圖片網址'] || shop.icon || 'https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'}"
+               onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
+          <div class="shop-item-info">
+            <h3>${shop['店家名稱'] || '店家名稱'}</h3>
+            <p>${shop['優惠內容'] || '優惠內容'}</p>
+            <p class="address">📍 ${shop['地址'] || '地址未提供'}</p>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      shopList.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">沒有店家資料</p>';
+    }
+  } catch (error) {
+    console.error('❌ 載入店家地圖失敗:', error);
+    shopList.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">載入失敗，請稍後再試</p>';
+  }
+}
+
+// ============================================
+// 🔧 工具函數 - 加強錯誤處理
+// ============================================
+// 安全請求函數
+async function safeFetch(url, options = {}) {
+  try {
+    console.log(`🌐 發送請求: ${url}`);
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log(`✅ 請求成功:`, result);
+    return result;
+  } catch (error) {
+    console.error('❌ 請求失敗:', error);
+    return { success: false, message: error.message };
+  }
+}
+
+// ============================================
+// 🎯 事件監聽器 - 修正收藏優惠功能
+// ============================================
+// 收藏優惠按鈕事件
+claimBtn.addEventListener('click', () => {
+  if (!currentShop) return;
+  
+  claimBtn.disabled = true;
+  claimBtn.textContent = "🎉 收藏中...";
+  
+  const shopId = currentShop.ID || currentShop['店家名稱'] || '';
+  const shopName = currentShop["店家名稱"] || currentShop.name || '';
+  const discount = currentShop["優惠內容"] || currentShop.discount || '';
+  const category = currentShop["分類"] || currentShop.category || "一般";
+  const icon = currentShop.icon || currentShop["圖示"] || "🏪";
+  const imageUrl = currentShop["圖片網址"] || currentShop.icon || '';
+  
+  const params = new URLSearchParams({
+    action: "saveCoupon",
+    userId: userId,
+    couponId: 'CPN' + Date.now(),
+    shopId: encodeURIComponent(shopId),
+    shopName: encodeURIComponent(shopName),
+    discount: encodeURIComponent(discount),
+    category: encodeURIComponent(category),
+    icon: encodeURIComponent(icon),
+    imageUrl: encodeURIComponent(imageUrl),
+    status: "active",
+    sheetName: COUPON_SHEET_NAME
+  });
+  
+  fetch(`${GAS_BASE}?${params.toString()}`)
+    .then(r => r.json())
+    .then(res => {
+      if (res.success) {
+        claimBtn.textContent = "✅ 收藏成功！";
+        setTimeout(() => closeShop(), 1500);
+      } else {
+        claimBtn.textContent = "⚠️ 收藏失敗";
+        console.error('收藏失敗:', res.message);
+      }
+    })
+    .catch(err => {
+      claimBtn.textContent = "⚠️ 網路錯誤";
+      console.error('收藏錯誤:', err);
+    });
+});
+
+// ============================================
+// 📱 底部功能列 - 添加 SVG 版本切換
+// ============================================
+function switchToSVGVersion() {
+  if (confirm('要切換到 SVG 版本遊戲嗎？')) {
+    window.location.href = 'game.html';
+  }
+}
+
+// ============================================
+// 🔍 頁面載入時檢查 LINE 登入狀態
+// ============================================
+window.addEventListener('DOMContentLoaded', function() {
+  console.log('=== 📱 檢查頁面參數 ===');
+  
+  // 檢查 URL 是否包含登入成功的標記
+  const urlParams = new URLSearchParams(window.location.search);
+  const lineUserId = urlParams.get('lineUserId');
+  const lineDisplayName = urlParams.get('lineDisplayName');
+  const linePictureUrl = urlParams.get('linePictureUrl');
+  
+  if (lineUserId && lineDisplayName) {
+    console.log('🎉 偵測到 LINE 登入成功！');
+    console.log('   User ID:', lineUserId);
+    console.log('   顯示名稱:', decodeURIComponent(lineDisplayName));
+    
+    // 儲存到 localStorage
+    localStorage.setItem('lineUserId', lineUserId);
+    localStorage.setItem('lineDisplayName', decodeURIComponent(lineDisplayName));
+    localStorage.setItem('linePictureUrl', decodeURIComponent(linePictureUrl || ''));
+    
+    // 更新 UI
+    document.getElementById('lineLoginText').textContent = decodeURIComponent(lineDisplayName);
+    document.getElementById('lineLoginBtn').classList.add('logged-in');
+    userId = lineUserId;
+    
+    // 隱藏登入畫面，進入遊戲
+    loginScreen.classList.add('hidden');
+    
+    console.log('✅ LINE 登入資料已儲存');
+    
+    // 顯示歡迎訊息
+    setTimeout(() => {
+      alert(`歡迎，${decodeURIComponent(lineDisplayName)}！\n\n您的優惠券已綁定到 LINE 帳號。`);
+    }, 500);
+    
+    // 清除 URL 參數
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else {
+    // 檢查 localStorage 是否有登入資料
+    const storedUserId = localStorage.getItem('lineUserId');
+    const storedDisplayName = localStorage.getItem('lineDisplayName');
+    
+    if (storedUserId) {
+      console.log('✅ 用戶已登入（從 localStorage）');
+      console.log('   User ID:', storedUserId);
+      console.log('   顯示名稱:', storedDisplayName);
+      
+      document.getElementById('lineLoginText').textContent = storedDisplayName || '已登入';
+      document.getElementById('lineLoginBtn').classList.add('logged-in');
+      userId = storedUserId;
+      
+      // 隱藏登入畫面，進入遊戲
+      loginScreen.classList.add('hidden');
+    } else {
+      console.log('⚪ 用戶未登入，顯示登入畫面');
+      // 顯示登入畫面
+      loginScreen.classList.remove('hidden');
+    }
+  }
+  
+  // 初始化角色位置
+  updatePlayer();
 });
 </script>
+</body>
+</html>
