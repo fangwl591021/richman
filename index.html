@@ -109,11 +109,12 @@ body{
 }
 .msg{
   color:#000;
-  font-size:14px;
+  font-size:14px; /* 縮小字體 */
   font-weight:bold;
   text-shadow:1px 1px 2px rgba(255,255,255,.6);
   min-height:18px;
   transition:opacity .5s ease;
+  margin-top: -5px; /* 移到按鈕正下方 */
 }
 
 /* === 🎲 穩定 2D 骰子樣式 === */
@@ -474,12 +475,12 @@ body{
   </div>
 
   <div class="center">
-  <div class="dice-box">
-    <!-- 骰子 -->
-  </div>
-  <button class="roll-btn" id="rollBtn">🎲 投擲骰子</button>  <!-- 按鈕 -->
-  <div class="msg" id="msg"></div>  <!-- 提示文字移到按鈕下方 -->
-</div>
+    <div class="msg" id="msg"></div>
+    <div class="dice-box">
+      <!-- 骰子 1 -->
+      <div class="dice face-1" id="dice1">
+        <div class="dot"></div>
+      </div>
       
       <!-- 骰子 2 -->
       <div class="dice face-1" id="dice2">
