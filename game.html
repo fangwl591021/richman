@@ -1,0 +1,36 @@
+<!-- 修改底部導航 -->
+<div class="bottom-nav">
+  <button class="nav-btn" onclick="showInfo()">
+    <div class="nav-icon">ℹ️</div>
+    <div class="nav-label">說明</div>
+  </button>
+  <button class="nav-btn" onclick="showCoupons()">
+    <div class="nav-icon">🎫</div>
+    <div class="nav-label">優惠券</div>
+  </button>
+  <button class="nav-btn" onclick="showProfile()">
+    <div class="nav-icon">👤</div>
+    <div class="nav-label">我的</div>
+  </button>
+  <!-- 添加返回主要版本的按鈕 -->
+  <button class="nav-btn" onclick="switchToMainVersion()">
+    <div class="nav-icon">🏠</div>
+    <div class="nav-label">主版本</div>
+  </button>
+</div>
+
+<script>
+// 添加返回函數
+function switchToMainVersion() {
+    if (confirm('要返回主要遊戲版本嗎？')) {
+        window.location.href = 'index.html';
+    }
+}
+
+// 在 init 函數中添加
+function init() {
+    // ... 您現有的程式碼 ...
+    
+    console.log('🎨 SVG 遊戲版本載入完成');
+}
+</script>
