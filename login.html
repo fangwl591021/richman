@@ -166,6 +166,7 @@
             
             if (verify === userData.userId) {
                 console.log('🎮 跳轉到遊戲...');
+                // ✅ 修改這裡：跳轉到 index.html
                 window.location.href = 'index.html';
             } else {
                 throw new Error('資料驗證失敗');
