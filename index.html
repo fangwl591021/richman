@@ -218,42 +218,82 @@ body{
 .bottom-bar button.logged-in{color:#4caf50;}
 
 /* === 優惠券收集區彈窗 === */
+/* === 優惠券收集區彈窗 === */
 .coupon-panel{
   position:fixed;top:0;left:0;right:0;bottom:70px;
   background:white;z-index:200;display:none;
-  overflow-y:auto;padding:20px;
+  overflow-y:auto;padding:15px; /* 從 20px 改小 */
 }
-.coupon-panel.show{display:block;}
+
 .coupon-panel-header{
   display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:20px;padding-bottom:15px;
+  margin-bottom:15px; /* 從 20px 改小 */
+  padding-bottom:12px; /* 從 15px 改小 */
   border-bottom:2px solid #eee;
 }
-.coupon-panel-header h2{font-size:28px;color:#333;}
-.coupon-panel-header .close-btn{
-  width:40px;height:40px;border:none;
-  background:#ddd;border-radius:50%;
-  font-size:24px;cursor:pointer;
+
+.coupon-panel-header h2{
+  font-size:21px; /* 從 28px 改小 */
+  color:#333;
 }
-.coupon-list{display:grid;gap:15px;}
+
+.coupon-list{
+  display:grid;
+  gap:12px; /* 從 15px 改小 */
+}
+
 .coupon-card{
-  border:1px solid #ddd;border-radius:12px;
-  padding:15px;display:flex;gap:15px;
-  background:white;box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  border:1px solid #ddd;
+  border-radius:10px; /* 從 12px 改小 */
+  padding:12px; /* 從 15px 改小 */
+  display:flex;
+  gap:12px; /* 從 15px 改小 */
+  background:white;
+  box-shadow:0 1px 5px rgba(0,0,0,0.1); /* 從 2px 8px 改小 */
 }
+
 .coupon-card img{
-  width:80px;height:80px;object-fit:cover;
-  border-radius:8px;flex-shrink:0;
+  width:60px; /* 從 80px 改小 */
+  height:60px; /* 從 80px 改小 */
+  object-fit:cover;
+  border-radius:6px; /* 從 8px 改小 */
+  flex-shrink:0;
 }
-.coupon-card-info{flex:1;}
-.coupon-card-info h3{font-size:20px;margin-bottom:5px;color:#333;}
-.coupon-card-info p{font-size:16px;color:#666;}
-.coupon-card-info .discount{color:#e53935;font-weight:bold;}
+
+.coupon-card-info{
+  flex:1;
+}
+
+.coupon-card-info h3{
+  font-size:16px; /* 從 20px 改小 */
+  margin-bottom:4px; /* 從 5px 改小 */
+  color:#333;
+}
+
+.coupon-card-info p{
+  font-size:13px; /* 從 16px 改小 */
+  color:#666;
+}
+
+.coupon-card-info .discount{
+  color:#e53935;
+  font-weight:bold;
+}
+
 .empty-state{
-  text-align:center;padding:60px 20px;color:#999;
+  text-align:center;
+  padding:45px 15px; /* 從 60px 20px 改小 */
+  color:#999;
 }
-.empty-state .icon{font-size:64px;margin-bottom:20px;}
-.empty-state p{font-size:18px;}
+
+.empty-state .icon{
+  font-size:48px; /* 從 64px 改小 */
+  margin-bottom:15px; /* 從 20px 改小 */
+}
+
+.empty-state p{
+  font-size:15px; /* 從 18px 改小 */
+}
 
 /* === 店家地圖彈窗 === */
 .map-panel{
@@ -927,9 +967,6 @@ async function safeFetch(url, options = {}) {
   }
 }
 
-// ============================================
-// 🎯 事件監聽器 - 修正收藏優惠功能
-// ============================================
 // 收藏優惠按鈕事件
 claimBtn.addEventListener('click', async () => {
   if (!currentShop) return;
@@ -945,46 +982,46 @@ claimBtn.addEventListener('click', async () => {
     
     console.log('💾 準備收藏優惠券:', { shopName, discount, userId });
     
-    // 使用 FormData 發送 POST 請求
-    const formData = new FormData();
-    formData.append('action', 'saveCoupon');
-    formData.append('userId', userId);
-    formData.append('couponId', 'CPN' + Date.now());
-    formData.append('shopName', shopName);
-    formData.append('discount', discount);
-    formData.append('imageUrl', imageUrl);
-    formData.append('status', 'active');
+    // 使用 JSONP 或代理方式繞過 CORS
+    // 方法：使用動態創建 script 標籤
+    const couponId = 'CPN' + Date.now();
+    const callbackName = 'couponCallback_' + couponId;
     
-    const response = await fetch(GAS_BASE, {
-      method: 'POST',
-      body: formData
-    });
+    // 創建全局回調函數
+    window[callbackName] = function(result) {
+      console.log('💾 收藏優惠券回應:', result);
+      
+      if (result.success) {
+        claimBtn.textContent = "✅ 收藏成功！";
+        setTimeout(() => {
+          closeShop();
+          if (document.getElementById('couponPanel').classList.contains('show')) {
+            loadCoupons();
+          }
+        }, 1500);
+      } else {
+        claimBtn.textContent = "⚠️ 收藏失敗";
+        console.error('收藏失敗:', result.message);
+        setTimeout(() => {
+          claimBtn.textContent = "收藏優惠";
+          claimBtn.disabled = false;
+        }, 2000);
+      }
+      
+      // 清理
+      delete window[callbackName];
+      if (script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
     
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
+    // 構建 URL（使用 JSONP）
+    const url = `${GAS_BASE}?action=saveCoupon&userId=${encodeURIComponent(userId)}&couponId=${couponId}&shopName=${encodeURIComponent(shopName)}&discount=${encodeURIComponent(discount)}&imageUrl=${encodeURIComponent(imageUrl)}&status=active&callback=${callbackName}`;
     
-    const result = await response.json();
-    console.log('💾 收藏優惠券回應:', result);
-    
-    if (result.success) {
-      claimBtn.textContent = "✅ 收藏成功！";
-      // 重新載入優惠券列表
-      setTimeout(() => {
-        closeShop();
-        // 如果優惠券面板是打開的，重新載入
-        if (document.getElementById('couponPanel').classList.contains('show')) {
-          loadCoupons();
-        }
-      }, 1500);
-    } else {
-      claimBtn.textContent = "⚠️ 收藏失敗";
-      console.error('收藏失敗:', result.message);
-      setTimeout(() => {
-        claimBtn.textContent = "收藏優惠";
-        claimBtn.disabled = false;
-      }, 2000);
-    }
+    // 動態添加 script 標籤
+    const script = document.createElement('script');
+    script.src = url;
+    document.head.appendChild(script);
     
   } catch (error) {
     console.error('❌ 收藏錯誤:', error);
