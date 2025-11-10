@@ -268,9 +268,15 @@ async function saveCoupon(shopData) {
   }
 }
 
+// 在 common.js 中修正 verifyCoupon 函數
 async function verifyCoupon(couponId) {
   try {
     console.log('✅ 核銷優惠券:', couponId);
+    
+    if (!couponId || couponId === 'undefined') {
+      console.error('❌ 無效的 couponId');
+      return false;
+    }
     
     // 嘗試不同的 API action
     const actions = [
