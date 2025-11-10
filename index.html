@@ -658,28 +658,16 @@ async function loadCoupons() {
   try {
     console.log('🎫 開始載入優惠券...');
     
-    // 使用更簡單的參數傳遞方式
-    const couponUrl = `${GAS_COUPON_BASE}&userId=${encodeURIComponent(userId)}`;
+    // 直接使用 GET 請求載入優惠券
+    const couponUrl = `${GAS_BASE}?action=getCoupons&userId=${encodeURIComponent(userId)}`;
+    const response = await fetch(couponUrl);
     
-    const response = await fetch(couponUrl, {
-      method: 'GET',
-      mode: 'no-cors'
-    }).catch(err => {
-      console.log('使用備用請求方式...');
-      return safeFetch(couponUrl);
-    });
-    
-    let result;
-    if (response instanceof Response) {
-      try {
-        result = await response.json();
-      } catch (e) {
-        console.log('優惠券 JSON 解析失敗');
-        result = { success: false };
-      }
-    } else {
-      result = response;
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
+    
+    const result = await response.json();
+    console.log('🎫 優惠券API回應:', result);
     
     if (result.success && result.data && result.data.length > 0) {
       couponCount.textContent = result.data.length;
@@ -691,7 +679,9 @@ async function loadCoupons() {
           <div class="coupon-card-info">
             <h3>${coupon.shopName || '店家名稱'}</h3>
             <p class="discount">${coupon.discount || '優惠內容'}</p>
-            <p style="font-size:14px;color:#999;margin-top:4px;">${coupon.createTime ? new Date(coupon.createTime).toLocaleDateString() : ''}</p>
+            <p style="font-size:14px;color:#999;margin-top:4px;">
+              ${coupon.createTime ? new Date(coupon.createTime).toLocaleDateString('zh-TW') : '今天'}
+            </p>
           </div>
         </div>
       `).join('');
