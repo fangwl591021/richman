@@ -209,31 +209,31 @@ body{
 .shop-popup{
   position:fixed;top:50%;left:50%;
   transform:translate(-50%,-50%);
-  width:85%;max-width:350px; /* 進一步縮小寬度 */
+  width:85%;max-width:350px;
   background:white;color:#222;
   border-radius:12px;box-shadow:0 8px 25px rgba(0,0,0,.4);
   overflow-y:auto;text-align:center;
-  max-height:75vh; /* 限制高度 */
+  max-height:75vh;
   z-index:50;display:none;
   animation:fadeIn .4s ease;
 }
 @keyframes fadeIn{from{opacity:0;transform:translate(-50%,-45%);}to{opacity:1;transform:translate(-50%,-50%);}}
 .shop-popup img{
-  width:100%;height:150px;object-fit:cover; /* 縮小圖片高度 */
+  width:100%;height:auto;object-fit:contain; /* 移除高度限制，保持比例 */
   display:block;
   background:#eee;
   border-radius:12px 12px 0 0;
 }
 .shop-content{
-  padding:12px 15px 15px; /* 縮小內距 */
-  text-align:left; /* 改為靠左對齊 */
+  padding:12px 15px 15px;
+  text-align:left; /* 靠左對齊 */
 }
 .shop-content h2{
-  font-size:18px;color:#222;margin-bottom:6px; /* 縮小字體 */
+  font-size:18px;color:#222;margin-bottom:6px;
 }
 .shop-content p{
-  font-size:14px;color:#555;margin-bottom:12px; /* 縮小字體 */
-  white-space: pre-line; /* 支援 \n 換行 */
+  font-size:14px;color:#555;margin-bottom:12px;
+  white-space: pre-line; /* 支援換行 */
   line-height:1.3;
 }
 .shop-buttons{
@@ -242,7 +242,7 @@ body{
 .shop-buttons button{
   width:95%;
   border:none;border-radius:8px;
-  padding:10px 12px;font-size:14px;font-weight:bold;cursor:pointer; /* 縮小按鈕 */
+  padding:10px 12px;font-size:14px;font-weight:bold;cursor:pointer;
   color:white;transition:transform .2s ease;
 }
 .shop-buttons button:active{transform:scale(0.95);}
@@ -260,18 +260,18 @@ body{
 .bottom-bar button{
   flex:1;height:100%;border:none;
   background:transparent;color:white;
-  font-size:10px;font-weight:bold; /* 縮小字體 */
+  font-size:10px;font-weight:bold;
   cursor:pointer;transition:all .3s ease;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:2px;
 }
 .bottom-bar button:active{background:rgba(255,255,255,0.1);}
-.bottom-bar button .icon{font-size:20px;} /* 縮小圖標 */
+.bottom-bar button .icon{font-size:20px;}
 .bottom-bar button.logged-in{color:#4caf50;}
 
 /* ✨ LINE 頭像樣式 */
 .line-avatar{
-  width:30px; /* 縮小頭像 */
+  width:30px;
   height:30px;
   border-radius:50%;
   object-fit:cover;
@@ -303,33 +303,33 @@ body{
   margin-bottom:12px;padding-bottom:10px;
   border-bottom:1px solid #eee;
 }
-.coupon-panel-header h2{font-size:18px;color:#333;} /* 縮小字體 */
+.coupon-panel-header h2{font-size:18px;color:#333;}
 .coupon-panel-header .close-btn{
-  width:30px;height:30px;border:none; /* 縮小關閉按鈕 */
+  width:30px;height:30px;border:none;
   background:#ddd;border-radius:50%;
   font-size:16px;cursor:pointer;
 }
-.coupon-list{display:grid;gap:8px;} /* 縮小間距 */
+.coupon-list{display:grid;gap:8px;}
 .coupon-card{
   border:1px solid #ddd;border-radius:8px;
-  padding:8px;display:flex;gap:8px; /* 縮小內距 */
+  padding:8px;display:flex;gap:8px;
   background:white;box-shadow:0 1px 3px rgba(0,0,0,0.1);
-  transform: scale(0.75); /* 縮減四分之一尺寸 */
+  transform: scale(0.75);
   transform-origin: top center;
-  margin: -8px 0; /* 補償縮小後的間距 */
+  margin: -8px 0;
 }
 .coupon-card img{
-  width:45px;height:45px;object-fit:cover; /* 縮小圖片 */
+  width:45px;height:45px;object-fit:cover;
   border-radius:4px;flex-shrink:0;
 }
 .coupon-card-info{flex:1;}
-.coupon-card-info h3{font-size:14px;margin-bottom:3px;color:#333;} /* 縮小字體 */
-.coupon-card-info p{font-size:12px;color:#666;} /* 縮小字體 */
+.coupon-card-info h3{font-size:14px;margin-bottom:3px;color:#333;}
+.coupon-card-info p{font-size:12px;color:#666;}
 .coupon-card-info .discount{
   color:#e53935;font-weight:bold;
-  white-space: pre-line; /* 支援 \n 換行 */
+  white-space: pre-line; /* 支援換行 */
   line-height:1.2;
-  font-size:11px; /* 縮小字體 */
+  font-size:11px;
 }
 .coupon-card-info .date{
   font-size:10px;color:#999;margin-top:2px;
@@ -338,10 +338,10 @@ body{
   font-size:10px;color:#4caf50;margin-top:1px;
 }
 .empty-state{
-  text-align:center;padding:30px 15px;color:#999; /* 縮小內距 */
+  text-align:center;padding:30px 15px;color:#999;
 }
-.empty-state .icon{font-size:36px;margin-bottom:10px;} /* 縮小圖標 */
-.empty-state p{font-size:14px;} /* 縮小字體 */
+.empty-state .icon{font-size:36px;margin-bottom:10px;}
+.empty-state p{font-size:14px;}
 
 /* === 店家地圖彈窗 === */
 .map-panel{
@@ -351,36 +351,36 @@ body{
 }
 .map-panel.show{display:block;}
 .map-panel-header{
-  padding:10px 12px;background:#764ba2;color:white; /* 縮小內距 */
+  padding:10px 12px;background:#764ba2;color:white;
   display:flex;justify-content:space-between;align-items:center;
 }
-.map-panel-header h2{font-size:16px;} /* 縮小字體 */
+.map-panel-header h2{font-size:16px;}
 .map-panel-header .close-btn{
-  width:30px;height:30px;border:none; /* 縮小關閉按鈕 */
+  width:30px;height:30px;border:none;
   background:rgba(255,255,255,0.2);border-radius:50%;
   color:white;font-size:16px;cursor:pointer;
 }
 .map-container{
   padding:12px;
 }
-.shop-list{display:grid;gap:8px;} /* 縮小間距 */
+.shop-list{display:grid;gap:8px;}
 .shop-item{
   border:1px solid #ddd;border-radius:6px;
-  padding:8px;display:flex;gap:8px; /* 縮小內距 */
+  padding:8px;display:flex;gap:8px;
   background:white;
 }
 .shop-item img{
-  width:40px;height:40px;object-fit:cover; /* 縮小圖片 */
+  width:40px;height:40px;object-fit:cover;
   border-radius:4px;flex-shrink:0;
 }
 .shop-item-info{flex:1;}
-.shop-item-info h3{font-size:14px;margin-bottom:2px;} /* 縮小字體 */
+.shop-item-info h3{font-size:14px;margin-bottom:2px;}
 .shop-item-info p{
-  font-size:12px;color:#666; /* 縮小字體 */
-  white-space: pre-line; /* 支援 \n 換行 */
+  font-size:12px;color:#666;
+  white-space: pre-line; /* 支援換行 */
   line-height:1.2;
 }
-.shop-item-info .address{font-size:11px;color:#999;margin-top:2px;} /* 縮小字體 */
+.shop-item-info .address{font-size:11px;color:#999;margin-top:2px;}
 
 /* === 載入動畫 === */
 .loading {
@@ -702,11 +702,18 @@ function showShopPopup(shop) {
   }
   
   shopName.textContent = shopNameText;
-  // 支援 \n 換行，但不顯示 \n 字符
-  shopDesc.textContent = shopDescText.replace(/\\n/g, '\n');
+  // 修正換行問題 - 正確處理 \n 換行
+  shopDesc.textContent = processNewlines(shopDescText);
   shopPopup.style.display = 'block';
   claimBtn.disabled = false;
   claimBtn.textContent = "收藏優惠";
+}
+
+// 處理換行的函數
+function processNewlines(text) {
+  if (!text) return "";
+  // 將字串中的 \n 替換為實際換行
+  return text.replace(/\\n/g, '\n');
 }
 
 function closeShop() {
@@ -797,7 +804,7 @@ async function loadCoupons() {
                  onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
             <div class="coupon-card-info">
               <h3>${coupon.shopName || '店家名稱'}</h3>
-              <p class="discount">${(coupon.discount || '優惠內容').replace(/\\n/g, '\n')}</p>
+              <p class="discount">${processNewlines(coupon.discount || '優惠內容')}</p>
               <p class="date">
                 ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
               </p>
@@ -980,7 +987,7 @@ async function loadShopMap() {
                onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/6/65/No-Image-Placeholder.svg'">
           <div class="shop-item-info">
             <h3>${shop['店家名稱'] || '店家名稱'}</h3>
-            <p>${(shop['優惠內容'] || '優惠內容').replace(/\\n/g, '\n')}</p>
+            <p>${processNewlines(shop['優惠內容'] || '優惠內容')}</p>
             <p class="address">📍 ${shop['地址'] || '地址未提供'}</p>
           </div>
         </div>
