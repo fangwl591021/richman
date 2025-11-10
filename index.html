@@ -684,14 +684,42 @@ async function loadCoupons() {
 }
 
 // ============================================
-// 📱 LINE 登入功能
-// ============================================
-// ============================================
 // 📱 LINE 登入功能 - 使用 LIFF 內建登入
 // ============================================
+let liffInitialized = false;
+
+// 初始化 LIFF
+async function initLiff() {
+    try {
+        if (typeof liff === 'undefined') {
+            console.log('❌ LIFF SDK 未載入');
+            return false;
+        }
+        
+        await liff.init({ 
+            liffId: '2008231249-7DlMkygo' // 您的 LIFF ID
+        });
+        liffInitialized = true;
+        console.log('✅ LIFF 初始化成功');
+        return true;
+    } catch (error) {
+        console.error('❌ LIFF 初始化失敗:', error);
+        return false;
+    }
+}
+
 async function startLineLogin() {
   try {
     console.log('=== 🔐 開始 LINE 登入流程 ===');
+    
+    // 確保 LIFF 已初始化
+    if (!liffInitialized) {
+      const initialized = await initLiff();
+      if (!initialized) {
+        alert('LINE 登入功能初始化失敗，請重新整理頁面');
+        return;
+      }
+    }
     
     // 使用 LIFF 內建的登入功能
     if (!liff.isLoggedIn()) {
@@ -937,14 +965,33 @@ function switchToSVGVersion() {
 // ============================================
 // 🔍 頁面載入時檢查 LINE 登入狀態
 // ============================================
-window.addEventListener('DOMContentLoaded', function() {
-  console.log('=== 📱 檢查頁面參數 ===');
+window.addEventListener('DOMContentLoaded', async function() {
+  console.log('=== 📱 初始化應用程式 ===');
   
-  // 檢查 URL 是否包含登入成功的標記
+  // 嘗試初始化 LIFF（非強制）
+  try {
+    await initLiff();
+    
+    // 如果 LIFF 初始化成功且用戶已登入，自動取得資料
+    if (liffInitialized && liff.isLoggedIn()) {
+      console.log('✅ LIFF 用戶已登入，自動取得資料');
+      await getLineProfile();
+      
+      // 如果成功取得 LINE 資料，就隱藏登入畫面
+      if (localStorage.getItem('lineUserId')) {
+        loginScreen.classList.add('hidden');
+        return;
+      }
+    }
+  } catch (error) {
+    console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF，繼續其他登入方式');
+  }
+  
+  // 原有的檢查邏輯
+  console.log('=== 📱 檢查頁面參數 ===');
   const urlParams = new URLSearchParams(window.location.search);
   const lineUserId = urlParams.get('lineUserId');
   const lineDisplayName = urlParams.get('lineDisplayName');
-  const linePictureUrl = urlParams.get('linePictureUrl');
   
   if (lineUserId && lineDisplayName) {
     console.log('🎉 偵測到 LINE 登入成功！');
