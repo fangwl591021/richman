@@ -10,96 +10,26 @@
 body{
   font-family:"Microsoft JhengHei",sans-serif;
   background:#111;
-  height:auto; /* 改為自動高度 */
-  min-height:100vh; /* 確保最小高度 */
-  overflow-y:auto; /* 允許垂直滾動 */
+  min-height:100vh;
   display:flex;
   flex-direction:column;
   align-items:center;
-  justify-content:flex-start; /* 改為頂部對齊 */
-  padding:10px 0 70px; /* 底部留出功能區空間 */
-  gap:10px;
+  padding:15px 0 75px;
+  gap:15px;
 }
+
+/* 遊戲板 */
 .board{
   width:95%;
   aspect-ratio:2/3;
   background:url("https://aiwe.cc/wp-content/uploads/2025/11/8fbdbf5573b18fae93736180f8d0197a.png") center/contain no-repeat;
   background-color:#000;
   border-radius:10px;
-  margin-bottom:0;
-  position:relative; /* 改為相對定位 */
-  transform:none; /* 移除transform */
-  top:auto; /* 移除固定定位 */
-  left:auto;
-}
-/* === 底部功能區 === */
-.bottom-bar{
-  position:fixed;bottom:0;left:0;right:0;
-  height:60px;
-  background:#FFF8E1;
-  display:flex;justify-content:space-around;align-items:center;
-  z-index:100;
-  border-top:2px solid rgba(0,0,0,0.1);
+  position:relative;
+  overflow:hidden;
 }
 
-/* === LINE 登入歡迎頁面 === */
-.login-screen{
-  position:fixed;top:0;left:0;right:0;bottom:0;
-  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  z-index:999;padding:20px;
-}
-.login-screen.hidden{display:none;}
-.login-box{
-  background:white;border-radius:30px;
-  padding:50px 40px;text-align:center;
-  box-shadow:0 20px 60px rgba(0,0,0,0.3);
-  max-width:450px;width:100%;
-  animation:slideIn 0.5s ease;
-}
-@keyframes slideIn{
-  from{opacity:0;transform:translateY(-30px);}
-  to{opacity:1;transform:translateY(0);}
-}
-.login-box .logo{
-  font-size:80px;margin-bottom:20px;
-  animation:bounce 1s infinite ease-in-out;
-}
-@keyframes bounce{
-  0%,100%{transform:translateY(0);}
-  50%{transform:translateY(-10px);}
-}
-.login-box h1{
-  font-size:36px;color:#333;margin-bottom:15px;
-}
-.login-box p{
-  font-size:18px;color:#666;margin-bottom:40px;
-  line-height:1.6;
-}
-.login-box .line-login-btn{
-  width:100%;padding:20px;
-  background:#06C755;color:white;
-  border:none;border-radius:15px;
-  font-size:24px;font-weight:bold;
-  cursor:pointer;transition:all 0.3s ease;
-  display:flex;align-items:center;justify-content:center;
-  gap:15px;box-shadow:0 8px 20px rgba(6,199,85,0.3);
-}
-.login-box .line-login-btn:hover{
-  background:#05b04b;transform:translateY(-2px);
-  box-shadow:0 12px 30px rgba(6,199,85,0.4);
-}
-.login-box .line-login-btn .icon{
-  font-size:32px;
-}
-
-.board{
-  position:fixed;top:50%;left:50%;
-  transform:translate(-50%,-50%) translateY(-35px);
-  width:95%;aspect-ratio:2/3;
-  background:url("https://aiwe.cc/wp-content/uploads/2025/11/8fbdbf5573b18fae93736180f8d0197a.png") center/contain no-repeat;
-  background-color:#000;border-radius:10px;overflow:hidden;
-}
+/* 玩家 */
 .player{
   position:absolute;
   width:80px;
@@ -111,18 +41,21 @@ body{
 @keyframes walk{0%,100%{transform:rotate(0);}25%{transform:rotate(-4deg);}75%{transform:rotate(4deg);}}
 .walking{animation:walk .45s infinite ease-in-out;}
 
+/* 中央控制區 */
 .center{
   position:absolute;top:50%;left:50%;
   transform:translate(-50%,-50%);
   display:flex;flex-direction:column;align-items:center;
-  gap:15px; /* 減少間距 */
+  gap:15px;
   z-index:5;
 }
-  .dice-box{
+
+.dice-box{
   display:flex;
   gap:25px;
 }
-  .roll-btn{
+
+.roll-btn{
   padding:15px 30px;
   background:linear-gradient(135deg,#667eea,#764ba2);
   color:white;
@@ -134,22 +67,17 @@ body{
   cursor:pointer;
   transition:all 0.3s ease;
 }
+
 .msg{
   color:#000;
-  font-size:14px; /* 縮小字體 */
+  font-size:14px;
   font-weight:bold;
   text-shadow:1px 1px 2px rgba(255,255,255,.6);
   min-height:18px;
   transition:opacity .5s ease;
-  /* 移除 margin-top，讓它自然在按鈕下方 */
 }
 
-/* === 🎲 穩定 2D 骰子樣式 === */
-.dice-box{
-  display:flex;
-  gap:25px;
-}
-
+/* 骰子樣式 */
 .dice{
   width:60px;
   height:60px;
@@ -171,27 +99,22 @@ body{
   position:absolute;
 }
 
-/* 骰子點數布局 - 修復版 */
+/* 骰子點數布局 */
 .face-1 .dot:nth-child(1){top:50%;left:50%;transform:translate(-50%,-50%);}
-
 .face-2 .dot:nth-child(1){top:20%;left:20%;}
 .face-2 .dot:nth-child(2){bottom:20%;right:20%;}
-
 .face-3 .dot:nth-child(1){top:20%;left:20%;}
 .face-3 .dot:nth-child(2){top:50%;left:50%;transform:translate(-50%,-50%);}
 .face-3 .dot:nth-child(3){bottom:20%;right:20%;}
-
 .face-4 .dot:nth-child(1){top:20%;left:20%;}
 .face-4 .dot:nth-child(2){top:20%;right:20%;}
 .face-4 .dot:nth-child(3){bottom:20%;left:20%;}
 .face-4 .dot:nth-child(4){bottom:20%;right:20%;}
-
 .face-5 .dot:nth-child(1){top:20%;left:20%;}
 .face-5 .dot:nth-child(2){top:20%;right:20%;}
 .face-5 .dot:nth-child(3){top:50%;left:50%;transform:translate(-50%,-50%);}
 .face-5 .dot:nth-child(4){bottom:20%;left:20%;}
 .face-5 .dot:nth-child(5){bottom:20%;right:20%;}
-
 .face-6 .dot:nth-child(1){top:20%;left:20%;}
 .face-6 .dot:nth-child(2){top:20%;right:20%;}
 .face-6 .dot:nth-child(3){top:50%;left:20%;transform:translateY(-50%);}
@@ -199,11 +122,8 @@ body{
 .face-6 .dot:nth-child(5){bottom:20%;left:20%;}
 .face-6 .dot:nth-child(6){bottom:20%;right:20%;}
 
-/* 骰子滾動動畫 */
-.dice.rolling {
-  animation:diceRoll 0.1s infinite;
-}
-
+/* 骰子動畫 */
+.dice.rolling {animation:diceRoll 0.1s infinite;}
 @keyframes diceRoll{
   0%{transform:rotate(0deg) scale(1);}
   25%{transform:rotate(90deg) scale(1.05);}
@@ -212,48 +132,110 @@ body{
   100%{transform:rotate(360deg) scale(1);}
 }
 
-.dice.shake{
-  animation:diceShake 0.5s ease-out;
-}
-
+.dice.shake{animation:diceShake 0.5s ease-out;}
 @keyframes diceShake{
   0%,100%{transform:translateY(0) scale(1);}
   10%,30%,50%,70%,90%{transform:translateY(-8px) scale(1.05);}
   20%,40%,60%,80%{transform:translateY(0) scale(1);}
 }
 
-.roll-btn{
-  padding:15px 30px;
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  color:white;
-  font-size:20px;
-  font-weight:bold;
+.roll-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 15px rgba(0,0,0,.4);}
+.roll-btn:active:not(:disabled){transform:translateY(0);}
+.roll-btn:disabled{opacity:0.6;cursor:not-allowed;}
+
+/* 底部功能區 */
+.bottom-bar{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:60px;
+  background:#FFF8E1;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  z-index:100;
+  border-top:2px solid rgba(0,0,0,0.1);
+}
+
+.bottom-bar button{
+  flex:1;
+  height:100%;
   border:none;
-  border-radius:25px;
-  box-shadow:0 4px 10px rgba(0,0,0,.3);
+  background:transparent;
+  color:#333;
+  font-size:10px;
+  font-weight:bold;
   cursor:pointer;
-  transition:all 0.3s ease;
+  transition:all .3s ease;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
 }
 
-.roll-btn:hover:not(:disabled){
-  transform:translateY(-2px);
-  box-shadow:0 6px 15px rgba(0,0,0,.4);
+.bottom-bar button:active{background:rgba(0,0,0,0.1);}
+.bottom-bar button .icon{font-size:20px;color:#333;}
+.bottom-bar button.logged-in{color:#5D4037;}
+
+/* LINE 頭像 */
+.line-avatar{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid #fff;
+  box-shadow:0 2px 6px rgba(0,0,0,0.3);
 }
 
-.roll-btn:active:not(:disabled){
-  transform:translateY(0);
-}
+#lineLoginBtn.has-avatar .icon{display:none;}
+#lineLoginBtn .line-avatar{display:none;}
+#lineLoginBtn.has-avatar .line-avatar{display:block;}
 
-.roll-btn:disabled{
-  opacity:0.6;
-  cursor:not-allowed;
+/* 登入頁面 */
+.login-screen{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:999;padding:20px;
 }
+.login-screen.hidden{display:none;}
+.login-box{
+  background:white;border-radius:30px;
+  padding:50px 40px;text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  max-width:450px;width:100%;
+  animation:slideIn 0.5s ease;
+}
+@keyframes slideIn{
+  from{opacity:0;transform:translateY(-30px);}
+  to{opacity:1;transform:translateY(0);}
+}
+.login-box .logo{font-size:80px;margin-bottom:20px;animation:bounce 1s infinite ease-in-out;}
+@keyframes bounce{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-10px);}
+}
+.login-box h1{font-size:36px;color:#333;margin-bottom:15px;}
+.login-box p{font-size:18px;color:#666;margin-bottom:40px;line-height:1.6;}
+.login-box .line-login-btn{
+  width:100%;padding:20px;
+  background:#06C755;color:white;
+  border:none;border-radius:15px;
+  font-size:24px;font-weight:bold;
+  cursor:pointer;transition:all 0.3s ease;
+  display:flex;align-items:center;justify-content:center;
+  gap:15px;box-shadow:0 8px 20px rgba(6,199,85,0.3);
+}
+.login-box .line-login-btn:hover{background:#05b04b;transform:translateY(-2px);box-shadow:0 12px 30px rgba(6,199,85,0.4);}
+.login-box .line-login-btn .icon{font-size:32px;}
 
-/* === LINE Bubble 風格彈窗 === */
+/* 店家彈窗 */
 .shop-popup{
   position:fixed;top:50%;left:50%;
   transform:translate(-50%,-50%);
-  width:85%;max-width:300px; /* kilo 尺寸 */
+  width:85%;max-width:300px;
   background:white;
   border-radius:12px;
   box-shadow:0 8px 25px rgba(0,0,0,.4);
@@ -267,11 +249,10 @@ body{
   to{opacity:1;transform:translate(-50%,-50%);}
 }
 
-/* Hero 圖片區域 - 20:13 比例 */
 .shop-hero{
   width:100%;
   height:0;
-  padding-bottom:65%; /* 20:13 比例 (13/20 = 0.65) */
+  padding-bottom:65%;
   position:relative;
   overflow:hidden;
 }
@@ -281,41 +262,16 @@ body{
   left:0;
   width:100%;
   height:100%;
-  object-fit:cover; /* cover 模式 */
+  object-fit:cover;
 }
 
-/* Body 內容區域 */
-.shop-body{
-  padding:16px;
-  background:white;
-}
-.shop-title{
-  font-size:18px;
-  font-weight:bold;
-  color:#333;
-  margin-bottom:8px;
-  line-height:1.3;
-}
-.shop-desc{
-  font-size:13px;
-  color:#666;
-  line-height:1.5;
-}
-.desc-line{
-  margin-bottom:4px;
-  display:block;
-}
+.shop-body{padding:16px;background:white;}
+.shop-title{font-size:18px;font-weight:bold;color:#333;margin-bottom:8px;line-height:1.3;}
+.shop-desc{font-size:13px;color:#666;line-height:1.5;}
+.desc-line{margin-bottom:4px;display:block;}
 
-/* Footer 按鈕區域 */
-.shop-footer{
-  padding:0 16px 16px;
-  background:white;
-}
-.shop-buttons{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
+.shop-footer{padding:0 16px 16px;background:white;}
+.shop-buttons{display:flex;flex-direction:column;gap:8px;}
 .shop-buttons button{
   width:100%;
   border:none;
@@ -328,68 +284,11 @@ body{
   transition:all 0.2s ease;
   text-align:center;
 }
-.shop-buttons button:active{
-  transform:scale(0.98);
-}
-.shop-buttons .claim{
-  background:#764ba2;
-}
-.shop-buttons .close{
-  background:#888;
-}
+.shop-buttons button:active{transform:scale(0.98);}
+.shop-buttons .claim{background:#764ba2;}
+.shop-buttons .close{background:#888;}
 
-/* === 底部功能區 === */
-.bottom-bar{
-  position:fixed;bottom:0;left:0;right:0;
-  height:60px;
-  background:#FFF8E1; /* 乳黃色 */
-  display:flex;justify-content:space-around;align-items:center;
-  z-index:100;
-  border-top:2px solid rgba(0,0,0,0.1);
-}
-.bottom-bar button{
-  flex:1;height:100%;border:none;
-  background:transparent;
-  color:#333; /* 黑色文字 */
-  font-size:10px;font-weight:bold;
-  cursor:pointer;transition:all .3s ease;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2px;
-}
-.bottom-bar button:active{
-  background:rgba(0,0,0,0.1);
-}
-.bottom-bar button .icon{
-  font-size:20px;
-  color:#333; /* 黑色圖標 */
-}
-.bottom-bar button.logged-in{
-  color:#5D4037; /* 深棕色表示已登入 */
-}
-
-/* ✨ LINE 頭像樣式 */
-.line-avatar{
-  width:30px;
-  height:30px;
-  border-radius:50%;
-  object-fit:cover;
-  border:2px solid #fff;
-  box-shadow:0 2px 6px rgba(0,0,0,0.3);
-}
-
-#lineLoginBtn.has-avatar .icon{
-  display:none;
-}
-
-#lineLoginBtn .line-avatar{
-  display:none;
-}
-
-#lineLoginBtn.has-avatar .line-avatar{
-  display:block;
-}
-
-/* === 優惠券收集區彈窗 === */
+/* 優惠券面板 */
 .coupon-panel{
   position:fixed;top:0;left:0;right:0;bottom:70px;
   background:white;z-index:200;display:none;
@@ -420,24 +319,14 @@ body{
 .coupon-card-info{flex:1;}
 .coupon-card-info h3{font-size:14px;margin-bottom:2px;color:#333;}
 .coupon-card-info p{font-size:12px;color:#666;}
-.coupon-card-info .discount{
-  color:#e53935;font-weight:bold;
-  line-height:1.2;
-  font-size:11px;
-}
-.coupon-card-info .date{
-  font-size:10px;color:#999;margin-top:2px;
-}
-.coupon-card-info .status{
-  font-size:10px;color:#4caf50;margin-top:1px;
-}
-.empty-state{
-  text-align:center;padding:30px 15px;color:#999;
-}
+.coupon-card-info .discount{color:#e53935;font-weight:bold;line-height:1.2;font-size:11px;}
+.coupon-card-info .date{font-size:10px;color:#999;margin-top:2px;}
+.coupon-card-info .status{font-size:10px;color:#4caf50;margin-top:1px;}
+.empty-state{text-align:center;padding:30px 15px;color:#999;}
 .empty-state .icon{font-size:36px;margin-bottom:10px;}
 .empty-state p{font-size:14px;}
 
-/* === 店家地圖彈窗 === */
+/* 地圖面板 */
 .map-panel{
   position:fixed;top:0;left:0;right:0;bottom:70px;
   background:white;z-index:200;display:none;
@@ -454,9 +343,7 @@ body{
   background:rgba(255,255,255,0.2);border-radius:50%;
   color:white;font-size:16px;cursor:pointer;
 }
-.map-container{
-  padding:12px;
-}
+.map-container{padding:12px;}
 .shop-list{display:grid;gap:8px;}
 .shop-item{
   border:1px solid #ddd;border-radius:6px;
@@ -469,13 +356,10 @@ body{
 }
 .shop-item-info{flex:1;}
 .shop-item-info h3{font-size:14px;margin-bottom:2px;}
-.shop-item-info p{
-  font-size:12px;color:#666;
-  line-height:1.2;
-}
+.shop-item-info p{font-size:12px;color:#666;line-height:1.2;}
 .shop-item-info .address{font-size:11px;color:#999;margin-top:2px;}
 
-/* === 載入動畫 === */
+/* 載入動畫 */
 .loading {
   display: inline-block;
   width: 16px;
@@ -485,9 +369,7 @@ body{
   border-top-color: #fff;
   animation: spin 1s ease-in-out infinite;
 }
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin {to { transform: rotate(360deg); }}
 </style>
 </head>
 <body>
@@ -523,7 +405,7 @@ body{
     </div>
   </div>
   <button class="roll-btn" onclick="startGame()" id="rollBtn">🎲 投擲骰子</button>
-  <div class="msg" id="msg"></div> <!-- 移到按鈕下方 -->
+  <div class="msg" id="msg"></div>
 </div>
 
 <!-- 🧧 LINE Bubble 風格店家優惠卡片 -->
