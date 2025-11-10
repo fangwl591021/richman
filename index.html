@@ -1,188 +1,37 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LINE 登入 - 歡樂大富翁</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: "Microsoft JhengHei", sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .login-box {
-            background: white;
-            border-radius: 30px;
-            padding: 50px 40px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 450px;
-            width: 100%;
-        }
-        .logo {
-            font-size: 80px;
-            margin-bottom: 20px;
-        }
-        h1 {
-            font-size: 36px;
-            color: #333;
-            margin-bottom: 15px;
-        }
-        p {
-            font-size: 18px;
-            color: #666;
-            margin-bottom: 40px;
-            line-height: 1.6;
-        }
-        .line-login-btn {
-            width: 100%;
-            padding: 20px;
-            background: #06C755;
-            color: white;
-            border: none;
-            border-radius: 15px;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-        }
-        .line-login-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-        .status {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 16px;
-        }
-        .error { background: #ffebee; color: #c62828; }
-        .success { background: #e8f5e9; color: #2e7d32; }
-        .info { background: #e3f2fd; color: #1976d2; }
-    </style>
-</head>
-<body>
-    <div class="login-box">
-        <div class="logo">🎲</div>
-        <h1>歡樂大富翁</h1>
-        <p>歡迎來到板橋商圈！<br>請先使用 LINE 登入開始遊戲，<br>收集專屬優惠券吧！</p>
-        
-        <button class="line-login-btn" id="loginBtn" disabled>
-            初始化中...
-        </button>
-        
-        <div id="status"></div>
-    </div>
+<!-- 在底部功能列添加這個按鈕 -->
+<div class="bottom-bar">
+  <button onclick="openCouponPanel()">
+    <span class="icon">🎫</span>
+    <span>優惠券</span>
+  </button>
+  <button id="lineLoginBtn" onclick="lineLogin()">
+    <span class="icon">📱</span>
+    <span id="lineLoginText">LINE登入</span>
+  </button>
+  <button onclick="openMapPanel()">
+    <span class="icon">🗺️</span>
+    <span>店家地圖</span>
+  </button>
+  <!-- 添加切換到 SVG 版本的按鈕 -->
+  <button onclick="switchToSVGVersion()">
+    <span class="icon">🎮</span>
+    <span>SVG版本</span>
+  </button>
+</div>
 
-    <!-- LINE LIFF SDK -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
-    <script>
-    // ⚠️ 請填入您的 LIFF ID
-    const LIFF_ID = '2008231249-7DlMkygo';
-    
-    const loginBtn = document.getElementById('loginBtn');
-    const statusDiv = document.getElementById('status');
-    
-    function showStatus(message, type = 'info') {
-        statusDiv.textContent = message;
-        statusDiv.className = `status ${type}`;
+<script>
+// 添加切換函數
+function switchToSVGVersion() {
+    if (confirm('要切換到 SVG 版本遊戲嗎？')) {
+        window.location.href = 'game.html';
     }
+}
+
+// 在 DOMContentLoaded 事件中添加
+window.addEventListener('DOMContentLoaded', function() {
+    // ... 您現有的程式碼 ...
     
-    // 初始化 LIFF
-    async function init() {
-        try {
-            console.log('🚀 初始化 LIFF...');
-            await liff.init({ liffId: LIFF_ID });
-            console.log('✅ LIFF 初始化成功');
-            
-            if (liff.isLoggedIn()) {
-                console.log('✅ 已登入，取得用戶資料');
-                await getProfile();
-            } else {
-                console.log('ℹ️ 未登入');
-                showStatus('請點擊下方按鈕登入', 'info');
-                loginBtn.disabled = false;
-                loginBtn.textContent = '📱 使用 LINE 登入';
-                loginBtn.onclick = () => liff.login();
-            }
-            
-        } catch (error) {
-            console.error('❌ 初始化失敗:', error);
-            showStatus('初始化失敗: ' + error.message, 'error');
-            loginBtn.textContent = '❌ 初始化失敗';
-        }
-    }
-    
-    // 取得用戶資料
-    async function getProfile() {
-        try {
-            showStatus('取得用戶資料中...', 'info');
-            
-            const profile = await liff.getProfile();
-            console.log('✅ 用戶資料:', profile);
-            
-            // ✅ 雙重儲存：localStorage + sessionStorage
-            const userData = {
-                userId: profile.userId,
-                displayName: profile.displayName,
-                pictureUrl: profile.pictureUrl || '',
-                loginTime: Date.now()
-            };
-            
-            // 儲存到 localStorage
-            localStorage.setItem('lineUserId', userData.userId);
-            localStorage.setItem('lineDisplayName', userData.displayName);
-            localStorage.setItem('linePictureUrl', userData.pictureUrl);
-            localStorage.setItem('lineLoginTime', userData.loginTime);
-            
-            // 同時儲存到 sessionStorage（作為備份）
-            sessionStorage.setItem('lineUserId', userData.userId);
-            sessionStorage.setItem('lineDisplayName', userData.displayName);
-            sessionStorage.setItem('linePictureUrl', userData.pictureUrl);
-            
-            // ✅ 設置登入標記
-            sessionStorage.setItem('justLoggedIn', 'true');
-            
-            console.log('✅ 資料已儲存');
-            
-            showStatus(`歡迎，${profile.displayName}！`, 'success');
-            loginBtn.textContent = '✅ 登入成功';
-            
-            // ✅ 等待足夠時間確保儲存完成
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // ✅ 最後驗證一次
-            const verify = localStorage.getItem('lineUserId');
-            console.log('📋 驗證 localStorage:', verify);
-            
-            if (verify === userData.userId) {
-                console.log('🎮 跳轉到遊戲...');
-                // ✅ 修改這裡：跳轉到 index.html
-                window.location.href = 'index.html';
-            } else {
-                throw new Error('資料驗證失敗');
-            }
-            
-        } catch (error) {
-            console.error('❌ 取得資料失敗:', error);
-            showStatus('取得資料失敗，請重試', 'error');
-            loginBtn.textContent = '🔄 重新登入';
-            loginBtn.disabled = false;
-            loginBtn.onclick = () => location.reload();
-        }
-    }
-    
-    // 頁面載入時初始化
-    window.addEventListener('DOMContentLoaded', init);
+    // 添加版本資訊顯示
+    console.log('🎮 主要遊戲版本載入完成');
+});
 </script>
-</body>
-</html>
