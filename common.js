@@ -4,6 +4,88 @@ let userId = "TEMP_USER";
 let liffInitialized = false;
 
 // ============================================
+// 🎮 Google Sheets 格子配置（新增）
+// ============================================
+const SHEET_ID = "1-qvp5x8VJa_vFULJy8dfT3FjQwLDkGV8ECyeCiwJpkU";
+const CELL_CONFIG_GID = "106466612"; // 格子設定工作表的 GID
+
+// 快取格子配置
+let cellConfigCache = null;
+
+// 讀取格子設定（新增功能）
+async function loadCellConfig() {
+  if (cellConfigCache) {
+    console.log('✅ 使用快取的格子設定');
+    return cellConfigCache;
+  }
+
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${CELL_CONFIG_GID}`;
+    console.log('📥 讀取格子設定:', url);
+    
+    const response = await fetch(url);
+    const text = await response.text();
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    
+    const rows = json.table.rows;
+    const config = {};
+    
+    // 從第二行開始（跳過表頭）
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i].c;
+      if (!row || !row[0]) continue;
+      
+      const cellIndex = row[0]?.v ?? null;
+      if (cellIndex === null) continue;
+      
+      config[cellIndex] = {
+        格子編號: cellIndex,
+        X座標: row[1]?.v ?? 0,
+        Y座標: row[2]?.v ?? 0,
+        格子類型: row[3]?.v ?? "",
+        店家分類: row[4]?.v ?? "",
+        特殊事件: row[5]?.v ?? "",
+        事件參數: row[6]?.v ?? "",
+        格子名稱: row[7]?.v ?? ""
+      };
+    }
+    
+    cellConfigCache = config;
+    console.log('✅ 格子設定載入成功，共', Object.keys(config).length, '個格子');
+    return config;
+    
+  } catch (error) {
+    console.error('❌ 載入格子設定失敗:', error);
+    return {};
+  }
+}
+
+// 取得指定格子的配置（新增功能）
+async function getCellConfig(cellIndex) {
+  const config = await loadCellConfig();
+  return config[cellIndex] || null;
+}
+
+// 根據分類篩選店家（新增功能）
+async function loadShopsByCategory(category) {
+  const allShops = await loadShops();
+  
+  // 篩選指定分類
+  const filtered = allShops.filter(shop => {
+    const shopCategory = shop["分類"] || shop["店家分類"] || "";
+    return shopCategory === category;
+  });
+  
+  console.log(`🔍 篩選分類「${category}」的店家:`, filtered.length, '間');
+  
+  if (filtered.length === 0) {
+    console.warn(`⚠️ 找不到分類「${category}」的店家！請檢查店家資料表`);
+  }
+  
+  return filtered;
+}
+
+// ============================================
 // 📱 LINE 登入功能
 // ============================================
 async function initLiff() {
@@ -268,20 +350,17 @@ async function saveCoupon(shopData) {
   }
 }
 
-// 在 common.js 中修正 verifyCoupon 函數
 async function verifyCoupon(couponId) {
   try {
     console.log('🎫 開始核銷優惠券:', couponId);
     
-    const user = await getCurrentUser();
+    const user = getCurrentUser();
     if (!user || !user.userId) {
       console.log('⚠️ 未登入用戶，使用前端模擬核銷');
       return simulateVerifyCoupon(couponId);
     }
     
-    // 只嘗試 verifyCoupon，移除其他 action
     const action = 'verifyCoupon';
-    
     console.log(`🔄 使用 action: ${action}`);
     
     const formData = new FormData();
@@ -300,7 +379,6 @@ async function verifyCoupon(couponId) {
     if (result.success === true || result.status === 'success') {
       console.log(`✅ ${action} 成功`);
       
-      // 更新本地狀態
       let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
       usedCoupons[couponId] = {
         used: true,
@@ -310,9 +388,6 @@ async function verifyCoupon(couponId) {
       
       return true;
     } else {
-      console.log(`❌ ${action} 失敗:`, result.message);
-      
-      // 如果後端說"已經處理過"，也視為成功
       if (result.message && result.message.includes('已經處理')) {
         console.log('ℹ️ 優惠券已經處理過，更新本地狀態');
         let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
@@ -329,15 +404,12 @@ async function verifyCoupon(couponId) {
     
   } catch (error) {
     console.error('❌ 核銷錯誤:', error);
-    // 後端錯誤時，在前端模擬核銷
     simulateVerifyCoupon(couponId);
     return true;
   }
 }
 
-// 前端模擬核銷（當後端不支援時）
 function simulateVerifyCoupon(couponId) {
-  // 在前端 localStorage 中記錄已核銷的優惠券
   let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
   usedCoupons[couponId] = {
     used: true,
@@ -412,7 +484,6 @@ async function initializeApp() {
     console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF，繼續其他登入方式');
   }
   
-  // 檢查 URL 參數
   const urlParams = new URLSearchParams(window.location.search);
   const lineUserId = urlParams.get('lineUserId');
   const lineDisplayName = urlParams.get('lineDisplayName');
@@ -434,7 +505,6 @@ async function initializeApp() {
     
     window.history.replaceState({}, document.title, window.location.pathname);
   } else {
-    // 檢查 localStorage
     const storedUserId = localStorage.getItem('lineUserId');
     const storedDisplayName = localStorage.getItem('lineDisplayName');
     const storedPictureUrl = localStorage.getItem('linePictureUrl');
@@ -453,11 +523,11 @@ async function initializeApp() {
     }
   }
 }
+
 // ============================================
 // 🔧 新增工具函數
 // ============================================
 
-// 取得當前用戶資訊
 function getCurrentUser() {
   const lineUserId = localStorage.getItem('lineUserId');
   if (lineUserId) {
@@ -470,9 +540,7 @@ function getCurrentUser() {
   return null;
 }
 
-// 顯示通知
 function showNotification(message, type = 'info') {
-  // 移除現有的通知
   const existingNotification = document.querySelector('.notification');
   if (existingNotification) {
     existingNotification.remove();
@@ -497,13 +565,11 @@ function showNotification(message, type = 'info') {
   
   document.body.appendChild(notification);
   
-  // 3秒後自動移除
   setTimeout(() => {
     notification.remove();
   }, 3000);
 }
 
-// 放棄優惠券 API 呼叫 - 修正版
 async function abandonCoupon(couponId) {
   try {
     const user = getCurrentUser();
@@ -527,7 +593,6 @@ async function abandonCoupon(couponId) {
     if (result.success === true || result.status === 'success') {
       console.log('✅ 放棄成功！');
       
-      // 更新本地狀態
       let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
       usedCoupons[couponId] = {
         used: 'abandoned',
@@ -537,10 +602,8 @@ async function abandonCoupon(couponId) {
       
       return true;
     } else {
-      // 即使後端返回錯誤，也檢查是否是"已經處理過"的錯誤
       if (result.message && result.message.includes('已經處理')) {
         console.log('ℹ️ 優惠券已經處理過，更新本地狀態');
-        // 更新本地狀態
         let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
         usedCoupons[couponId] = {
           used: 'abandoned',
@@ -554,7 +617,6 @@ async function abandonCoupon(couponId) {
     
   } catch (error) {
     console.error('❌ 放棄錯誤:', error);
-    // 後端錯誤時，在前端模擬放棄
     let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
     usedCoupons[couponId] = {
       used: 'abandoned',
