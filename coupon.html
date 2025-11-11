@@ -305,6 +305,13 @@ function getCurrentUser() {
   return null;
 }
 
+// 格式化優惠內容 - 句號換行
+function formatCouponDescription(text) {
+  if (!text) return "暫無優惠說明";
+  // 將句號 "。" 轉換為換行
+  return text.replace(/。/g, '。<br>');
+}
+
 // 優化的 loadCouponList 函數
 async function loadCouponList() {
   const couponList = document.getElementById('couponList');
@@ -374,7 +381,7 @@ async function loadCouponList() {
 
 // 創建優惠券 HTML 的輔助函數
 function createCouponHTML(coupon) {
-  const discountText = (coupon.discount || '優惠內容').replace(/\\n/g, '<br>');
+  const discountText = formatCouponDescription(coupon.discount || '優惠內容');
   
   // 更精確的狀態判斷
   const usedValue = coupon.used;
@@ -630,7 +637,7 @@ if (typeof loadCoupons === 'undefined') {
       {
         couponId: 'COUPON_1',
         shopName: '咖啡廳',
-        discount: '買一送一\\n美式咖啡',
+        discount: '買一送一。美式咖啡。限時優惠',
         imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png',
         obtainedDate: new Date().toISOString(),
         used: usedCoupons['COUPON_1'] ? usedCoupons['COUPON_1'].used : false
@@ -638,7 +645,7 @@ if (typeof loadCoupons === 'undefined') {
       {
         couponId: 'COUPON_2',
         shopName: '餐廳',
-        discount: '9折優惠\\n全品項',
+        discount: '9折優惠。全品項。限平日使用',
         imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png',
         obtainedDate: new Date(Date.now() - 86400000).toISOString(),
         used: usedCoupons['COUPON_2'] ? usedCoupons['COUPON_2'].used : 'abandoned'
@@ -646,7 +653,7 @@ if (typeof loadCoupons === 'undefined') {
       {
         couponId: 'COUPON_3',
         shopName: '書店',
-        discount: '滿500送100\\n購物金',
+        discount: '滿500送100。購物金。限下次使用',
         imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png',
         obtainedDate: new Date().toISOString(),
         used: usedCoupons['COUPON_3'] ? usedCoupons['COUPON_3'].used : false
