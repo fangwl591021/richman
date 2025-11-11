@@ -277,13 +277,37 @@ async function loadCoupons() {
     console.log('🎫 開始載入優惠券...');
     
     const couponUrl = `${GAS_BASE}?action=getUserCoupons&userId=${encodeURIComponent(userId)}`;
+    console.log('🔗 請求 URL:', couponUrl);
+    
     const response = await fetch(couponUrl);
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
     
-    const result = await response.json();
+    // 檢查回應內容類型
+    const contentType = response.headers.get('content-type');
+    console.log('📄 回應內容類型:', contentType);
+    
+    const responseText = await response.text();
+    console.log('📝 原始回應:', responseText.substring(0, 200)); // 只顯示前200字元
+    
+    // 檢查是否是 HTML 頁面
+    if (responseText.trim().startsWith('<!DOCTYPE') || responseText.includes('<html')) {
+      console.warn('⚠️ 後端返回 HTML 頁面而非 JSON，使用模擬資料');
+      return getMockCoupons();
+    }
+    
+    // 嘗試解析 JSON
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ JSON 解析失敗:', parseError);
+      console.warn('⚠️ JSON 解析失敗，使用模擬資料');
+      return getMockCoupons();
+    }
+    
     console.log('🎫 優惠券API回應:', result);
     
     if (result && result.status === 'success' && Array.isArray(result.coupons)) {
@@ -306,14 +330,16 @@ async function loadCoupons() {
       });
       
       console.log('✅ 優惠券載入成功，包含 F 和 G 欄位:', coupons.map(c => ({
-        店家名稱: c["店家名稱"] || c.shopName,
-        F: c["F"] || c.lineUrl,
-        G: c["G"] || c.mapUrl
+        店家名稱: c["店家名稱"],
+        F: c["F"],
+        G: c["G"],
+        F是否為空: !c["F"],
+        G是否為空: !c["G"]
       })));
       
       return coupons;
     } else {
-      console.log('⚠️ 後端無優惠券資料，使用模擬資料');
+      console.log('⚠️ 後端無優惠券資料或格式錯誤，使用模擬資料');
       return getMockCoupons();
     }
   } catch (error) {
