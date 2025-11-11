@@ -7,7 +7,245 @@
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="common.js"></script>
 <style>
-/* ... 保持原有樣式不變 ... */
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  font-family:"Microsoft JhengHei",sans-serif;
+  background:#f5f5f5;
+  min-height:100vh;
+  padding-bottom:70px;
+}
+
+/* 頁面標題 */
+.page-header{
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  color:white;
+  padding:20px 15px;
+  text-align:center;
+}
+.page-header h1{
+  font-size:24px;
+  margin-bottom:5px;
+}
+.page-header .subtitle{
+  font-size:14px;
+  opacity:0.9;
+}
+
+/* 優惠券列表 */
+.coupon-list{
+  padding:15px;
+  display:grid;
+  gap:12px;
+}
+.coupon-card{
+  background:white;
+  border-radius:12px;
+  padding:15px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+  display:flex;
+  gap:12px;
+  position:relative;
+  transition:all 0.3s ease;
+}
+.coupon-card.inactive{
+  background:#f9f9f9;
+  opacity:0.7;
+}
+.coupon-card img{
+  width:70px;
+  height:70px;
+  object-fit:cover;
+  border-radius:8px;
+  flex-shrink:0;
+}
+.coupon-card-info{
+  flex:1;
+}
+.coupon-card-info h3{
+  font-size:16px;
+  margin-bottom:6px;
+  color:#333;
+}
+.coupon-card-info .discount{
+  color:#e53935;
+  font-weight:bold;
+  line-height:1.4;
+  font-size:14px;
+  margin-bottom:6px;
+}
+.coupon-card-info .date{
+  font-size:12px;
+  color:#999;
+  margin-bottom:8px;
+}
+.coupon-card-info .status{
+  font-size:12px;
+  font-weight:bold;
+  padding:4px 10px;
+  border-radius:20px;
+  display:inline-block;
+}
+.coupon-card-info .status.available{
+  color:#4caf50;
+  background:#e8f5e8;
+}
+.coupon-card-info .status.used{
+  color:#999;
+  background:#f0f0f0;
+}
+.coupon-card-info .status.abandoned{
+  color:#ff9800;
+  background:#fff3e0;
+  border:1px solid #ffb74d;
+}
+.coupon-actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+.coupon-actions button{
+  padding:8px 16px;
+  border:none;
+  border-radius:6px;
+  font-size:12px;
+  font-weight:bold;
+  cursor:pointer;
+  transition:all 0.2s ease;
+}
+.coupon-actions .verify-btn{
+  background:#4caf50;
+  color:white;
+}
+.coupon-actions .verify-btn:active{
+  background:#45a049;
+  transform:scale(0.95);
+}
+.coupon-actions .verify-btn:disabled{
+  background:#cccccc;
+  cursor:not-allowed;
+  transform:none;
+}
+.coupon-actions .abandon-btn{
+  background:#ff9800;
+  color:white;
+}
+.coupon-actions .abandon-btn:active{
+  background:#f57c00;
+  transform:scale(0.95);
+}
+.coupon-actions .abandon-btn:disabled{
+  background:#cccccc;
+  cursor:not-allowed;
+  transform:none;
+}
+/* 確保按鈕禁用狀態明顯 */
+.coupon-actions button:disabled{
+  opacity:0.6;
+  cursor:not-allowed;
+  transform:none !important;
+}
+
+/* 分隔線 */
+.section-divider{
+  padding:10px 15px;
+  font-size:14px;
+  color:#666;
+  font-weight:bold;
+  border-bottom:1px solid #eee;
+  margin:10px 0;
+  background:#f9f9f9;
+}
+
+/* 空狀態 */
+.empty-state{
+  text-align:center;
+  padding:60px 20px;
+  color:#999;
+}
+.empty-state .icon{
+  font-size:48px;
+  margin-bottom:15px;
+}
+.empty-state p{
+  font-size:16px;
+  line-height:1.5;
+}
+.empty-state .action-btn{
+  margin-top:20px;
+  padding:12px 24px;
+  background:#764ba2;
+  color:white;
+  border:none;
+  border-radius:25px;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+/* 底部導航 */
+.bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:60px;
+  background:white;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  border-top:1px solid #eee;
+  z-index:100;
+}
+.bottom-nav button{
+  flex:1;
+  height:100%;
+  border:none;
+  background:transparent;
+  color:#333;
+  font-size:10px;
+  font-weight:bold;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+}
+.bottom-nav button.active{
+  color:#764ba2;
+}
+.bottom-nav button .icon{
+  font-size:20px;
+}
+
+/* LINE 頭像 */
+.line-avatar{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  object-fit:cover;
+  border:2px solid #fff;
+  box-shadow:0 2px 6px rgba(0,0,0,0.3);
+}
+#lineLoginBtn.has-avatar .icon{
+  display:none;
+}
+#lineLoginBtn.has-avatar .line-avatar{
+  display:block;
+}
+#lineLoginBtn .line-avatar{
+  display:none;
+}
+.bottom-nav button.logged-in{
+  color:#5D4037;
+}
+
+/* 載入狀態 */
+.loading{
+  text-align:center;
+  padding:40px;
+  color:#999;
+}
 </style>
 </head>
 <body>
@@ -50,9 +288,7 @@
 <script>
 // 頁面載入時初始化
 window.addEventListener('DOMContentLoaded', async function() {
-  console.log('DOM 載入完成，開始初始化...');
   await initializeApp();
-  console.log('初始化完成，開始載入優惠券列表...');
   loadCouponList();
 });
 
@@ -76,35 +312,20 @@ function formatCouponDescription(text) {
   return text.replace(/。/g, '。<br>');
 }
 
-// 統一優惠券資料格式
-function normalizeCouponData(coupon) {
-  // 統一欄位名稱，支援多種可能的欄位名稱
-  return {
-    couponId: coupon.couponId || coupon.id || `temp_${Date.now()}`,
-    shopName: coupon["店家名稱"] || coupon.shopName || coupon.name || "神秘店家",
-    discount: coupon["優惠內容"] || coupon.discount || coupon.description || "限時優惠",
-    imageUrl: coupon["圖片網址"] || coupon.imageUrl || coupon.icon || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png',
-    obtainedDate: coupon.obtainedDate || coupon.createdAt || new Date().toISOString(),
-    used: coupon.used || false
-  };
-}
-
 // 合併本地狀態到優惠券資料
 function mergeLocalCouponStatus(coupons) {
   const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
   
   return coupons.map(coupon => {
-    const normalizedCoupon = normalizeCouponData(coupon);
-    const couponId = normalizedCoupon.couponId;
-    
+    const couponId = coupon.couponId || coupon.id;
     if (couponId && usedCoupons[couponId]) {
       // 如果本地有狀態記錄，覆蓋後端的狀態
       return {
-        ...normalizedCoupon,
+        ...coupon,
         used: usedCoupons[couponId].used
       };
     }
-    return normalizedCoupon;
+    return coupon;
   });
 }
 
@@ -112,28 +333,17 @@ function mergeLocalCouponStatus(coupons) {
 async function loadCouponList() {
   const couponList = document.getElementById('couponList');
   
-  // 檢查元素是否存在
-  if (!couponList) {
-    console.error('❌ 找不到 couponList 元素');
-    return;
-  }
-  
   try {
-    console.log('開始載入優惠券資料...');
     let coupons = await loadCoupons();
-    console.log('原始優惠券資料:', coupons);
     
-    // 合併本地狀態並統一格式
+    // 合併本地狀態
     coupons = mergeLocalCouponStatus(coupons);
     
-    console.log('統一格式後的優惠券資料:', coupons);
-    
-    if (coupons && coupons.length > 0) {
+    if (coupons.length > 0) {
       // 分組：未使用、已使用、已放棄
       const availableCoupons = coupons.filter(coupon => {
         const used = coupon.used;
         const isAvailable = !(used === true || used === 'TRUE' || used === 'true' || used === 'abandoned' || used === '已使用');
-        console.log(`優惠券 ${coupon.couponId}: used=${used}, isAvailable=${isAvailable}`);
         return isAvailable;
       });
       
@@ -145,10 +355,6 @@ async function loadCouponList() {
       const abandonedCoupons = coupons.filter(coupon => 
         coupon.used === 'abandoned'
       );
-      
-      console.log('可用優惠券:', availableCoupons);
-      console.log('已使用優惠券:', usedCoupons);
-      console.log('已放棄優惠券:', abandonedCoupons);
       
       let html = '';
       
@@ -171,7 +377,6 @@ async function loadCouponList() {
       }
       
       couponList.innerHTML = html;
-      console.log('優惠券列表更新完成');
     } else {
       couponList.innerHTML = `
         <div class="empty-state">
@@ -185,25 +390,24 @@ async function loadCouponList() {
     }
   } catch (error) {
     console.error('載入優惠券失敗:', error);
-    if (couponList) {
-      couponList.innerHTML = `
-        <div class="empty-state">
-          <div class="icon">⚠️</div>
-          <p>載入失敗，請稍後再試</p>
-        </div>
-      `;
-    }
+    couponList.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">⚠️</div>
+        <p>載入失敗，請稍後再試</p>
+      </div>
+    `;
   }
 }
 
 // 創建優惠券 HTML 的輔助函數
 function createCouponHTML(coupon) {
-  // 使用統一格式的資料
-  const normalizedCoupon = normalizeCouponData(coupon);
-  const discountText = formatCouponDescription(normalizedCoupon.discount);
+  // 支援多種欄位名稱格式
+  const shopName = coupon["店家名稱"] || coupon.shopName || coupon.name || '店家名稱';
+  const discountText = formatCouponDescription(coupon["優惠內容"] || coupon.discount || coupon.description || '優惠內容');
+  const imageUrl = coupon["圖片網址"] || coupon.imageUrl || coupon.icon || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png';
   
   // 更精確的狀態判斷
-  const usedValue = normalizedCoupon.used;
+  const usedValue = coupon.used;
   const isUsed = usedValue === true || 
                 usedValue === 'TRUE' || 
                 usedValue === 'true' ||
@@ -222,23 +426,23 @@ function createCouponHTML(coupon) {
     statusText = '已放棄';
   }
   
-  console.log(`建立優惠券 HTML: ${normalizedCoupon.couponId}, used=${usedValue}, isUsed=${isUsed}, isAbandoned=${isAbandoned}`);
+  const couponId = coupon.couponId || coupon.id || `temp_${Date.now()}`;
   
   return `
-  <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}" data-coupon-id="${normalizedCoupon.couponId}">
-    <img src="${normalizedCoupon.imageUrl}" 
+  <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}" data-coupon-id="${couponId}">
+    <img src="${imageUrl}" 
          onerror="this.src='https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'">
     <div class="coupon-card-info">
-      <h3>${normalizedCoupon.shopName}</h3>
+      <h3>${shopName}</h3>
       <div class="discount">${discountText}</div>
       <div class="date">
-        ${normalizedCoupon.obtainedDate ? new Date(normalizedCoupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
+        ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
       </div>
       <div class="status ${statusClass}">${statusText}</div>
       ${!isUsed && !isAbandoned ? `
       <div class="coupon-actions">
-        <button class="verify-btn" onclick="handleVerifyCoupon('${normalizedCoupon.couponId}')">核銷使用</button>
-        <button class="abandon-btn" onclick="handleAbandonCoupon('${normalizedCoupon.couponId}')">放棄</button>
+        <button class="verify-btn" onclick="handleVerifyCoupon('${couponId}')">核銷使用</button>
+        <button class="abandon-btn" onclick="handleAbandonCoupon('${couponId}')">放棄</button>
       </div>
       ` : ''}
     </div>
@@ -449,15 +653,15 @@ if (typeof loadCoupons === 'undefined') {
     // 獲取本地核銷狀態
     const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
     
-    // 模擬真實的優惠券資料格式（與遊戲中獲得的一致）
-    const coupons = [
+    // 模擬測試資料 - 使用與遊戲中相同的格式
+    return [
       {
         couponId: 'COUPON_1',
         "店家名稱": "咖啡廳",
         "優惠內容": "買一送一。美式咖啡。限時優惠",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
         obtainedDate: new Date().toISOString(),
-        used: false
+        used: usedCoupons['COUPON_1'] ? usedCoupons['COUPON_1'].used : false
       },
       {
         couponId: 'COUPON_2',
@@ -465,7 +669,7 @@ if (typeof loadCoupons === 'undefined') {
         "優惠內容": "9折優惠。全品項。限平日使用",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png",
         obtainedDate: new Date(Date.now() - 86400000).toISOString(),
-        used: false
+        used: usedCoupons['COUPON_2'] ? usedCoupons['COUPON_2'].used : 'abandoned'
       },
       {
         couponId: 'COUPON_3',
@@ -473,12 +677,9 @@ if (typeof loadCoupons === 'undefined') {
         "優惠內容": "滿500送100。購物金。限下次使用",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png",
         obtainedDate: new Date().toISOString(),
-        used: false
+        used: usedCoupons['COUPON_3'] ? usedCoupons['COUPON_3'].used : false
       }
     ];
-    
-    console.log('模擬載入優惠券，usedCoupons:', usedCoupons);
-    return coupons;
   };
 }
 </script>
