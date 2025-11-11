@@ -100,20 +100,17 @@ body{
 }
 .coupon-actions{
   display:flex;
-  gap:6px;
+  gap:8px;
   margin-top:10px;
-  flex-wrap:wrap;
 }
 .coupon-actions button{
-  padding:6px 12px;
+  padding:8px 16px;
   border:none;
   border-radius:6px;
-  font-size:11px;
+  font-size:12px;
   font-weight:bold;
   cursor:pointer;
   transition:all 0.2s ease;
-  flex:1;
-  min-width:60px;
 }
 .coupon-actions .verify-btn{
   background:#4caf50;
@@ -140,22 +137,6 @@ body{
   background:#cccccc;
   cursor:not-allowed;
   transform:none;
-}
-.coupon-actions .line-btn{
-  background:#06C755;
-  color:white;
-}
-.coupon-actions .line-btn:active{
-  background:#05b04b;
-  transform:scale(0.95);
-}
-.coupon-actions .address-btn{
-  background:#2196F3;
-  color:white;
-}
-.coupon-actions .address-btn:active{
-  background:#1976D2;
-  transform:scale(0.95);
 }
 /* 確保按鈕禁用狀態明顯 */
 .coupon-actions button:disabled{
@@ -424,8 +405,6 @@ function createCouponHTML(coupon) {
   const shopName = coupon["店家名稱"] || coupon.shopName || coupon.name || '店家名稱';
   const discountText = formatCouponDescription(coupon["優惠內容"] || coupon.discount || coupon.description || '優惠內容');
   const imageUrl = coupon["圖片網址"] || coupon.imageUrl || coupon.icon || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png';
-  const lineUrl = coupon["F"] || coupon.lineUrl || coupon.contact || '';
-  const addressUrl = coupon["G"] || coupon.addressUrl || coupon.location || '';
   
   // 更精確的狀態判斷
   const usedValue = coupon.used;
@@ -464,33 +443,11 @@ function createCouponHTML(coupon) {
       <div class="coupon-actions">
         <button class="verify-btn" onclick="handleVerifyCoupon('${couponId}')">核銷使用</button>
         <button class="abandon-btn" onclick="handleAbandonCoupon('${couponId}')">放棄</button>
-        ${lineUrl ? `<button class="line-btn" onclick="handleLineContact('${lineUrl}')">加LINE聯繫</button>` : ''}
-        ${addressUrl ? `<button class="address-btn" onclick="handleAddress('${addressUrl}')">地址</button>` : ''}
       </div>
       ` : ''}
     </div>
   </div>
   `;
-}
-
-// LINE聯繫處理函數
-function handleLineContact(lineUrl) {
-  if (lineUrl) {
-    // 在新視窗中開啟LINE聯繫網址
-    window.open(lineUrl, '_blank');
-  } else {
-    alert('暫無LINE聯繫資訊');
-  }
-}
-
-// 地址處理函數
-function handleAddress(addressUrl) {
-  if (addressUrl) {
-    // 在新視窗中開啟地址網址
-    window.open(addressUrl, '_blank');
-  } else {
-    alert('暫無地址資訊');
-  }
 }
 
 // 輔助函數：根據 couponId 找到對應的優惠券卡片
@@ -696,15 +653,13 @@ if (typeof loadCoupons === 'undefined') {
     // 獲取本地核銷狀態
     const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
     
-    // 模擬測試資料 - 使用與遊戲中相同的格式，包含LINE和地址網址
+    // 模擬測試資料 - 使用與遊戲中相同的格式
     return [
       {
         couponId: 'COUPON_1',
         "店家名稱": "咖啡廳",
         "優惠內容": "買一送一。美式咖啡。限時優惠",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
-        "F": "https://line.me/ti/p/~example1",
-        "G": "https://maps.app.goo.gl/example1",
         obtainedDate: new Date().toISOString(),
         used: usedCoupons['COUPON_1'] ? usedCoupons['COUPON_1'].used : false
       },
@@ -713,8 +668,6 @@ if (typeof loadCoupons === 'undefined') {
         "店家名稱": "餐廳",
         "優惠內容": "9折優惠。全品項。限平日使用",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png",
-        "F": "https://line.me/ti/p/~example2",
-        "G": "https://maps.app.goo.gl/example2",
         obtainedDate: new Date(Date.now() - 86400000).toISOString(),
         used: usedCoupons['COUPON_2'] ? usedCoupons['COUPON_2'].used : 'abandoned'
       },
@@ -723,8 +676,6 @@ if (typeof loadCoupons === 'undefined') {
         "店家名稱": "書店",
         "優惠內容": "滿500送100。購物金。限下次使用",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png",
-        "F": "",
-        "G": "",
         obtainedDate: new Date().toISOString(),
         used: usedCoupons['COUPON_3'] ? usedCoupons['COUPON_3'].used : false
       }
