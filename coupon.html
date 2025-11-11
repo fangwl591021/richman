@@ -318,12 +318,14 @@ async function loadCouponList() {
   
   try {
     const coupons = await loadCoupons();
+    console.log('載入的優惠券資料:', coupons);
     
     if (coupons.length > 0) {
       // 分組：未使用、已使用、已放棄
       const availableCoupons = coupons.filter(coupon => {
         const used = coupon.used;
         const isAvailable = !(used === true || used === 'TRUE' || used === 'true' || used === 'abandoned' || used === '已使用');
+        console.log(`優惠券 ${coupon.couponId}: used=${used}, isAvailable=${isAvailable}`);
         return isAvailable;
       });
       
@@ -335,6 +337,10 @@ async function loadCouponList() {
       const abandonedCoupons = coupons.filter(coupon => 
         coupon.used === 'abandoned'
       );
+      
+      console.log('可用優惠券:', availableCoupons);
+      console.log('已使用優惠券:', usedCoupons);
+      console.log('已放棄優惠券:', abandonedCoupons);
       
       let html = '';
       
@@ -404,6 +410,8 @@ function createCouponHTML(coupon) {
   }
   
   const couponId = coupon.couponId || coupon.id || `temp_${Date.now()}`;
+  
+  console.log(`建立優惠券 HTML: ${couponId}, used=${usedValue}, isUsed=${isUsed}, isAbandoned=${isAbandoned}`);
   
   return `
   <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}" data-coupon-id="${couponId}">
@@ -520,7 +528,7 @@ async function handleAbandonCoupon(couponId) {
     const success = await abandonCoupon(couponId);
     
     if (success) {
-      // 立即重新載入列表
+      // 強制清除快取並重新載入列表
       await loadCouponList();
       alert('優惠券已放棄！');
       window.scrollTo(0, 0);
@@ -631,7 +639,7 @@ if (typeof loadCoupons === 'undefined') {
     const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
     
     // 模擬測試資料
-    return [
+    const coupons = [
       {
         couponId: 'COUPON_1',
         shopName: '咖啡廳',
@@ -646,7 +654,7 @@ if (typeof loadCoupons === 'undefined') {
         discount: '9折優惠。全品項。限平日使用',
         imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png',
         obtainedDate: new Date(Date.now() - 86400000).toISOString(),
-        used: usedCoupons['COUPON_2'] ? usedCoupons['COUPON_2'].used : 'abandoned'
+        used: usedCoupons['COUPON_2'] ? usedCoupons['COUPON_2'].used : false
       },
       {
         couponId: 'COUPON_3',
@@ -657,6 +665,9 @@ if (typeof loadCoupons === 'undefined') {
         used: usedCoupons['COUPON_3'] ? usedCoupons['COUPON_3'].used : false
       }
     ];
+    
+    console.log('模擬載入優惠券，usedCoupons:', usedCoupons);
+    return coupons;
   };
 }
 </script>
