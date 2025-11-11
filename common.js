@@ -1,11 +1,229 @@
-// ============================================
-// 🌐 API 配置
-// ============================================
-const GAS_BASE = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
-const LIFF_ID = 'YOUR_LIFF_ID'; // LINE LIFF ID
+// common.js - 共用功能庫
+const GAS_BASE = 'https://richman.fangwl591021.workers.dev/';
+let userId = "TEMP_USER";
+let liffInitialized = false;
 
 // ============================================
-// 📋 店家資料載入
+// 🎮 Google Sheets 格子配置（新增）
+// ============================================
+const SHEET_ID = "1-qvp5x8VJa_vFULJy8dfT3FjQwLDkGV8ECyeCiwJpkU";
+const CELL_CONFIG_GID = "106466612"; // 格子設定工作表的 GID
+
+// 快取格子配置
+let cellConfigCache = null;
+
+// 讀取格子設定（新增功能）
+async function loadCellConfig() {
+  if (cellConfigCache) {
+    console.log('✅ 使用快取的格子設定');
+    return cellConfigCache;
+  }
+
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&gid=${CELL_CONFIG_GID}`;
+    console.log('📥 讀取格子設定:', url);
+    
+    const response = await fetch(url);
+    const text = await response.text();
+    const json = JSON.parse(text.substring(47).slice(0, -2));
+    
+    const rows = json.table.rows;
+    const config = {};
+    
+    // 從第二行開始（跳過表頭）
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i].c;
+      if (!row || !row[0]) continue;
+      
+      const cellIndex = row[0]?.v ?? null;
+      if (cellIndex === null) continue;
+      
+      config[cellIndex] = {
+        格子編號: cellIndex,
+        X座標: row[1]?.v ?? 0,
+        Y座標: row[2]?.v ?? 0,
+        格子類型: row[3]?.v ?? "",
+        店家分類: row[4]?.v ?? "",
+        特殊事件: row[5]?.v ?? "",
+        事件參數: row[6]?.v ?? "",
+        格子名稱: row[7]?.v ?? ""
+      };
+    }
+    
+    cellConfigCache = config;
+    console.log('✅ 格子設定載入成功，共', Object.keys(config).length, '個格子');
+    return config;
+    
+  } catch (error) {
+    console.error('❌ 載入格子設定失敗:', error);
+    return {};
+  }
+}
+
+// 取得指定格子的配置（新增功能）
+async function getCellConfig(cellIndex) {
+  const config = await loadCellConfig();
+  return config[cellIndex] || null;
+}
+
+// 根據分類篩選店家（新增功能）
+async function loadShopsByCategory(category) {
+  const allShops = await loadShops();
+  
+  // 篩選指定分類
+  const filtered = allShops.filter(shop => {
+    const shopCategory = shop["分類"] || shop["店家分類"] || "";
+    return shopCategory === category;
+  });
+  
+  console.log(`🔍 篩選分類「${category}」的店家:`, filtered.length, '間');
+  
+  if (filtered.length === 0) {
+    console.warn(`⚠️ 找不到分類「${category}」的店家！請檢查店家資料表`);
+  }
+  
+  return filtered;
+}
+
+// ============================================
+// 📱 LINE 登入功能
+// ============================================
+async function initLiff() {
+    try {
+        if (typeof liff === 'undefined') {
+            console.log('❌ LIFF SDK 未載入');
+            return false;
+        }
+        
+        await liff.init({ 
+            liffId: '2008231249-7DlMkygo'
+        });
+        liffInitialized = true;
+        console.log('✅ LIFF 初始化成功');
+        return true;
+    } catch (error) {
+        console.error('❌ LIFF 初始化失敗:', error);
+        return false;
+    }
+}
+
+async function startLineLogin() {
+  try {
+    console.log('=== 🔐 開始 LINE 登入流程 ===');
+    
+    if (!liffInitialized) {
+      const initialized = await initLiff();
+      if (!initialized) {
+        alert('LINE 登入功能初始化失敗，請重新整理頁面');
+        return;
+      }
+    }
+    
+    if (!liff.isLoggedIn()) {
+      console.log('🔐 執行 LIFF 登入...');
+      liff.login();
+    } else {
+      console.log('✅ 用戶已登入，取得用戶資料');
+      await getLineProfile();
+    }
+  } catch (error) {
+    console.error('❌ LINE 登入發生錯誤:', error);
+    alert('LINE 登入發生錯誤，請稍後再試');
+  }
+}
+
+async function getLineProfile() {
+  try {
+    console.log('📱 取得 LINE 用戶資料...');
+    const profile = await liff.getProfile();
+    
+    localStorage.setItem('lineUserId', profile.userId);
+    localStorage.setItem('lineDisplayName', profile.displayName);
+    localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
+    
+    updateUserInterface({
+      userId: profile.userId,
+      displayName: profile.displayName,
+      pictureUrl: profile.pictureUrl
+    });
+    
+    console.log('✅ LINE 用戶資料取得成功:', profile.displayName);
+    
+  } catch (error) {
+    console.error('❌ 取得 LINE 用戶資料失敗:', error);
+    alert('取得用戶資料失敗，請重試');
+  }
+}
+
+function updateUserInterface(userInfo) {
+  if (userInfo && userInfo.userId) {
+    localStorage.setItem('lineUserId', userInfo.userId);
+    localStorage.setItem('lineDisplayName', userInfo.displayName);
+    localStorage.setItem('linePictureUrl', userInfo.pictureUrl || '');
+    
+    // 更新頭像顯示
+    const lineAvatar = document.getElementById('lineAvatar');
+    const lineLoginBtn = document.getElementById('lineLoginBtn');
+    const lineLoginText = document.getElementById('lineLoginText');
+    
+    if (lineAvatar && userInfo.pictureUrl) {
+      lineAvatar.src = userInfo.pictureUrl;
+    }
+    if (lineLoginBtn) {
+      lineLoginBtn.classList.add('has-avatar');
+    }
+    if (lineLoginText) {
+      lineLoginText.textContent = userInfo.displayName;
+    }
+    if (lineLoginBtn) {
+      lineLoginBtn.classList.add('logged-in');
+    }
+    
+    userId = userInfo.userId;
+    
+    // 隱藏登入畫面（如果存在）
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen) {
+      loginScreen.classList.add('hidden');
+    }
+    
+    alert(`歡迎，${userInfo.displayName}！`);
+  }
+}
+
+function lineLogin() {
+  if (localStorage.getItem('lineUserId')) {
+    if (confirm('確定要登出 LINE 帳號嗎？')) {
+      localStorage.removeItem('lineUserId');
+      localStorage.removeItem('lineDisplayName');
+      localStorage.removeItem('linePictureUrl');
+      
+      const lineLoginText = document.getElementById('lineLoginText');
+      const lineLoginBtn = document.getElementById('lineLoginBtn');
+      const lineAvatar = document.getElementById('lineAvatar');
+      
+      if (lineLoginText) lineLoginText.textContent = 'LINE';
+      if (lineLoginBtn) {
+        lineLoginBtn.classList.remove('logged-in');
+        lineLoginBtn.classList.remove('has-avatar');
+      }
+      if (lineAvatar) lineAvatar.src = '';
+      userId = 'TEMP_USER';
+      
+      alert('已登出！');
+      
+      const loginScreen = document.getElementById('loginScreen');
+      if (loginScreen) {
+        loginScreen.classList.remove('hidden');
+      }
+    }
+  } else {
+    startLineLogin();
+  }
+}
+
+// ============================================
+// 🏪 店家資料功能
 // ============================================
 async function loadShops() {
   try {
@@ -22,12 +240,6 @@ async function loadShops() {
     
     if (result && result.success === true && Array.isArray(result.data)) {
       console.log(`✅ 成功載入 ${result.data.length} 個店家`);
-      
-      // 檢查店家資料是否包含 F 和 G 欄位
-      result.data.forEach(shop => {
-        console.log(`🏪 ${shop["店家名稱"]}: F=${!!shop["F"]}, G=${!!shop["G"]}`);
-      });
-      
       return result.data;
     } else {
       const errorMsg = result.message || '載入店家資料失敗';
@@ -40,201 +252,32 @@ async function loadShops() {
   }
 }
 
-// 按分類載入店家
-async function loadShopsByCategory(category) {
-  try {
-    console.log(`📋 載入分類「${category}」的店家...`);
-    
-    const allShops = await loadShops();
-    const filteredShops = allShops.filter(shop => 
-      shop["店家分類"] === category || shop.category === category
-    );
-    
-    console.log(`✅ 找到 ${filteredShops.length} 個「${category}」類型的店家`);
-    return filteredShops;
-    
-  } catch (error) {
-    console.error('❌ 按分類載入店家失敗:', error);
-    return [];
-  }
-}
-
-// 預設店家資料（當 API 失敗時使用）
 function getDefaultShops() {
-  console.warn('⚠️ 使用預設店家資料');
   return [
     {
-      "店家名稱": "美味咖啡廳",
-      "優惠內容": "買一送一。美式咖啡。限時優惠",
+      "店家名稱": "板橋咖啡廳",
+      "優惠內容": "1️⃣ 拿鐵第二杯半價\n2️⃣ 消費滿200元送點心\n3️⃣ 平日時段85折優惠",
       "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
-      "F": "https://line.me/ti/p/~example1",
-      "G": "https://maps.app.goo.gl/example1",
-      "店家分類": "美食"
+      "地址": "板橋區中山路一段123號"
     },
     {
-      "店家名稱": "幸福餐廳",
-      "優惠內容": "9折優惠。全品項。限平日使用",
-      "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png",
-      "F": "https://line.me/ti/p/~example2",
-      "G": "https://maps.app.goo.gl/example2",
-      "店家分類": "美食"
+      "店家名稱": "商圈服飾店", 
+      "優惠內容": "1️⃣ 全館8折優惠\n2️⃣ 新品上市9折\n3️⃣ 會員獨享折上折",
+      "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
+      "地址": "板橋區文化路二段456號"
     }
   ];
 }
 
 // ============================================
-// 🎮 格子配置載入
+// 🎫 優惠券功能
 // ============================================
-async function getCellConfig(cellIndex) {
-  try {
-    console.log(`📋 載入格子 ${cellIndex} 的配置...`);
-    
-    const response = await fetch(`${GAS_BASE}?action=getCellConfig&cellIndex=${cellIndex}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    const result = await response.json();
-    console.log(`✅ 格子 ${cellIndex} 配置:`, result);
-    
-    if (result && result.success === true && result.data) {
-      return result.data;
-    } else {
-      throw new Error(result.message || '載入格子配置失敗');
-    }
-    
-  } catch (error) {
-    console.error(`❌ 載入格子 ${cellIndex} 配置失敗:`, error);
-    
-    // 使用預設配置
-    const rand = Math.random();
-    let cellType, specialEvent = null, eventParam = null;
-    
-    if (rand < 0.6) {
-      cellType = '店家';
-    } else if (rand < 0.75) {
-      cellType = '獎勵';
-      specialEvent = '前進';
-      eventParam = 3;
-    } else if (rand < 0.85) {
-      cellType = '懲罰';
-      specialEvent = '後退';
-      eventParam = 2;
-    } else if (rand < 0.95) {
-      cellType = '機會';
-    } else {
-      cellType = '起點';
-    }
-    
-    const categories = ['美食', '購物', '服務', '娛樂', '美容', '教育'];
-    const category = categories[cellIndex % categories.length];
-    
-    return {
-      格子類型: cellType,
-      格子名稱: `${cellType}格 ${cellIndex}`,
-      店家分類: cellType === '店家' ? category : '-',
-      特殊事件: specialEvent,
-      事件參數: eventParam
-    };
-  }
-}
-
-// ============================================
-// 🎫 優惠券相關功能
-// ============================================
-async function saveCoupon(shop) {
-  try {
-    console.log('💾 開始保存優惠券...', shop);
-    
-    const user = getCurrentUser();
-    if (!user || !user.userId) {
-      throw new Error('用戶未登入');
-    }
-    
-    const formData = new FormData();
-    formData.append('action', 'saveCoupon');
-    formData.append('userId', user.userId);
-    formData.append('shopName', shop["店家名稱"] || shop.name || '');
-    formData.append('discount', shop["優惠內容"] || shop.discount || '');
-    formData.append('imageUrl', shop["圖片網址"] || shop.imageUrl || '');
-    formData.append('lineUrl', shop["F"] || shop.lineUrl || '');
-    formData.append('addressUrl', shop["G"] || shop.addressUrl || '');
-    formData.append('category', shop["店家分類"] || shop.category || '');
-    
-    console.log('📤 發送優惠券資料到後端...');
-    
-    const response = await fetch(GAS_BASE, {
-      method: 'POST',
-      body: formData
-    });
-    
-    const result = await response.json();
-    console.log('📥 後端回應:', result);
-    
-    if (result.success === true || result.status === 'success') {
-      console.log('✅ 優惠券保存成功！');
-      
-      // 同時保存到本地
-      const coupons = JSON.parse(localStorage.getItem('localCoupons') || '[]');
-      const newCoupon = {
-        couponId: result.couponId || `COUPON_${Date.now()}`,
-        "店家名稱": shop["店家名稱"],
-        "優惠內容": shop["優惠內容"],
-        "圖片網址": shop["圖片網址"],
-        "F": shop["F"],
-        "G": shop["G"],
-        "店家分類": shop["店家分類"],
-        obtainedDate: new Date().toISOString(),
-        used: false
-      };
-      coupons.push(newCoupon);
-      localStorage.setItem('localCoupons', JSON.stringify(coupons));
-      
-      return true;
-    } else {
-      throw new Error(result.message || '保存失敗');
-    }
-    
-  } catch (error) {
-    console.error('❌ 保存優惠券錯誤:', error);
-    
-    // 後端失敗時，至少保存到本地
-    try {
-      const coupons = JSON.parse(localStorage.getItem('localCoupons') || '[]');
-      const newCoupon = {
-        couponId: `LOCAL_${Date.now()}`,
-        "店家名稱": shop["店家名稱"] || shop.name,
-        "優惠內容": shop["優惠內容"] || shop.discount,
-        "圖片網址": shop["圖片網址"] || shop.imageUrl,
-        "F": shop["F"] || shop.lineUrl || '',
-        "G": shop["G"] || shop.addressUrl || '',
-        "店家分類": shop["店家分類"] || shop.category,
-        obtainedDate: new Date().toISOString(),
-        used: false
-      };
-      coupons.push(newCoupon);
-      localStorage.setItem('localCoupons', JSON.stringify(coupons));
-      console.log('✅ 已保存到本地儲存');
-      return true;
-    } catch (localError) {
-      console.error('❌ 本地保存也失敗:', localError);
-      return false;
-    }
-  }
-}
-
 async function loadCoupons() {
   try {
-    console.log('📋 開始載入優惠券...');
+    console.log('🎫 開始載入優惠券...');
     
-    const user = getCurrentUser();
-    if (!user || !user.userId) {
-      console.log('⚠️ 用戶未登入，載入本地優惠券');
-      return JSON.parse(localStorage.getItem('localCoupons') || '[]');
-    }
-    
-    const response = await fetch(`${GAS_BASE}?action=getCoupons&userId=${user.userId}`);
+    const couponUrl = `${GAS_BASE}?action=getUserCoupons&userId=${encodeURIComponent(userId)}`;
+    const response = await fetch(couponUrl);
     
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -243,17 +286,67 @@ async function loadCoupons() {
     const result = await response.json();
     console.log('🎫 優惠券API回應:', result);
     
-    if (result && result.success === true && Array.isArray(result.data)) {
-      console.log(`✅ 成功載入 ${result.data.length} 張優惠券`);
-      return result.data;
+    if (result && result.status === 'success' && Array.isArray(result.coupons)) {
+      let coupons = result.coupons;
+      
+      // 獲取前端核銷記錄
+      const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+      
+      // 合併後端和前端的核銷狀態
+      coupons = coupons.map(coupon => {
+        const couponId = coupon.id || coupon._id;
+        const backendUsed = coupon.used === true || coupon.used === 'true';
+        const frontendUsed = usedCoupons[couponId] ? usedCoupons[couponId].used : false;
+        
+        // 如果後端或前端任一標記為已使用，則視為已使用
+        return {
+          ...coupon,
+          used: backendUsed || frontendUsed
+        };
+      });
+      
+      return coupons;
     } else {
-      throw new Error(result.message || '載入失敗');
+      return [];
     }
-    
   } catch (error) {
     console.error('❌ 載入優惠券失敗:', error);
-    // 載入本地優惠券作為備用
-    return JSON.parse(localStorage.getItem('localCoupons') || '[]');
+    return [];
+  }
+}
+
+async function saveCoupon(shopData) {
+  try {
+    const shopName = shopData["店家名稱"] || shopData.name || '';
+    const discount = shopData["優惠內容"] || shopData.discount || '';
+    const imageUrl = shopData["圖片網址"] || shopData.icon || '';
+    const shopId = shopData.id || 'shop_' + Date.now();
+    
+    const formData = new FormData();
+    formData.append('action', 'saveCoupon');
+    formData.append('userId', userId);
+    formData.append('shopId', shopId);
+    formData.append('shopName', shopName);
+    formData.append('discount', discount);
+    formData.append('imageUrl', imageUrl);
+    
+    const response = await fetch(GAS_BASE, {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    console.log('💾 收藏優惠券回應:', result);
+    
+    return result.status === 'success';
+    
+  } catch (error) {
+    console.error('❌ 收藏錯誤:', error);
+    return false;
   }
 }
 
@@ -263,26 +356,29 @@ async function verifyCoupon(couponId) {
     
     const user = getCurrentUser();
     if (!user || !user.userId) {
-      throw new Error('用戶未登入');
+      console.log('⚠️ 未登入用戶，使用前端模擬核銷');
+      return simulateVerifyCoupon(couponId);
     }
     
+    const action = 'verifyCoupon';
+    console.log(`🔄 使用 action: ${action}`);
+    
     const formData = new FormData();
-    formData.append('action', 'verifyCoupon');
+    formData.append('action', action);
     formData.append('userId', user.userId);
     formData.append('couponId', couponId);
     
-    const response = await fetch(GAS_BASE, {
+    const response = await fetch('https://richman.fangwl591021.workers.dev/', {
       method: 'POST',
       body: formData
     });
     
     const result = await response.json();
-    console.log('核銷回應:', result);
+    console.log(`📊 ${action} 回應:`, result);
     
     if (result.success === true || result.status === 'success') {
-      console.log('✅ 核銷成功！');
+      console.log(`✅ ${action} 成功`);
       
-      // 更新本地狀態
       let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
       usedCoupons[couponId] = {
         used: true,
@@ -292,99 +388,145 @@ async function verifyCoupon(couponId) {
       
       return true;
     } else {
+      if (result.message && result.message.includes('已經處理')) {
+        console.log('ℹ️ 優惠券已經處理過，更新本地狀態');
+        let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+        usedCoupons[couponId] = {
+          used: true,
+          verifiedAt: new Date().toISOString()
+        };
+        localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+        return true;
+      }
+      
       throw new Error(result.message || '核銷失敗');
     }
     
   } catch (error) {
     console.error('❌ 核銷錯誤:', error);
-    // 後端錯誤時，在前端模擬核銷
-    let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
-    usedCoupons[couponId] = {
-      used: true,
-      verifiedAt: new Date().toISOString()
-    };
-    localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+    simulateVerifyCoupon(couponId);
     return true;
   }
 }
 
+function simulateVerifyCoupon(couponId) {
+  let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+  usedCoupons[couponId] = {
+    used: true,
+    usedAt: new Date().toISOString()
+  };
+  localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+  console.log('💾 前端記錄核銷:', couponId);
+}
+
 // ============================================
-// 🔐 LINE 登入相關
+// 🔧 工具函數
+// ============================================
+function formatDescription(text) {
+  if (!text) return '';
+  
+  const lines = text.split('\n');
+  let formattedHTML = '';
+  
+  lines.forEach((line, index) => {
+    if (line.trim()) {
+      if (/^[0-9]|^[0-9]️⃣|^[一二三四五六七八九十]/.test(line.trim())) {
+        formattedHTML += `<span class="desc-line">${line}</span>`;
+      } else {
+        formattedHTML += `<span class="desc-line">${line}</span>`;
+      }
+    }
+  });
+  
+  return formattedHTML;
+}
+
+function showMsg(t, elementId = 'msg') {
+  const msgElement = document.getElementById(elementId);
+  if (msgElement) {
+    msgElement.textContent = t;
+    msgElement.style.opacity = 1;
+  }
+}
+
+function hideMsg(elementId = 'msg') {
+  const msgElement = document.getElementById(elementId);
+  if (msgElement) {
+    msgElement.style.opacity = 0;
+    setTimeout(() => {
+      msgElement.textContent = "";
+    }, 500);
+  }
+}
+
+// ============================================
+// 📄 頁面初始化
 // ============================================
 async function initializeApp() {
-  console.log('🚀 初始化應用程式...');
-  
-  // 檢查是否在 LINE 環境中
-  if (typeof liff !== 'undefined') {
-    try {
-      await liff.init({ liffId: LIFF_ID });
-      
-      if (liff.isLoggedIn()) {
-        const profile = await liff.getProfile();
-        localStorage.setItem('lineUserId', profile.userId);
-        localStorage.setItem('lineDisplayName', profile.displayName);
-        localStorage.setItem('linePictureUrl', profile.pictureUrl);
-        
-        console.log('✅ LINE 用戶已登入:', profile.displayName);
-      }
-    } catch (error) {
-      console.error('❌ LIFF 初始化失敗:', error);
-    }
-  }
-  
-  // 檢查是否有 LINE 登入資訊
-  const user = getCurrentUser();
-  const loginScreen = document.getElementById('loginScreen');
-  
-  if (user && user.userId) {
-    console.log('✅ 用戶已登入:', user.displayName);
-    if (loginScreen) {
-      loginScreen.classList.add('hidden');
-    }
-    
-    // 更新底部 LINE 按鈕顯示
-    const lineLoginBtn = document.getElementById('lineLoginBtn');
-    const lineAvatar = document.getElementById('lineAvatar');
-    const lineLoginText = document.getElementById('lineLoginText');
-    
-    if (lineLoginBtn && lineAvatar && user.pictureUrl) {
-      lineLoginBtn.classList.add('has-avatar', 'logged-in');
-      lineAvatar.src = user.pictureUrl;
-      if (lineLoginText) {
-        lineLoginText.textContent = user.displayName || 'LINE';
-      }
-    }
-  } else {
-    console.log('⚠️ 用戶未登入');
-    if (loginScreen) {
-      loginScreen.classList.remove('hidden');
-    }
-  }
-}
-
-async function startLineLogin() {
-  console.log('🔐 開始 LINE 登入流程...');
-  
-  if (typeof liff === 'undefined') {
-    alert('LINE LIFF SDK 未載入，請確認網路連線');
-    return;
-  }
+  console.log('=== 📱 初始化應用程式 ===');
   
   try {
-    if (!liff.isLoggedIn()) {
-      liff.login();
-    } else {
-      await initializeApp();
+    await initLiff();
+    
+    if (liffInitialized && liff.isLoggedIn()) {
+      console.log('✅ LIFF 用戶已登入，自動取得資料');
+      await getLineProfile();
+      
+      if (localStorage.getItem('lineUserId')) {
+        const loginScreen = document.getElementById('loginScreen');
+        if (loginScreen) {
+          loginScreen.classList.add('hidden');
+        }
+        return;
+      }
     }
   } catch (error) {
-    console.error('❌ LINE 登入失敗:', error);
-    alert('登入失敗：' + error.message);
+    console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF，繼續其他登入方式');
+  }
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const lineUserId = urlParams.get('lineUserId');
+  const lineDisplayName = urlParams.get('lineDisplayName');
+  const linePictureUrl = urlParams.get('linePictureUrl');
+  
+  if (lineUserId && lineDisplayName) {
+    localStorage.setItem('lineUserId', lineUserId);
+    localStorage.setItem('lineDisplayName', decodeURIComponent(lineDisplayName));
+    
+    if (linePictureUrl) {
+      localStorage.setItem('linePictureUrl', decodeURIComponent(linePictureUrl));
+    }
+    
+    updateUserInterface({
+      userId: lineUserId,
+      displayName: decodeURIComponent(lineDisplayName),
+      pictureUrl: linePictureUrl ? decodeURIComponent(linePictureUrl) : ''
+    });
+    
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else {
+    const storedUserId = localStorage.getItem('lineUserId');
+    const storedDisplayName = localStorage.getItem('lineDisplayName');
+    const storedPictureUrl = localStorage.getItem('linePictureUrl');
+    
+    if (storedUserId) {
+      updateUserInterface({
+        userId: storedUserId,
+        displayName: storedDisplayName,
+        pictureUrl: storedPictureUrl
+      });
+    } else {
+      const loginScreen = document.getElementById('loginScreen');
+      if (loginScreen) {
+        loginScreen.classList.remove('hidden');
+      }
+    }
   }
 }
 
-async function lineLogin() {
-  await startLineLogin();
-}
+// ============================================
+// 🔧 新增工具函數
+// ============================================
 
 function getCurrentUser() {
   const lineUserId = localStorage.getItem('lineUserId');
@@ -398,22 +540,89 @@ function getCurrentUser() {
   return null;
 }
 
-// ============================================
-// 🛠️ 輔助函數
-// ============================================
-function showMsg(text) {
-  const msg = document.getElementById('msg');
-  if (msg) {
-    msg.textContent = text;
-    msg.style.opacity = '1';
+function showNotification(message, type = 'info') {
+  const existingNotification = document.querySelector('.notification');
+  if (existingNotification) {
+    existingNotification.remove();
   }
+  
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: ${type === 'success' ? '#4caf50' : type === 'error' ? '#f44336' : '#2196f3'};
+    color: white;
+    padding: 12px 24px;
+    border-radius: 6px;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    font-weight: bold;
+  `;
+  
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
 }
 
-function hideMsg() {
-  const msg = document.getElementById('msg');
-  if (msg) {
-    msg.style.opacity = '0';
+async function abandonCoupon(couponId) {
+  try {
+    const user = getCurrentUser();
+    if (!user || !user.userId) {
+      throw new Error('用戶未登入');
+    }
+    
+    const formData = new FormData();
+    formData.append('action', 'abandonCoupon');
+    formData.append('userId', user.userId);
+    formData.append('couponId', couponId);
+    
+    const response = await fetch('https://richman.fangwl591021.workers.dev/', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    console.log('放棄回應:', result);
+    
+    if (result.success === true || result.status === 'success') {
+      console.log('✅ 放棄成功！');
+      
+      let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+      usedCoupons[couponId] = {
+        used: 'abandoned',
+        abandonedAt: new Date().toISOString()
+      };
+      localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+      
+      return true;
+    } else {
+      if (result.message && result.message.includes('已經處理')) {
+        console.log('ℹ️ 優惠券已經處理過，更新本地狀態');
+        let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+        usedCoupons[couponId] = {
+          used: 'abandoned',
+          abandonedAt: new Date().toISOString()
+        };
+        localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+        return true;
+      }
+      throw new Error(result.message || '放棄失敗');
+    }
+    
+  } catch (error) {
+    console.error('❌ 放棄錯誤:', error);
+    let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+    usedCoupons[couponId] = {
+      used: 'abandoned',
+      abandonedAt: new Date().toISOString()
+    };
+    localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
+    return true;
   }
 }
-
-console.log('✅ common.js 載入完成');
