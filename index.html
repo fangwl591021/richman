@@ -725,10 +725,19 @@ async function handleShopCell(cellConfig) {
   
   // 隨機選一間店家
   const randomShop = shops[Math.floor(Math.random() * shops.length)];
-  currentShop = randomShop;
   
-  console.log(`✨ 顯示店家:`, randomShop);
-  showShopPopup(randomShop);
+  // 確保店家資料包含所有必要欄位（F 和 G）
+  currentShop = {
+    "店家名稱": randomShop["店家名稱"] || randomShop.name || "店家",
+    "優惠內容": randomShop["優惠內容"] || randomShop.discount || "優惠",
+    "圖片網址": randomShop["圖片網址"] || randomShop.imageUrl || randomShop.icon || "",
+    "F": randomShop["F"] || randomShop.lineUrl || "",  // LINE 網址
+    "G": randomShop["G"] || randomShop.addressUrl || "", // 地址網址
+    "店家分類": randomShop["店家分類"] || category
+  };
+  
+  console.log(`✨ 顯示店家（含F和G欄位）:`, currentShop);
+  showShopPopup(currentShop);
 }
 
 // 處理獎勵格
@@ -900,6 +909,12 @@ function closeShop() {
 claimBtn.addEventListener('click', async () => {
   if (!currentShop) return;
   
+  // 調試：確認當前店家資料包含 F 和 G 欄位
+  console.log('📦 準備收藏的店家資料:', currentShop);
+  console.log('   - 店家名稱:', currentShop["店家名稱"]);
+  console.log('   - F (LINE):', currentShop["F"]);
+  console.log('   - G (地址):', currentShop["G"]);
+  
   claimBtn.disabled = true;
   claimBtn.textContent = "🎉 收藏中...";
   
@@ -908,6 +923,7 @@ claimBtn.addEventListener('click', async () => {
     
     if (success) {
       claimBtn.textContent = "✅ 收藏成功！";
+      console.log('✅ 優惠券已成功保存，包含 F 和 G 欄位');
       setTimeout(() => {
         closeShop();
       }, 1500);
