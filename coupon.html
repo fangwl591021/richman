@@ -360,6 +360,18 @@ async function loadCouponList() {
   try {
     let coupons = await loadCoupons();
     
+    // 添加除錯資訊
+    console.log('📋 完整的優惠券資料:', coupons);
+    console.log('🔍 詳細的 F 和 G 欄位檢查:', coupons.map(c => ({
+      店家名稱: c["店家名稱"],
+      F: c["F"],
+      G: c["G"],
+      F類型: typeof c["F"],
+      G類型: typeof c["G"],
+      F是否為空: !c["F"],
+      G是否為空: !c["G"]
+    })));
+    
     // 合併本地狀態
     coupons = mergeLocalCouponStatus(coupons);
     
@@ -401,6 +413,16 @@ async function loadCouponList() {
       }
       
       couponList.innerHTML = html;
+      
+      // 檢查生成的 HTML 中是否包含按鈕
+      console.log('🔄 生成的 HTML 結構檢查:');
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const lineButtons = tempDiv.querySelectorAll('.line-btn');
+      const mapButtons = tempDiv.querySelectorAll('.map-btn');
+      console.log(`✅ 找到 ${lineButtons.length} 個 LINE 按鈕`);
+      console.log(`✅ 找到 ${mapButtons.length} 個地圖按鈕`);
+      
     } else {
       couponList.innerHTML = `
         <div class="empty-state">
@@ -430,9 +452,19 @@ function createCouponHTML(coupon) {
   const discountText = formatCouponDescription(coupon["優惠內容"] || coupon.discount || coupon.description || '優惠內容');
   const imageUrl = coupon["圖片網址"] || coupon.imageUrl || coupon.icon || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png';
   
-  // 獲取 LINE 連結和地圖連結
-  const lineUrl = coupon["F"] || coupon.lineUrl || coupon.lineLink || '';
-  const mapUrl = coupon["G"] || coupon.mapUrl || coupon.addressUrl || coupon.addressLink || '';
+  // 獲取 LINE 連結和地圖連結 - 強制顯示按鈕進行測試
+  const lineUrl = coupon["F"] || coupon.lineUrl || coupon.lineLink || 'https://line.me/ti/p/~test_line';
+  const mapUrl = coupon["G"] || coupon.mapUrl || coupon.addressUrl || coupon.addressLink || 'https://maps.google.com';
+  
+  // 除錯：檢查每個優惠券的欄位
+  console.log(`🎫 建立優惠券 HTML: ${shopName}`, {
+    lineUrl,
+    mapUrl,
+    hasLineBtn: !!lineUrl,
+    hasMapBtn: !!mapUrl,
+    lineUrl類型: typeof lineUrl,
+    mapUrl類型: typeof mapUrl
+  });
   
   // 更精確的狀態判斷
   const usedValue = coupon.used;
@@ -478,17 +510,15 @@ function createCouponHTML(coupon) {
         </button>
         ` : ''}
         
-        ${lineUrl ? `
+        <!-- 強制顯示 LINE 按鈕 -->
         <button class="line-btn" onclick="handleLineContact('${couponId}', '${encodeURIComponent(lineUrl)}', '${encodeURIComponent(shopName)}')">
           <span>💚</span>加LINE
         </button>
-        ` : ''}
         
-        ${mapUrl ? `
+        <!-- 強制顯示地圖按鈕 -->
         <button class="map-btn" onclick="handleOpenMap('${couponId}', '${encodeURIComponent(mapUrl)}', '${encodeURIComponent(shopName)}')">
           <span>🗺️</span>地圖
         </button>
-        ` : ''}
       </div>
     </div>
   </div>
