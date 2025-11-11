@@ -600,6 +600,8 @@ function updatePlayer() {
 
 // ✨ 3D 骰子投擲函數
 async function rollDice() {
+  console.log('🎲 === 開始投擲骰子 ===');
+  
   rollBtn.disabled = true;
   rollBtn.textContent = '🎲 投擲中...';
   
@@ -615,6 +617,10 @@ async function rollDice() {
   const v1 = Math.floor(Math.random() * 6) + 1;
   const v2 = Math.floor(Math.random() * 6) + 1;
   
+  console.log(`   骰子1: ${v1} 點`);
+  console.log(`   骰子2: ${v2} 點`);
+  console.log(`   總計: ${v1 + v2} 點`);
+  
   // 1.2秒後停止動畫並顯示結果
   setTimeout(() => {
     dice1.classList.remove('rolling');
@@ -629,11 +635,15 @@ async function rollDice() {
     const total = v1 + v2;
     showMsg(`🎲 擲出 ${v1} + ${v2} = ${total} 點！`);
     rollBtn.textContent = '🎲 投擲骰子';
+    
+    console.log('✅ 骰子停止，開始移動玩家');
     movePlayer(total);
   }, 1200);
 }
 
 async function movePlayer(steps) {
+  console.log(`🚶 開始移動玩家 ${steps} 步...`);
+  
   player.classList.add('walking');
   sMove.loop = true;
   sMove.currentTime = 0;
@@ -649,7 +659,13 @@ async function movePlayer(steps) {
   sMove.pause();
   sMove.currentTime = 0;
   
+  console.log(`✅ 玩家移動完成，當前位置: ${pos}`);
+  console.log('🔍 準備檢查格子事件...');
+  
   await checkEvent();
+  
+  console.log('✅ 格子事件檢查完成');
+  
   setTimeout(() => hideMsg(), 800);
   rollBtn.disabled = false;
 }
@@ -659,6 +675,8 @@ async function movePlayer(steps) {
 // ============================================
 async function checkEvent() {
   try {
+    console.log(`🎯 檢查格子 ${pos} 的事件...`);
+    
     // 讀取當前格子的配置
     const cellConfig = await getCellConfig(pos);
     
@@ -668,76 +686,107 @@ async function checkEvent() {
       return;
     }
     
-    console.log(`📍 格子 ${pos}:`, cellConfig);
+    console.log(`📍 格子 ${pos} 配置:`, cellConfig);
     const cellType = cellConfig.格子類型;
+    console.log(`   格子類型: ${cellType}`);
     
     // 根據格子類型執行不同邏輯
     switch (cellType) {
       case '店家':
+        console.log('🏪 這是店家格子，準備顯示店家...');
         await handleShopCell(cellConfig);
         break;
         
       case '獎勵':
+        console.log('🎉 這是獎勵格子');
         await handleRewardCell(cellConfig);
         break;
         
       case '懲罰':
+        console.log('💥 這是懲罰格子');
         await handlePenaltyCell(cellConfig);
         break;
         
       case '機會':
+        console.log('🎲 這是機會格子');
         await handleChanceCell(cellConfig);
         break;
         
       case '起點':
+        console.log('🏁 回到起點');
         showMsg('🏁 回到起點！');
         break;
         
       default:
+        console.log(`❓ 未知格子類型: ${cellType}`);
         showMsg(`踩到 ${cellConfig.格子名稱}`);
     }
     
   } catch (error) {
     console.error('❌ 處理格子事件時發生錯誤:', error);
+    console.error('錯誤堆疊:', error.stack);
     showMsg('格子事件執行失敗');
   }
 }
 
 // 處理店家格
 async function handleShopCell(cellConfig) {
+  console.log('🏪 === 開始處理店家格 ===');
+  console.log('   收到的配置:', cellConfig);
+  
   const category = cellConfig.店家分類;
+  console.log('   店家分類:', category);
   
   if (!category || category === '-') {
+    console.warn('⚠️ 此格子沒有有效的店家分類');
     showMsg('此格子沒有店家');
     return;
   }
   
-  console.log(`🏪 尋找分類「${category}」的店家...`);
+  console.log(`🔍 尋找分類「${category}」的店家...`);
   
-  // 從店家資料篩選該分類
-  const shops = await loadShopsByCategory(category);
-  
-  if (shops.length === 0) {
-    showMsg(`找不到「${category}」類型的店家`);
-    console.warn(`⚠️ 分類「${category}」沒有店家資料，請檢查店家資料表`);
-    return;
+  try {
+    // 從店家資料篩選該分類
+    const shops = await loadShopsByCategory(category);
+    console.log(`📊 找到 ${shops.length} 個店家:`, shops);
+    
+    if (shops.length === 0) {
+      console.warn(`⚠️ 分類「${category}」沒有店家資料`);
+      showMsg(`找不到「${category}」類型的店家`);
+      return;
+    }
+    
+    // 隨機選一間店家
+    const randomIndex = Math.floor(Math.random() * shops.length);
+    const randomShop = shops[randomIndex];
+    console.log(`🎲 隨機選擇第 ${randomIndex} 個店家:`, randomShop);
+    
+    // 確保店家資料包含所有必要欄位（F 和 G）
+    currentShop = {
+      "店家名稱": randomShop["店家名稱"] || randomShop.name || "店家",
+      "優惠內容": randomShop["優惠內容"] || randomShop.discount || "優惠",
+      "圖片網址": randomShop["圖片網址"] || randomShop.imageUrl || randomShop.icon || "",
+      "F": randomShop["F"] || randomShop.lineUrl || "",  // LINE 網址
+      "G": randomShop["G"] || randomShop.addressUrl || "", // 地址網址
+      "店家分類": randomShop["店家分類"] || category
+    };
+    
+    console.log('✅ 處理後的店家資料:');
+    console.log('   - 店家名稱:', currentShop["店家名稱"]);
+    console.log('   - 優惠內容:', currentShop["優惠內容"]);
+    console.log('   - 圖片網址:', currentShop["圖片網址"]);
+    console.log('   - F (LINE):', currentShop["F"]);
+    console.log('   - G (地址):', currentShop["G"]);
+    
+    console.log('📱 準備顯示店家彈窗...');
+    showShopPopup(currentShop);
+    console.log('✅ 店家彈窗已調用');
+    
+  } catch (error) {
+    console.error('❌ 處理店家格時發生錯誤:', error);
+    console.error('錯誤堆疊:', error.stack);
+    showMsg('載入店家資料失敗');
   }
-  
-  // 隨機選一間店家
-  const randomShop = shops[Math.floor(Math.random() * shops.length)];
-  
-  // 確保店家資料包含所有必要欄位（F 和 G）
-  currentShop = {
-    "店家名稱": randomShop["店家名稱"] || randomShop.name || "店家",
-    "優惠內容": randomShop["優惠內容"] || randomShop.discount || "優惠",
-    "圖片網址": randomShop["圖片網址"] || randomShop.imageUrl || randomShop.icon || "",
-    "F": randomShop["F"] || randomShop.lineUrl || "",  // LINE 網址
-    "G": randomShop["G"] || randomShop.addressUrl || "", // 地址網址
-    "店家分類": randomShop["店家分類"] || category
-  };
-  
-  console.log(`✨ 顯示店家（含F和G欄位）:`, currentShop);
-  showShopPopup(currentShop);
 }
 
 // 處理獎勵格
@@ -873,11 +922,16 @@ async function handleChanceCell(cellConfig) {
 // 🏪 店家彈窗顯示
 // ============================================
 function showShopPopup(shop) {
-  console.log('🏪 顯示店家彈窗:', shop);
+  console.log('📱 === showShopPopup 被調用 ===');
+  console.log('   收到的店家資料:', shop);
   
   const imgUrl = shop["圖片網址"] || shop.icon || shop.imageUrl || "";
   const shopNameText = shop["店家名稱"] || shop.name || shop.shopName || "神秘店家";
   let shopDescText = shop["優惠內容"] || shop.discount || shop.description || "限時優惠，趕快來看看！";
+  
+  console.log('   - 圖片網址:', imgUrl);
+  console.log('   - 店家名稱:', shopNameText);
+  console.log('   - 優惠內容:', shopDescText);
   
   // 處理換行 - 將句號轉換為實際換行
   shopDescText = shopDescText.replace(/。/g, '。<br>');
@@ -885,18 +939,26 @@ function showShopPopup(shop) {
   if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
     shopImg.src = imgUrl;
     shopImg.onerror = function() {
+      console.warn('⚠️ 圖片載入失敗，使用預設圖片');
       this.src = "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png";
     };
   } else {
+    console.log('   使用預設圖片');
     shopImg.src = "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png";
   }
   
   shopName.textContent = shopNameText;
   shopDesc.innerHTML = shopDescText;
   
+  console.log('   更新彈窗內容完成');
+  console.log('   顯示彈窗...');
+  
   shopPopup.style.display = 'block';
   claimBtn.disabled = false;
   claimBtn.textContent = "收藏優惠";
+  
+  console.log('✅ 店家彈窗已顯示');
+  console.log('   彈窗顯示狀態:', shopPopup.style.display);
 }
 
 function closeShop() {
@@ -1003,34 +1065,144 @@ if (typeof hideMsg === 'undefined') {
 
 if (typeof getCellConfig === 'undefined') {
   window.getCellConfig = async function(cellIndex) {
-    console.warn('⚠️ getCellConfig 未定義，使用模擬資料');
-    // 返回模擬的格子配置
-    const types = ['店家', '獎勵', '懲罰', '機會', '起點'];
-    const categories = ['美食', '購物', '服務', '娛樂'];
-    return {
-      格子類型: types[cellIndex % types.length],
-      格子名稱: `格子 ${cellIndex}`,
-      店家分類: categories[cellIndex % categories.length],
-      特殊事件: cellIndex % 5 === 0 ? '前進' : null,
-      事件參數: 3
+    console.log(`📋 getCellConfig (備用模式) - 格子 ${cellIndex}`);
+    
+    // 模擬 API 延遲
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 更高比例的店家格子（60%店家，其他40%）
+    const rand = Math.random();
+    let cellType, specialEvent = null, eventParam = null;
+    
+    if (rand < 0.6) {
+      // 60% 是店家
+      cellType = '店家';
+    } else if (rand < 0.75) {
+      // 15% 是獎勵
+      cellType = '獎勵';
+      specialEvent = '前進';
+      eventParam = 3;
+    } else if (rand < 0.85) {
+      // 10% 是懲罰
+      cellType = '懲罰';
+      specialEvent = '後退';
+      eventParam = 2;
+    } else if (rand < 0.95) {
+      // 10% 是機會
+      cellType = '機會';
+    } else {
+      // 5% 是起點
+      cellType = '起點';
+    }
+    
+    const categories = ['美食', '購物', '服務', '娛樂', '美容', '教育'];
+    const category = categories[cellIndex % categories.length];
+    
+    const config = {
+      格子類型: cellType,
+      格子名稱: `${cellType}格 ${cellIndex}`,
+      店家分類: cellType === '店家' ? category : '-',
+      特殊事件: specialEvent,
+      事件參數: eventParam
     };
+    
+    console.log(`   返回配置:`, config);
+    return config;
   };
 }
 
 if (typeof loadShopsByCategory === 'undefined') {
   window.loadShopsByCategory = async function(category) {
-    console.warn('⚠️ loadShopsByCategory 未定義，使用模擬資料');
-    // 返回模擬的店家資料
-    return [
+    console.log(`📋 loadShopsByCategory (備用模式) - 分類: ${category}`);
+    
+    // 模擬 API 延遲
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // 根據分類返回不同的店家
+    const shopsByCategory = {
+      '美食': [
+        {
+          "店家名稱": "美味咖啡廳",
+          "優惠內容": "買一送一。美式咖啡。限時優惠",
+          "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
+          "F": "https://line.me/ti/p/~cafe123",
+          "G": "https://maps.app.goo.gl/cafe123",
+          "店家分類": "美食"
+        },
+        {
+          "店家名稱": "幸福餐廳",
+          "優惠內容": "9折優惠。全品項。限平日使用",
+          "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png",
+          "F": "https://line.me/ti/p/~restaurant123",
+          "G": "https://maps.app.goo.gl/restaurant123",
+          "店家分類": "美食"
+        }
+      ],
+      '購物': [
+        {
+          "店家名稱": "時尚服飾店",
+          "優惠內容": "滿千送百。全館商品。會員獨享",
+          "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png",
+          "F": "https://line.me/ti/p/~fashion123",
+          "G": "https://maps.app.goo.gl/fashion123",
+          "店家分類": "購物"
+        }
+      ],
+      '服務': [
+        {
+          "店家名稱": "專業理髮店",
+          "優惠內容": "剪髮優惠。8折。需預約",
+          "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
+          "F": "https://line.me/ti/p/~haircut123",
+          "G": "https://maps.app.goo.gl/haircut123",
+          "店家分類": "服務"
+        }
+      ],
+      '娛樂': [
+        {
+          "店家名稱": "歡樂KTV",
+          "優惠內容": "買3小時送1小時。限假日。需提前訂位",
+          "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png",
+          "F": "https://line.me/ti/p/~ktv123",
+          "G": "https://maps.app.goo.gl/ktv123",
+          "店家分類": "娛樂"
+        }
+      ],
+      '美容': [
+        {
+          "店家名稱": "美麗美容院",
+          "優惠內容": "做臉體驗價。599元。首次限定",
+          "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png",
+          "F": "https://line.me/ti/p/~beauty123",
+          "G": "https://maps.app.goo.gl/beauty123",
+          "店家分類": "美容"
+        }
+      ],
+      '教育': [
+        {
+          "店家名稱": "智慧補習班",
+          "優惠內容": "試聽免費。一對一教學。限額報名",
+          "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
+          "F": "https://line.me/ti/p/~edu123",
+          "G": "https://maps.app.goo.gl/edu123",
+          "店家分類": "教育"
+        }
+      ]
+    };
+    
+    const shops = shopsByCategory[category] || [
       {
         "店家名稱": `${category}店家`,
         "優惠內容": "限時優惠。買一送一。快來搶購",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
-        "F": "https://line.me/ti/p/~example",
-        "G": "https://maps.app.goo.gl/example",
+        "F": "https://line.me/ti/p/~default123",
+        "G": "https://maps.app.goo.gl/default123",
         "店家分類": category
       }
     ];
+    
+    console.log(`   返回 ${shops.length} 個店家:`, shops);
+    return shops;
   };
 }
 
