@@ -386,22 +386,22 @@ function getMockCoupons() {
   ];
 }
 
-// 修改 saveCoupon 函數，統一使用 F 和 G 欄位
+// 在 common.js 中修改 saveCoupon 函數
 async function saveCoupon(shopData) {
   try {
     const shopName = shopData["店家名稱"] || shopData.name || '';
     const discount = shopData["優惠內容"] || shopData.discount || '';
     const imageUrl = shopData["圖片網址"] || shopData.icon || '';
     
-    // 統一欄位名稱：使用 F 和 G
-    const lineUrl = shopData["加LINE 建模"] || shopData["加LINE連繫"] || shopData["F"] || shopData.lineUrl || '';
-    const mapUrl = shopData["地址"] || shopData["G"] || shopData.mapUrl || '';
+    // 🎯 關鍵修正：正確獲取加LINE聯繫和地址連結
+    const lineContact = shopData["加LINE連繫"] || shopData["加LINE 建模"] || shopData.lineUrl || '';
+    const address = shopData["地址"] || shopData.mapUrl || '';
     
     const shopId = shopData.id || 'shop_' + Date.now();
     
     console.log('💾 保存優惠券資料:', {
       shopName, discount, imageUrl,
-      lineUrl, mapUrl // 統一使用 lineUrl 和 mapUrl
+      lineContact, address
     });
     
     const formData = new FormData();
@@ -411,8 +411,8 @@ async function saveCoupon(shopData) {
     formData.append('shopName', shopName);
     formData.append('discount', discount);
     formData.append('imageUrl', imageUrl);
-    formData.append('lineUrl', lineUrl);
-    formData.append('mapUrl', mapUrl);
+    formData.append('lineContact', lineContact); // 保存加LINE聯繫
+    formData.append('address', address);         // 保存地址
     
     const response = await fetch(GAS_BASE, {
       method: 'POST',
