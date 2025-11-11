@@ -76,20 +76,35 @@ function formatCouponDescription(text) {
   return text.replace(/。/g, '。<br>');
 }
 
+// 統一優惠券資料格式
+function normalizeCouponData(coupon) {
+  // 統一欄位名稱，支援多種可能的欄位名稱
+  return {
+    couponId: coupon.couponId || coupon.id || `temp_${Date.now()}`,
+    shopName: coupon["店家名稱"] || coupon.shopName || coupon.name || "神秘店家",
+    discount: coupon["優惠內容"] || coupon.discount || coupon.description || "限時優惠",
+    imageUrl: coupon["圖片網址"] || coupon.imageUrl || coupon.icon || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png',
+    obtainedDate: coupon.obtainedDate || coupon.createdAt || new Date().toISOString(),
+    used: coupon.used || false
+  };
+}
+
 // 合併本地狀態到優惠券資料
 function mergeLocalCouponStatus(coupons) {
   const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
   
   return coupons.map(coupon => {
-    const couponId = coupon.couponId || coupon.id;
+    const normalizedCoupon = normalizeCouponData(coupon);
+    const couponId = normalizedCoupon.couponId;
+    
     if (couponId && usedCoupons[couponId]) {
       // 如果本地有狀態記錄，覆蓋後端的狀態
       return {
-        ...coupon,
+        ...normalizedCoupon,
         used: usedCoupons[couponId].used
       };
     }
-    return coupon;
+    return normalizedCoupon;
   });
 }
 
@@ -108,10 +123,10 @@ async function loadCouponList() {
     let coupons = await loadCoupons();
     console.log('原始優惠券資料:', coupons);
     
-    // 合併本地狀態
+    // 合併本地狀態並統一格式
     coupons = mergeLocalCouponStatus(coupons);
     
-    console.log('合併後的優惠券資料:', coupons);
+    console.log('統一格式後的優惠券資料:', coupons);
     
     if (coupons && coupons.length > 0) {
       // 分組：未使用、已使用、已放棄
@@ -183,10 +198,12 @@ async function loadCouponList() {
 
 // 創建優惠券 HTML 的輔助函數
 function createCouponHTML(coupon) {
-  const discountText = formatCouponDescription(coupon.discount || '優惠內容');
+  // 使用統一格式的資料
+  const normalizedCoupon = normalizeCouponData(coupon);
+  const discountText = formatCouponDescription(normalizedCoupon.discount);
   
   // 更精確的狀態判斷
-  const usedValue = coupon.used;
+  const usedValue = normalizedCoupon.used;
   const isUsed = usedValue === true || 
                 usedValue === 'TRUE' || 
                 usedValue === 'true' ||
@@ -205,25 +222,23 @@ function createCouponHTML(coupon) {
     statusText = '已放棄';
   }
   
-  const couponId = coupon.couponId || coupon.id || `temp_${Date.now()}`;
-  
-  console.log(`建立優惠券 HTML: ${couponId}, used=${usedValue}, isUsed=${isUsed}, isAbandoned=${isAbandoned}`);
+  console.log(`建立優惠券 HTML: ${normalizedCoupon.couponId}, used=${usedValue}, isUsed=${isUsed}, isAbandoned=${isAbandoned}`);
   
   return `
-  <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}" data-coupon-id="${couponId}">
-    <img src="${coupon.imageUrl || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'}" 
+  <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}" data-coupon-id="${normalizedCoupon.couponId}">
+    <img src="${normalizedCoupon.imageUrl}" 
          onerror="this.src='https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'">
     <div class="coupon-card-info">
-      <h3>${coupon.shopName || '店家名稱'}</h3>
+      <h3>${normalizedCoupon.shopName}</h3>
       <div class="discount">${discountText}</div>
       <div class="date">
-        ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
+        ${normalizedCoupon.obtainedDate ? new Date(normalizedCoupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
       </div>
       <div class="status ${statusClass}">${statusText}</div>
       ${!isUsed && !isAbandoned ? `
       <div class="coupon-actions">
-        <button class="verify-btn" onclick="handleVerifyCoupon('${couponId}')">核銷使用</button>
-        <button class="abandon-btn" onclick="handleAbandonCoupon('${couponId}')">放棄</button>
+        <button class="verify-btn" onclick="handleVerifyCoupon('${normalizedCoupon.couponId}')">核銷使用</button>
+        <button class="abandon-btn" onclick="handleAbandonCoupon('${normalizedCoupon.couponId}')">放棄</button>
       </div>
       ` : ''}
     </div>
@@ -434,29 +449,29 @@ if (typeof loadCoupons === 'undefined') {
     // 獲取本地核銷狀態
     const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
     
-    // 模擬測試資料
+    // 模擬真實的優惠券資料格式（與遊戲中獲得的一致）
     const coupons = [
       {
         couponId: 'COUPON_1',
-        shopName: '咖啡廳',
-        discount: '買一送一。美式咖啡。限時優惠',
-        imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png',
+        "店家名稱": "咖啡廳",
+        "優惠內容": "買一送一。美式咖啡。限時優惠",
+        "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
         obtainedDate: new Date().toISOString(),
         used: false
       },
       {
         couponId: 'COUPON_2',
-        shopName: '餐廳',
-        discount: '9折優惠。全品項。限平日使用',
-        imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png',
+        "店家名稱": "餐廳",
+        "優惠內容": "9折優惠。全品項。限平日使用",
+        "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png",
         obtainedDate: new Date(Date.now() - 86400000).toISOString(),
         used: false
       },
       {
         couponId: 'COUPON_3',
-        shopName: '書店',
-        discount: '滿500送100。購物金。限下次使用',
-        imageUrl: 'https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png',
+        "店家名稱": "書店",
+        "優惠內容": "滿500送100。購物金。限下次使用",
+        "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png",
         obtainedDate: new Date().toISOString(),
         used: false
       }
