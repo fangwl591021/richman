@@ -445,28 +445,25 @@ async function loadCouponList() {
   }
 }
 
-// 創建優惠券 HTML 的輔助函數
+// 在 coupon.html 中修改 createCouponHTML 函數
 function createCouponHTML(coupon) {
-  // 支援多種欄位名稱格式
   const shopName = coupon["店家名稱"] || coupon.shopName || coupon.name || '店家名稱';
   const discountText = formatCouponDescription(coupon["優惠內容"] || coupon.discount || coupon.description || '優惠內容');
   const imageUrl = coupon["圖片網址"] || coupon.imageUrl || coupon.icon || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png';
   
-  // 獲取 LINE 連結和地圖連結 - 強制顯示按鈕進行測試
-  const lineUrl = coupon["F"] || coupon.lineUrl || coupon.lineLink || 'https://line.me/ti/p/~test_line';
-  const mapUrl = coupon["G"] || coupon.mapUrl || coupon.addressUrl || coupon.addressLink || 'https://maps.google.com';
+  // 🎯 關鍵修正：正確讀取加LINE聯繫和地址連結
+  const lineContact = coupon["加LINE連繫"] || coupon.lineContact || coupon["加LINE 建模"] || coupon.lineUrl || '';
+  const address = coupon["地址"] || coupon.address || coupon.mapUrl || '';
   
-  // 除錯：檢查每個優惠券的欄位
-  console.log(`🎫 建立優惠券 HTML: ${shopName}`, {
-    lineUrl,
-    mapUrl,
-    hasLineBtn: !!lineUrl,
-    hasMapBtn: !!mapUrl,
-    lineUrl類型: typeof lineUrl,
-    mapUrl類型: typeof mapUrl
+  console.log(`🎫 優惠券 ${shopName} 的聯繫資訊:`, {
+    lineContact,
+    address,
+    hasLine: !!lineContact,
+    hasMap: !!address
   });
   
-  // 更精確的狀態判斷
+  // 其餘程式碼保持不變...
+  // 狀態判斷
   const usedValue = coupon.used;
   const isUsed = usedValue === true || 
                 usedValue === 'TRUE' || 
@@ -510,13 +507,13 @@ function createCouponHTML(coupon) {
         </button>
         ` : ''}
         
-        <!-- 強制顯示 LINE 按鈕 -->
-        <button class="line-btn" onclick="handleLineContact('${couponId}', '${encodeURIComponent(lineUrl)}', '${encodeURIComponent(shopName)}')">
+        <!-- 加LINE按鈕 -->
+        <button class="line-btn" onclick="handleLineContact('${couponId}', '${encodeURIComponent(lineContact)}', '${encodeURIComponent(shopName)}')" ${!lineContact ? 'disabled' : ''}>
           <span>💚</span>加LINE
         </button>
         
-        <!-- 強制顯示地圖按鈕 -->
-        <button class="map-btn" onclick="handleOpenMap('${couponId}', '${encodeURIComponent(mapUrl)}', '${encodeURIComponent(shopName)}')">
+        <!-- 地圖按鈕 -->
+        <button class="map-btn" onclick="handleOpenMap('${couponId}', '${encodeURIComponent(address)}', '${encodeURIComponent(shopName)}')" ${!address ? 'disabled' : ''}>
           <span>🗺️</span>地圖
         </button>
       </div>
