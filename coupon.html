@@ -468,10 +468,9 @@ async function handleVerifyCoupon(couponId) {
     
     if (success) {
       // 立即重新載入列表
-      loadCouponList().then(() => {
-        alert('優惠券已成功核銷！');
-        window.scrollTo(0, 0);
-      });
+      await loadCouponList();
+      alert('優惠券已成功核銷！');
+      window.scrollTo(0, 0);
     } else {
       alert('核銷失敗，請稍後再試');
       // 重新啟用按鈕
@@ -522,10 +521,9 @@ async function handleAbandonCoupon(couponId) {
     
     if (success) {
       // 立即重新載入列表
-      loadCouponList().then(() => {
-        alert('優惠券已放棄！');
-        window.scrollTo(0, 0);
-      });
+      await loadCouponList();
+      alert('優惠券已放棄！');
+      window.scrollTo(0, 0);
     } else {
       alert('放棄失敗，請稍後再試');
       // 重新啟用按鈕
