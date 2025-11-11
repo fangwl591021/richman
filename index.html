@@ -82,66 +82,182 @@ body{
   transition:opacity .5s ease;
 }
 
-/* 骰子樣式 */
-.dice{
-  width:60px;
-  height:60px;
-  background:white;
-  border-radius:12px;
-  box-shadow:0 5px 15px rgba(0,0,0,.3);
-  position:relative;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  border:2px solid #333;
+/* ========== 3D 骰子樣式 ========== */
+/* 3D 場景容器 */
+.dice-scene {
+  width: 70px;
+  height: 70px;
+  perspective: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.dot{
-  width:10px;
-  height:10px;
-  background:black;
-  border-radius:50%;
-  position:absolute;
+/* 3D 骰子容器 */
+.dice {
+  width: 70px;
+  height: 70px;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease-out;
 }
 
-/* 骰子點數布局 */
-.face-1 .dot:nth-child(1){top:50%;left:50%;transform:translate(-50%,-50%);}
-.face-2 .dot:nth-child(1){top:20%;left:20%;}
-.face-2 .dot:nth-child(2){bottom:20%;right:20%;}
-.face-3 .dot:nth-child(1){top:20%;left:20%;}
-.face-3 .dot:nth-child(2){top:50%;left:50%;transform:translate(-50%,-50%);}
-.face-3 .dot:nth-child(3){bottom:20%;right:20%;}
-.face-4 .dot:nth-child(1){top:20%;left:20%;}
-.face-4 .dot:nth-child(2){top:20%;right:20%;}
-.face-4 .dot:nth-child(3){bottom:20%;left:20%;}
-.face-4 .dot:nth-child(4){bottom:20%;right:20%;}
-.face-5 .dot:nth-child(1){top:20%;left:20%;}
-.face-5 .dot:nth-child(2){top:20%;right:20%;}
-.face-5 .dot:nth-child(3){top:50%;left:50%;transform:translate(-50%,-50%);}
-.face-5 .dot:nth-child(4){bottom:20%;left:20%;}
-.face-5 .dot:nth-child(5){bottom:20%;right:20%;}
-.face-6 .dot:nth-child(1){top:20%;left:20%;}
-.face-6 .dot:nth-child(2){top:20%;right:20%;}
-.face-6 .dot:nth-child(3){top:50%;left:20%;transform:translateY(-50%);}
-.face-6 .dot:nth-child(4){top:50%;right:20%;transform:translateY(-50%);}
-.face-6 .dot:nth-child(5){bottom:20%;left:20%;}
-.face-6 .dot:nth-child(6){bottom:20%;right:20%;}
-
-/* 骰子動畫 */
-.dice.rolling {animation:diceRoll 0.1s infinite;}
-@keyframes diceRoll{
-  0%{transform:rotate(0deg) scale(1);}
-  25%{transform:rotate(90deg) scale(1.05);}
-  50%{transform:rotate(180deg) scale(1.1);}
-  75%{transform:rotate(270deg) scale(1.05);}
-  100%{transform:rotate(360deg) scale(1);}
+/* 骰子的每一面 */
+.dice-face {
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(145deg, #ffffff, #f0f0f0);
+  border-radius: 10px;
+  position: absolute;
+  box-shadow: 
+    inset 0 0 10px rgba(0,0,0,0.1),
+    0 2px 8px rgba(0,0,0,0.15);
 }
 
-.dice.shake{animation:diceShake 0.5s ease-out;}
-@keyframes diceShake{
-  0%,100%{transform:translateY(0) scale(1);}
-  10%,30%,50%,70%,90%{transform:translateY(-8px) scale(1.05);}
-  20%,40%,60%,80%{transform:translateY(0) scale(1);}
+/* 骰子點數 */
+.dot {
+  width: 11px;
+  height: 11px;
+  background: #333;
+  border-radius: 50%;
+  position: absolute;
+  box-shadow: inset 0 2px 3px rgba(0,0,0,0.3);
+}
+
+/* 6個面的3D位置 */
+.dice-face.front  { transform: rotateY(0deg)   translateZ(35px); }
+.dice-face.back   { transform: rotateY(180deg) translateZ(35px); }
+.dice-face.right  { transform: rotateY(90deg)  translateZ(35px); }
+.dice-face.left   { transform: rotateY(-90deg) translateZ(35px); }
+.dice-face.top    { transform: rotateX(90deg)  translateZ(35px); }
+.dice-face.bottom { transform: rotateX(-90deg) translateZ(35px); }
+
+/* 1點 - 中央紅色 */
+.face-1 .dot {
+  background: #d32f2f;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* 2點 - 對角線 */
+.face-2 .dot:nth-child(1) {
+  top: 25%;
+  left: 25%;
+}
+.face-2 .dot:nth-child(2) {
+  bottom: 25%;
+  right: 25%;
+}
+
+/* 3點 - 正三角對角線 */
+.face-3 .dot:nth-child(1) {
+  top: 25%;
+  left: 25%;
+}
+.face-3 .dot:nth-child(2) {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.face-3 .dot:nth-child(3) {
+  bottom: 25%;
+  right: 25%;
+}
+
+/* 4點 - 四個角落 */
+.face-4 .dot:nth-child(1) {
+  top: 25%;
+  left: 25%;
+}
+.face-4 .dot:nth-child(2) {
+  top: 25%;
+  right: 25%;
+}
+.face-4 .dot:nth-child(3) {
+  bottom: 25%;
+  left: 25%;
+}
+.face-4 .dot:nth-child(4) {
+  bottom: 25%;
+  right: 25%;
+}
+
+/* 5點 - 四角+中央 */
+.face-5 .dot:nth-child(1) {
+  top: 25%;
+  left: 25%;
+}
+.face-5 .dot:nth-child(2) {
+  top: 25%;
+  right: 25%;
+}
+.face-5 .dot:nth-child(3) {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.face-5 .dot:nth-child(4) {
+  bottom: 25%;
+  left: 25%;
+}
+.face-5 .dot:nth-child(5) {
+  bottom: 25%;
+  right: 25%;
+}
+
+/* 6點 - 左右兩列 */
+.face-6 .dot:nth-child(1) {
+  top: 25%;
+  left: 30%;
+}
+.face-6 .dot:nth-child(2) {
+  top: 50%;
+  left: 30%;
+  transform: translateY(-50%);
+}
+.face-6 .dot:nth-child(3) {
+  bottom: 25%;
+  left: 30%;
+}
+.face-6 .dot:nth-child(4) {
+  top: 25%;
+  right: 30%;
+}
+.face-6 .dot:nth-child(5) {
+  top: 50%;
+  right: 30%;
+  transform: translateY(-50%);
+}
+.face-6 .dot:nth-child(6) {
+  bottom: 25%;
+  right: 30%;
+}
+
+/* 投擲動畫 - 落地彈跳後旋轉 */
+.dice.rolling {
+  animation: roll 1.2s ease-out;
+}
+
+@keyframes roll {
+  0% { 
+    transform: rotateX(0deg) rotateY(0deg) translateY(-50px);
+  }
+  15% {
+    transform: rotateX(180deg) rotateY(90deg) translateY(0px);
+  }
+  25% {
+    transform: rotateX(270deg) rotateY(135deg) translateY(-25px);
+  }
+  35% {
+    transform: rotateX(360deg) rotateY(180deg) translateY(0px);
+  }
+  50% { 
+    transform: rotateX(540deg) rotateY(270deg) translateY(0px);
+  }
+  100% { 
+    transform: rotateX(720deg) rotateY(360deg) translateY(0px);
+  }
 }
 
 .roll-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 6px 15px rgba(0,0,0,.4);}
@@ -315,20 +431,61 @@ body{
   </div>
 
   <div class="center">
-  <div class="dice-box">
-    <!-- 骰子 1 -->
-    <div class="dice face-1" id="dice1">
-      <div class="dot"></div>
+    <div class="dice-box">
+      <!-- 骰子 1 -->
+      <div class="dice-scene">
+        <div class="dice" id="dice1">
+          <div class="dice-face front face-1"><div class="dot"></div></div>
+          <div class="dice-face back face-6">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="dice-face right face-3">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="dice-face left face-4">
+            <div class="dot"></div><div class="dot"></div>
+            <div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="dice-face top face-5">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            <div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="dice-face bottom face-2">
+            <div class="dot"></div><div class="dot"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 骰子 2 -->
+      <div class="dice-scene">
+        <div class="dice" id="dice2">
+          <div class="dice-face front face-1"><div class="dot"></div></div>
+          <div class="dice-face back face-6">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="dice-face right face-3">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="dice-face left face-4">
+            <div class="dot"></div><div class="dot"></div>
+            <div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="dice-face top face-5">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            <div class="dot"></div><div class="dot"></div>
+          </div>
+          <div class="dice-face bottom face-2">
+            <div class="dot"></div><div class="dot"></div>
+          </div>
+        </div>
+      </div>
     </div>
     
-    <!-- 骰子 2 -->
-    <div class="dice face-1" id="dice2">
-      <div class="dot"></div>
-    </div>
+    <button class="roll-btn" onclick="startGame()" id="rollBtn">🎲 投擲骰子</button>
+    <div class="msg" id="msg"></div>
   </div>
-  <button class="roll-btn" onclick="startGame()" id="rollBtn">🎲 投擲骰子</button>
-  <div class="msg" id="msg"></div>
-</div>
 </div>
 
 <!-- 🧧 LINE Bubble 風格店家優惠卡片 -->
@@ -405,6 +562,16 @@ for (let y = rows - 2; y >= 0; y--) path.push({ x: 0, y });
 for (let x = 1; x < cols; x++) path.push({ x, y: 0 });
 for (let y = 1; y < rows - 1; y++) path.push({ x: cols - 1, y });
 
+// 每個面對應的旋轉角度
+const rotations = {
+  1: 'rotateX(0deg) rotateY(0deg)',
+  2: 'rotateX(90deg) rotateY(0deg)',
+  3: 'rotateX(0deg) rotateY(-90deg)',
+  4: 'rotateX(0deg) rotateY(90deg)',
+  5: 'rotateX(-90deg) rotateY(0deg)',
+  6: 'rotateX(0deg) rotateY(180deg)'
+};
+
 // ============================================
 // 🎮 遊戲核心功能
 // ============================================
@@ -431,57 +598,39 @@ function updatePlayer() {
   player.style.top = `${cell.y * h + h / 2 - player.clientHeight / 2}px`;
 }
 
-// ✨ 更新骰子面
-function updateDiceFace(el, v) {
-  el.className = 'dice face-' + v;
-  el.innerHTML = '';
-  for (let i = 0; i < v; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'dot';
-    el.appendChild(dot);
-  }
-}
-
-// ✨ 穩定的骰子投擲函數
+// ✨ 3D 骰子投擲函數
 async function rollDice() {
   rollBtn.disabled = true;
   rollBtn.textContent = '🎲 投擲中...';
   
-  dice1.classList.add('rolling');
-  dice2.classList.add('rolling');
-  
+  // 播放音效
   sDice.currentTime = 0;
   sDice.play();
   
-  let count = 0, v1 = 1, v2 = 1;
-  const interval = setInterval(() => {
-    v1 = Math.floor(Math.random() * 6) + 1;
-    v2 = Math.floor(Math.random() * 6) + 1;
-    updateDiceFace(dice1, v1);
-    updateDiceFace(dice2, v2);
-    count++;
+  // 添加投擲動畫
+  dice1.classList.add('rolling');
+  dice2.classList.add('rolling');
+  
+  // 隨機生成點數
+  const v1 = Math.floor(Math.random() * 6) + 1;
+  const v2 = Math.floor(Math.random() * 6) + 1;
+  
+  // 1.2秒後停止動畫並顯示結果
+  setTimeout(() => {
+    dice1.classList.remove('rolling');
+    dice2.classList.remove('rolling');
     
-    if (count > 15) {
-      clearInterval(interval);
-      sDice.pause();
-      
-      dice1.classList.remove('rolling');
-      dice2.classList.remove('rolling');
-      
-      dice1.classList.add('shake');
-      dice2.classList.add('shake');
-      
-      setTimeout(() => {
-        dice1.classList.remove('shake');
-        dice2.classList.remove('shake');
-      }, 500);
-      
-      const total = v1 + v2;
-      showMsg(`🎲 擲出 ${v1} + ${v2} = ${total} 點！`);
-      rollBtn.textContent = '🎲 投擲骰子';
-      movePlayer(total);
-    }
-  }, 80);
+    // 設置最終旋轉角度
+    dice1.style.transform = rotations[v1];
+    dice2.style.transform = rotations[v2];
+    
+    sDice.pause();
+    
+    const total = v1 + v2;
+    showMsg(`🎲 擲出 ${v1} + ${v2} = ${total} 點！`);
+    rollBtn.textContent = '🎲 投擲骰子';
+    movePlayer(total);
+  }, 1200);
 }
 
 async function movePlayer(steps) {
@@ -791,7 +940,7 @@ function switchToSVGVersion() {
 // ============================================
 window.addEventListener('DOMContentLoaded', async function() {
   console.log('=== 📱 初始化應用程式 ===');
-  console.log('🎲 動態格子配置系統已啟用！');
+  console.log('🎲 3D 骰子系統已啟用！');
   
   await initializeApp();
   updatePlayer();
