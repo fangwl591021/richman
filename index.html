@@ -329,6 +329,7 @@ body{
   <button class="roll-btn" onclick="startGame()" id="rollBtn">🎲 投擲骰子</button>
   <div class="msg" id="msg"></div>
 </div>
+</div>
 
 <!-- 🧧 LINE Bubble 風格店家優惠卡片 -->
 <div class="shop-popup" id="shopPopup">
@@ -446,7 +447,6 @@ async function rollDice() {
   rollBtn.disabled = true;
   rollBtn.textContent = '🎲 投擲中...';
   
-  // 添加滾動 class
   dice1.classList.add('rolling');
   dice2.classList.add('rolling');
   
@@ -465,15 +465,12 @@ async function rollDice() {
       clearInterval(interval);
       sDice.pause();
       
-      // 移除滾動 class
       dice1.classList.remove('rolling');
       dice2.classList.remove('rolling');
       
-      // 添加震動效果
       dice1.classList.add('shake');
       dice2.classList.add('shake');
       
-      // 震動結束後移除 class
       setTimeout(() => {
         dice1.classList.remove('shake');
         dice2.classList.remove('shake');
@@ -509,39 +506,214 @@ async function movePlayer(steps) {
 }
 
 // ============================================
-// 🏪 店家與優惠功能
+// 🏪 格子事件處理系統
 // ============================================
 async function checkEvent() {
-  const cell = path[pos];
+  try {
+    // 讀取當前格子的配置
+    const cellConfig = await getCellConfig(pos);
+    
+    if (!cellConfig) {
+      console.warn(`⚠️ 找不到格子 ${pos} 的配置`);
+      showMsg('格子配置錯誤');
+      return;
+    }
+    
+    console.log(`📍 格子 ${pos}:`, cellConfig);
+    const cellType = cellConfig.格子類型;
+    
+    // 根據格子類型執行不同邏輯
+    switch (cellType) {
+      case '店家':
+        await handleShopCell(cellConfig);
+        break;
+        
+      case '獎勵':
+        await handleRewardCell(cellConfig);
+        break;
+        
+      case '懲罰':
+        await handlePenaltyCell(cellConfig);
+        break;
+        
+      case '機會':
+        await handleChanceCell(cellConfig);
+        break;
+        
+      case '起點':
+        showMsg('🏁 回到起點！');
+        break;
+        
+      default:
+        showMsg(`踩到 ${cellConfig.格子名稱}`);
+    }
+    
+  } catch (error) {
+    console.error('❌ 處理格子事件時發生錯誤:', error);
+    showMsg('格子事件執行失敗');
+  }
+}
+
+// 處理店家格
+async function handleShopCell(cellConfig) {
+  const category = cellConfig.店家分類;
   
-  if (cell.x === 0 && cell.y === 0) {
-    showMsg("💥 踩到懲罰格！退回7步！");
-    for (let i = 0; i < 7; i++) {
+  if (!category || category === '-') {
+    showMsg('此格子沒有店家');
+    return;
+  }
+  
+  console.log(`🏪 尋找分類「${category}」的店家...`);
+  
+  // 從店家資料篩選該分類
+  const shops = await loadShopsByCategory(category);
+  
+  if (shops.length === 0) {
+    showMsg(`找不到「${category}」類型的店家`);
+    console.warn(`⚠️ 分類「${category}」沒有店家資料，請檢查店家資料表`);
+    return;
+  }
+  
+  // 隨機選一間店家
+  const randomShop = shops[Math.floor(Math.random() * shops.length)];
+  currentShop = randomShop;
+  
+  console.log(`✨ 顯示店家:`, randomShop);
+  showShopPopup(randomShop);
+}
+
+// 處理獎勵格
+async function handleRewardCell(cellConfig) {
+  const event = cellConfig.特殊事件;
+  const param = cellConfig.事件參數;
+  
+  if (event === '前進' && param) {
+    showMsg(`🎉 ${cellConfig.格子名稱}！前進 ${param} 步！`);
+    player.classList.add('walking');
+    sMove.loop = true;
+    sMove.currentTime = 0;
+    sMove.play().catch(() => {});
+    
+    for (let i = 0; i < param; i++) {
+      pos = (pos + 1) % path.length;
+      updatePlayer();
+      await new Promise(r => setTimeout(r, 450));
+    }
+    
+    player.classList.remove('walking');
+    sMove.pause();
+    sMove.currentTime = 0;
+    
+  } else if (event === '再擲一次') {
+    showMsg(`🎊 ${cellConfig.格子名稱}！再擲一次骰子！`);
+    setTimeout(() => {
+      rollBtn.disabled = false;
+      rollBtn.click();
+    }, 1500);
+  } else {
+    showMsg(`⭐ ${cellConfig.格子名稱}！`);
+  }
+}
+
+// 處理懲罰格
+async function handlePenaltyCell(cellConfig) {
+  const event = cellConfig.特殊事件;
+  const param = cellConfig.事件參數;
+  
+  if (event === '後退' && param) {
+    showMsg(`💥 ${cellConfig.格子名稱}！退回 ${param} 步！`);
+    player.classList.add('walking');
+    sMove.loop = true;
+    sMove.currentTime = 0;
+    sMove.play().catch(() => {});
+    
+    for (let i = 0; i < param; i++) {
       pos = (pos - 1 + path.length) % path.length;
       updatePlayer();
       await new Promise(r => setTimeout(r, 300));
     }
-    return;
-  }
-  
-  try {
-    const shops = await loadShops();
-    console.log('🛍️ 載入到的店家資料:', shops);
     
-    if (shops && shops.length > 0) {
-      const shop = shops[Math.floor(Math.random() * shops.length)];
-      currentShop = shop;
-      showShopPopup(shop);
-    } else {
-      console.log('❌ 沒有可用的店家資料');
-      showMsg('暫無店家資料，請稍後再試');
-    }
-  } catch (error) {
-    console.error('❌ 載入店家時發生錯誤:', error);
-    showMsg('載入店家失敗');
+    player.classList.remove('walking');
+    sMove.pause();
+    sMove.currentTime = 0;
+  } else {
+    showMsg(`⚠️ ${cellConfig.格子名稱}！`);
   }
 }
 
+// 處理機會格
+async function handleChanceCell(cellConfig) {
+  showMsg(`🎲 ${cellConfig.格子名稱}！抽取機會卡...`);
+  
+  await new Promise(r => setTimeout(r, 1000));
+  
+  // 50% 好運 / 50% 壞運
+  const isGoodLuck = Math.random() < 0.5;
+  
+  if (isGoodLuck) {
+    // 好運事件
+    const goodEvents = [
+      { msg: '🎁 好運！獲得 2 張隨機優惠券！', action: async () => {
+        const shops = await loadShops();
+        if (shops.length >= 2) {
+          const shop1 = shops[Math.floor(Math.random() * shops.length)];
+          const shop2 = shops[Math.floor(Math.random() * shops.length)];
+          await saveCoupon(shop1);
+          await saveCoupon(shop2);
+        }
+      }},
+      { msg: '✨ 好運！傳送到起點！', action: async () => {
+        pos = 0;
+        updatePlayer();
+      }},
+      { msg: '🚀 好運！前進 5 步！', action: async () => {
+        player.classList.add('walking');
+        sMove.loop = true;
+        sMove.play().catch(() => {});
+        for (let i = 0; i < 5; i++) {
+          pos = (pos + 1) % path.length;
+          updatePlayer();
+          await new Promise(r => setTimeout(r, 450));
+        }
+        player.classList.remove('walking');
+        sMove.pause();
+      }}
+    ];
+    
+    const event = goodEvents[Math.floor(Math.random() * goodEvents.length)];
+    showMsg(event.msg);
+    await event.action();
+    
+  } else {
+    // 壞運事件
+    const badEvents = [
+      { msg: '😱 壞運！暫停一回合！', action: async () => {
+        rollBtn.disabled = true;
+        setTimeout(() => { rollBtn.disabled = false; }, 3000);
+      }},
+      { msg: '⬅️ 壞運！後退 5 步！', action: async () => {
+        player.classList.add('walking');
+        sMove.loop = true;
+        sMove.play().catch(() => {});
+        for (let i = 0; i < 5; i++) {
+          pos = (pos - 1 + path.length) % path.length;
+          updatePlayer();
+          await new Promise(r => setTimeout(r, 300));
+        }
+        player.classList.remove('walking');
+        sMove.pause();
+      }}
+    ];
+    
+    const event = badEvents[Math.floor(Math.random() * badEvents.length)];
+    showMsg(event.msg);
+    await event.action();
+  }
+}
+
+// ============================================
+// 🏪 店家彈窗顯示
+// ============================================
 function showShopPopup(shop) {
   console.log('🏪 顯示店家彈窗:', shop);
   
@@ -549,7 +721,7 @@ function showShopPopup(shop) {
   const shopNameText = shop["店家名稱"] || shop.name || shop.shopName || "神秘店家";
   let shopDescText = shop["優惠內容"] || shop.discount || shop.description || "限時優惠，趕快來看看！";
   
-  // 處理換行 - 將 \n 轉換為實際換行
+  // 處理換行 - 將句號轉換為實際換行
   shopDescText = shopDescText.replace(/。/g, '。<br>');
   
   if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
@@ -562,27 +734,19 @@ function showShopPopup(shop) {
   }
   
   shopName.textContent = shopNameText;
-  
-  // 格式化優惠內容，支援句號換行顯示
   shopDesc.innerHTML = shopDescText;
   
   shopPopup.style.display = 'block';
   claimBtn.disabled = false;
   claimBtn.textContent = "收藏優惠";
 }
-// ============================================
-// 通用格式化函數（用於其他頁面）
-// ============================================
-function formatDescription(text) {
-  // 將句號 "。" 轉換為換行
-  return text.replace(/。/g, '。<br>');
-}
+
 function closeShop() {
   shopPopup.style.display = 'none';
 }
 
 // ============================================
-// 收藏按鈕事件
+// 🎫 收藏按鈕事件
 // ============================================
 claimBtn.addEventListener('click', async () => {
   if (!currentShop) return;
@@ -623,11 +787,11 @@ function switchToSVGVersion() {
 }
 
 // ============================================
-// 頁面載入初始化
+// 📱 頁面載入初始化
 // ============================================
 window.addEventListener('DOMContentLoaded', async function() {
   console.log('=== 📱 初始化應用程式 ===');
-  console.log('🎲 穩定 2D 骰子版本已啟用！');
+  console.log('🎲 動態格子配置系統已啟用！');
   
   await initializeApp();
   updatePlayer();
