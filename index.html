@@ -961,6 +961,186 @@ window.addEventListener('DOMContentLoaded', async function() {
   await initializeApp();
   updatePlayer();
 });
+
+// ============================================
+// 🔐 LINE 登入處理
+// ============================================
+// 如果 common.js 中沒有定義 startLineLogin，這裡提供備用版本
+if (typeof startLineLogin === 'undefined') {
+  window.startLineLogin = async function() {
+    console.log('🔐 開始 LINE 登入流程...');
+    try {
+      // 如果有 lineLogin 函數就使用它
+      if (typeof lineLogin !== 'undefined') {
+        await lineLogin();
+      } else {
+        // 否則顯示提示訊息
+        alert('LINE 登入功能需要配置 LIFF ID。請聯繫管理員設定。');
+        console.error('❌ lineLogin 函數未定義，請檢查 common.js');
+      }
+    } catch (error) {
+      console.error('❌ LINE 登入錯誤:', error);
+      alert('登入失敗：' + error.message);
+    }
+  };
+}
+
+// ============================================
+// 🛠️ 輔助函數（如果 common.js 中沒有定義）
+// ============================================
+if (typeof showMsg === 'undefined') {
+  window.showMsg = function(text) {
+    msg.textContent = text;
+    msg.style.opacity = '1';
+  };
+}
+
+if (typeof hideMsg === 'undefined') {
+  window.hideMsg = function() {
+    msg.style.opacity = '0';
+  };
+}
+
+if (typeof getCellConfig === 'undefined') {
+  window.getCellConfig = async function(cellIndex) {
+    console.warn('⚠️ getCellConfig 未定義，使用模擬資料');
+    // 返回模擬的格子配置
+    const types = ['店家', '獎勵', '懲罰', '機會', '起點'];
+    const categories = ['美食', '購物', '服務', '娛樂'];
+    return {
+      格子類型: types[cellIndex % types.length],
+      格子名稱: `格子 ${cellIndex}`,
+      店家分類: categories[cellIndex % categories.length],
+      特殊事件: cellIndex % 5 === 0 ? '前進' : null,
+      事件參數: 3
+    };
+  };
+}
+
+if (typeof loadShopsByCategory === 'undefined') {
+  window.loadShopsByCategory = async function(category) {
+    console.warn('⚠️ loadShopsByCategory 未定義，使用模擬資料');
+    // 返回模擬的店家資料
+    return [
+      {
+        "店家名稱": `${category}店家`,
+        "優惠內容": "限時優惠。買一送一。快來搶購",
+        "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
+        "F": "https://line.me/ti/p/~example",
+        "G": "https://maps.app.goo.gl/example",
+        "店家分類": category
+      }
+    ];
+  };
+}
+
+if (typeof loadShops === 'undefined') {
+  window.loadShops = async function() {
+    console.warn('⚠️ loadShops 未定義，使用模擬資料');
+    return [
+      {
+        "店家名稱": "咖啡廳",
+        "優惠內容": "買一送一。美式咖啡。限時優惠",
+        "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
+        "F": "https://line.me/ti/p/~cafe",
+        "G": "https://maps.app.goo.gl/cafe"
+      }
+    ];
+  };
+}
+
+if (typeof saveCoupon === 'undefined') {
+  window.saveCoupon = async function(shop) {
+    console.warn('⚠️ saveCoupon 未定義，使用本地儲存');
+    try {
+      const user = getCurrentUser();
+      if (!user || !user.userId) {
+        console.log('⚠️ 用戶未登入，但仍保存到本地');
+      }
+      
+      // 保存到 localStorage
+      const coupons = JSON.parse(localStorage.getItem('localCoupons') || '[]');
+      const newCoupon = {
+        couponId: `COUPON_${Date.now()}`,
+        ...shop,
+        obtainedDate: new Date().toISOString(),
+        used: false
+      };
+      coupons.push(newCoupon);
+      localStorage.setItem('localCoupons', JSON.stringify(coupons));
+      
+      console.log('✅ 優惠券已保存到本地:', newCoupon);
+      return true;
+    } catch (error) {
+      console.error('❌ 保存優惠券錯誤:', error);
+      return false;
+    }
+  };
+}
+
+if (typeof getCurrentUser === 'undefined') {
+  window.getCurrentUser = function() {
+    const lineUserId = localStorage.getItem('lineUserId');
+    if (lineUserId) {
+      return {
+        userId: lineUserId,
+        displayName: localStorage.getItem('lineDisplayName'),
+        pictureUrl: localStorage.getItem('linePictureUrl')
+      };
+    }
+    return null;
+  };
+}
+
+if (typeof initializeApp === 'undefined') {
+  window.initializeApp = async function() {
+    console.log('🚀 初始化應用程式...');
+    
+    // 檢查是否有 LINE 登入資訊
+    const user = getCurrentUser();
+    const loginScreen = document.getElementById('loginScreen');
+    
+    if (user && user.userId) {
+      console.log('✅ 用戶已登入:', user.displayName);
+      if (loginScreen) {
+        loginScreen.classList.add('hidden');
+      }
+      
+      // 更新底部 LINE 按鈕顯示
+      const lineLoginBtn = document.getElementById('lineLoginBtn');
+      const lineAvatar = document.getElementById('lineAvatar');
+      const lineLoginText = document.getElementById('lineLoginText');
+      
+      if (lineLoginBtn && lineAvatar && user.pictureUrl) {
+        lineLoginBtn.classList.add('has-avatar', 'logged-in');
+        lineAvatar.src = user.pictureUrl;
+        if (lineLoginText) {
+          lineLoginText.textContent = user.displayName || 'LINE';
+        }
+      }
+    } else {
+      console.log('⚠️ 用戶未登入');
+      // 顯示登入畫面
+      if (loginScreen) {
+        loginScreen.classList.remove('hidden');
+      }
+    }
+  };
+}
+
+if (typeof lineLogin === 'undefined') {
+  window.lineLogin = async function() {
+    console.log('⚠️ lineLogin 未定義，使用模擬登入');
+    alert('這是測試模式。實際使用需要配置 LINE LIFF。');
+    
+    // 模擬登入
+    localStorage.setItem('lineUserId', 'test_user_' + Date.now());
+    localStorage.setItem('lineDisplayName', '測試用戶');
+    localStorage.setItem('linePictureUrl', '');
+    
+    await initializeApp();
+  };
+}
 </script>
 </body>
 </html>
