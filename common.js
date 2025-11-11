@@ -305,22 +305,78 @@ async function loadCoupons() {
         };
       });
       
+      console.log('✅ 優惠券載入成功，包含 F 和 G 欄位:', coupons.map(c => ({
+        店家名稱: c["店家名稱"] || c.shopName,
+        F: c["F"] || c.lineUrl,
+        G: c["G"] || c.mapUrl
+      })));
+      
       return coupons;
     } else {
-      return [];
+      console.log('⚠️ 後端無優惠券資料，使用模擬資料');
+      return getMockCoupons();
     }
   } catch (error) {
     console.error('❌ 載入優惠券失敗:', error);
-    return [];
+    return getMockCoupons();
   }
 }
 
+// 模擬優惠券資料（包含 F 和 G 欄位）
+function getMockCoupons() {
+  const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
+  
+  return [
+    {
+      couponId: 'COUPON_1',
+      "店家名稱": "板橋咖啡廳",
+      "優惠內容": "1️⃣ 拿鐵第二杯半價\n2️⃣ 消費滿200元送點心\n3️⃣ 平日時段85折優惠",
+      "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
+      "F": "https://line.me/ti/p/~coffee_shop",
+      "G": "https://goo.gl/maps/example1",
+      obtainedDate: new Date().toISOString(),
+      used: usedCoupons['COUPON_1'] ? usedCoupons['COUPON_1'].used : false
+    },
+    {
+      couponId: 'COUPON_2',
+      "店家名稱": "商圈服飾店", 
+      "優惠內容": "1️⃣ 全館8折優惠\n2️⃣ 新品上市9折\n3️⃣ 會員獨享折上折",
+      "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
+      "F": "fashion_store_line",
+      "G": "台北市板橋區文化路二段456號",
+      obtainedDate: new Date(Date.now() - 86400000).toISOString(),
+      used: usedCoupons['COUPON_2'] ? usedCoupons['COUPON_2'].used : 'abandoned'
+    },
+    {
+      couponId: 'COUPON_3',
+      "店家名稱": "美食餐廳",
+      "優惠內容": "1️⃣ 商業午餐9折\n2️⃣ 晚餐時段85折\n3️⃣ 生日當天免費甜點",
+      "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png",
+      "F": "https://line.me/ti/p/~restaurant",
+      "G": "https://maps.app.goo.gl/example3",
+      obtainedDate: new Date().toISOString(),
+      used: usedCoupons['COUPON_3'] ? usedCoupons['COUPON_3'].used : false
+    }
+  ];
+}
+
+// 保存優惠券時也要包含 F 和 G 欄位
 async function saveCoupon(shopData) {
   try {
     const shopName = shopData["店家名稱"] || shopData.name || '';
     const discount = shopData["優惠內容"] || shopData.discount || '';
     const imageUrl = shopData["圖片網址"] || shopData.icon || '';
+    const lineUrl = shopData["F"] || shopData.lineUrl || '';
+    const mapUrl = shopData["G"] || shopData.mapUrl || '';
     const shopId = shopData.id || 'shop_' + Date.now();
+    
+    console.log('💾 保存優惠券資料:', {
+      shopName,
+      discount,
+      imageUrl,
+      lineUrl,
+      mapUrl
+    });
     
     const formData = new FormData();
     formData.append('action', 'saveCoupon');
@@ -329,6 +385,8 @@ async function saveCoupon(shopData) {
     formData.append('shopName', shopName);
     formData.append('discount', discount);
     formData.append('imageUrl', imageUrl);
+    formData.append('lineUrl', lineUrl); // 新增 LINE 連結
+    formData.append('mapUrl', mapUrl);   // 新增地圖連結
     
     const response = await fetch(GAS_BASE, {
       method: 'POST',
