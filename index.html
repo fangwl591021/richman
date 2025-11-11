@@ -550,7 +550,7 @@ function showShopPopup(shop) {
   let shopDescText = shop["優惠內容"] || shop.discount || shop.description || "限時優惠，趕快來看看！";
   
   // 處理換行 - 將 \n 轉換為實際換行
-  shopDescText = shopDescText.replace(/\\n/g, '\n');
+  shopDescText = shopDescText.replace(/。/g, '。<br>');
   
   if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
     shopImg.src = imgUrl;
@@ -563,15 +563,20 @@ function showShopPopup(shop) {
   
   shopName.textContent = shopNameText;
   
-  // 格式化優惠內容，支援換行顯示
-  const formattedDesc = formatDescription(shopDescText);
-  shopDesc.innerHTML = formattedDesc;
+  // 格式化優惠內容，支援句號換行顯示
+  shopDesc.innerHTML = shopDescText;
   
   shopPopup.style.display = 'block';
   claimBtn.disabled = false;
   claimBtn.textContent = "收藏優惠";
 }
-
+// ============================================
+// 通用格式化函數（用於其他頁面）
+// ============================================
+function formatDescription(text) {
+  // 將句號 "。" 轉換為換行
+  return text.replace(/。/g, '。<br>');
+}
 function closeShop() {
   shopPopup.style.display = 'none';
 }
