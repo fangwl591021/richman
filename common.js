@@ -386,22 +386,22 @@ function getMockCoupons() {
   ];
 }
 
-// 保存優惠券時也要包含 F 和 G 欄位
+// 修改 saveCoupon 函數，統一使用 F 和 G 欄位
 async function saveCoupon(shopData) {
   try {
     const shopName = shopData["店家名稱"] || shopData.name || '';
     const discount = shopData["優惠內容"] || shopData.discount || '';
     const imageUrl = shopData["圖片網址"] || shopData.icon || '';
-    const lineUrl = shopData["F"] || shopData.lineUrl || '';
-    const mapUrl = shopData["G"] || shopData.mapUrl || '';
+    
+    // 統一欄位名稱：使用 F 和 G
+    const lineUrl = shopData["加LINE 建模"] || shopData["加LINE連繫"] || shopData["F"] || shopData.lineUrl || '';
+    const mapUrl = shopData["地址"] || shopData["G"] || shopData.mapUrl || '';
+    
     const shopId = shopData.id || 'shop_' + Date.now();
     
     console.log('💾 保存優惠券資料:', {
-      shopName,
-      discount,
-      imageUrl,
-      lineUrl,
-      mapUrl
+      shopName, discount, imageUrl,
+      lineUrl, mapUrl // 統一使用 lineUrl 和 mapUrl
     });
     
     const formData = new FormData();
@@ -411,8 +411,8 @@ async function saveCoupon(shopData) {
     formData.append('shopName', shopName);
     formData.append('discount', discount);
     formData.append('imageUrl', imageUrl);
-    formData.append('lineUrl', lineUrl); // 新增 LINE 連結
-    formData.append('mapUrl', mapUrl);   // 新增地圖連結
+    formData.append('lineUrl', lineUrl);
+    formData.append('mapUrl', mapUrl);
     
     const response = await fetch(GAS_BASE, {
       method: 'POST',
