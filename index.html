@@ -757,14 +757,22 @@ async function handleShopCell(cellConfig) {
     console.log(`🎲 隨機選擇第 ${randomIndex} 個店家:`, randomShop);
     
     // 確保店家資料包含所有必要欄位
-    currentShop = {
-      "店家名稱": randomShop["店家名稱"] || randomShop.name || "店家",
-      "優惠內容": randomShop["優惠內容"] || randomShop.discount || "優惠",
-      "圖片網址": randomShop["圖片網址"] || randomShop.imageUrl || randomShop.icon || "",
-      "加LINE連繫": randomShop["加LINE連繫"] || randomShop.lineUrl || "",
-      "地址": randomShop["地址"] || randomShop.addressUrl || "",
-      "店家分類": randomShop["店家分類"] || category
-    };
+// 確保店家資料包含所有必要欄位
+currentShop = {
+  "店家名稱": randomShop["店家名稱"] || randomShop.name || "店家",
+  "優惠內容": randomShop["優惠內容"] || randomShop.discount || "優惠",
+  "圖片網址": randomShop["圖片網址"] || randomShop.imageUrl || randomShop.icon || "",
+  
+  // 🎯 關鍵修正：使用「加LINE 建模」作為主要欄位名稱
+  "加LINE連繫": randomShop["加LINE 建模"] || randomShop["加LINE連繫"] || randomShop.lineUrl || "",
+  "地址": randomShop["地址"] || randomShop.addressUrl || "",
+  
+  "店家分類": randomShop["店家分類"] || category
+};
+
+console.log('🔍 加LINE 建模欄位內容:', randomShop["加LINE 建模"]);
+console.log('🔍 地址欄位內容:', randomShop["地址"]);
+console.log('✅ 處理後的店家資料:', currentShop);
     
     console.log('✅ 處理後的店家資料:', currentShop);
     showShopPopup(currentShop);
