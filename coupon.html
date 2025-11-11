@@ -102,15 +102,22 @@ body{
   display:flex;
   gap:8px;
   margin-top:10px;
+  flex-wrap:wrap;
 }
 .coupon-actions button{
-  padding:8px 16px;
+  padding:8px 12px;
   border:none;
   border-radius:6px;
   font-size:12px;
   font-weight:bold;
   cursor:pointer;
   transition:all 0.2s ease;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  flex:1;
+  min-width:80px;
+  justify-content:center;
 }
 .coupon-actions .verify-btn{
   background:#4caf50;
@@ -137,6 +144,23 @@ body{
   background:#cccccc;
   cursor:not-allowed;
   transform:none;
+}
+/* 新增的按鈕樣式 */
+.coupon-actions .line-btn{
+  background:#06C755;
+  color:white;
+}
+.coupon-actions .line-btn:active{
+  background:#05b04b;
+  transform:scale(0.95);
+}
+.coupon-actions .map-btn{
+  background:#2196F3;
+  color:white;
+}
+.coupon-actions .map-btn:active{
+  background:#1976D2;
+  transform:scale(0.95);
 }
 /* 確保按鈕禁用狀態明顯 */
 .coupon-actions button:disabled{
@@ -406,6 +430,10 @@ function createCouponHTML(coupon) {
   const discountText = formatCouponDescription(coupon["優惠內容"] || coupon.discount || coupon.description || '優惠內容');
   const imageUrl = coupon["圖片網址"] || coupon.imageUrl || coupon.icon || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png';
   
+  // 獲取 LINE 連結和地圖連結
+  const lineUrl = coupon["F"] || coupon.lineUrl || coupon.lineLink || '';
+  const mapUrl = coupon["G"] || coupon.mapUrl || coupon.addressUrl || coupon.addressLink || '';
+  
   // 更精確的狀態判斷
   const usedValue = coupon.used;
   const isUsed = usedValue === true || 
@@ -439,15 +467,89 @@ function createCouponHTML(coupon) {
         ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
       </div>
       <div class="status ${statusClass}">${statusText}</div>
-      ${!isUsed && !isAbandoned ? `
+      
       <div class="coupon-actions">
-        <button class="verify-btn" onclick="handleVerifyCoupon('${couponId}')">核銷使用</button>
-        <button class="abandon-btn" onclick="handleAbandonCoupon('${couponId}')">放棄</button>
+        ${!isUsed && !isAbandoned ? `
+        <button class="verify-btn" onclick="handleVerifyCoupon('${couponId}')">
+          <span>✓</span>核銷
+        </button>
+        <button class="abandon-btn" onclick="handleAbandonCoupon('${couponId}')">
+          <span>🗑️</span>放棄
+        </button>
+        ` : ''}
+        
+        ${lineUrl ? `
+        <button class="line-btn" onclick="handleLineContact('${couponId}', '${encodeURIComponent(lineUrl)}', '${encodeURIComponent(shopName)}')">
+          <span>💚</span>加LINE
+        </button>
+        ` : ''}
+        
+        ${mapUrl ? `
+        <button class="map-btn" onclick="handleOpenMap('${couponId}', '${encodeURIComponent(mapUrl)}', '${encodeURIComponent(shopName)}')">
+          <span>🗺️</span>地圖
+        </button>
+        ` : ''}
       </div>
-      ` : ''}
     </div>
   </div>
   `;
+}
+
+// 處理 LINE 聯繫
+function handleLineContact(couponId, encodedLineUrl, encodedShopName) {
+  try {
+    const lineUrl = decodeURIComponent(encodedLineUrl);
+    const shopName = decodeURIComponent(encodedShopName);
+    
+    console.log(`💚 開啟 LINE 聯繫: ${shopName}`, lineUrl);
+    
+    if (!lineUrl) {
+      alert('此店家暫無 LINE 聯繫資訊');
+      return;
+    }
+    
+    // 檢查是否為有效的 URL
+    if (lineUrl.startsWith('http://') || lineUrl.startsWith('https://')) {
+      // 在新視窗開啟 LINE 連結
+      window.open(lineUrl, '_blank');
+    } else {
+      // 如果不是完整 URL，可能是 LINE ID，提示用戶
+      alert(`店家 LINE: ${lineUrl}\n\n請在 LINE 中搜尋此 ID 進行聯繫`);
+    }
+    
+  } catch (error) {
+    console.error('❌ 開啟 LINE 聯繫錯誤:', error);
+    alert('開啟 LINE 聯繫失敗，請稍後再試');
+  }
+}
+
+// 處理開啟地圖
+function handleOpenMap(couponId, encodedMapUrl, encodedShopName) {
+  try {
+    const mapUrl = decodeURIComponent(encodedMapUrl);
+    const shopName = decodeURIComponent(encodedShopName);
+    
+    console.log(`🗺️ 開啟地圖: ${shopName}`, mapUrl);
+    
+    if (!mapUrl) {
+      alert('此店家暫無地圖資訊');
+      return;
+    }
+    
+    // 檢查是否為有效的 URL
+    if (mapUrl.startsWith('http://') || mapUrl.startsWith('https://')) {
+      // 在新視窗開啟地圖連結
+      window.open(mapUrl, '_blank');
+    } else {
+      // 如果不是完整 URL，可能是地址，使用 Google Maps 搜尋
+      const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapUrl)}`;
+      window.open(googleMapsUrl, '_blank');
+    }
+    
+  } catch (error) {
+    console.error('❌ 開啟地圖錯誤:', error);
+    alert('開啟地圖失敗，請稍後再試');
+  }
 }
 
 // 輔助函數：根據 couponId 找到對應的優惠券卡片
@@ -653,13 +755,15 @@ if (typeof loadCoupons === 'undefined') {
     // 獲取本地核銷狀態
     const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
     
-    // 模擬測試資料 - 使用與遊戲中相同的格式
+    // 模擬測試資料 - 包含 F 和 G 欄位
     return [
       {
         couponId: 'COUPON_1',
         "店家名稱": "咖啡廳",
         "優惠內容": "買一送一。美式咖啡。限時優惠",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
+        "F": "https://line.me/ti/p/~coffee_shop",
+        "G": "https://goo.gl/maps/example1",
         obtainedDate: new Date().toISOString(),
         used: usedCoupons['COUPON_1'] ? usedCoupons['COUPON_1'].used : false
       },
@@ -668,6 +772,8 @@ if (typeof loadCoupons === 'undefined') {
         "店家名稱": "餐廳",
         "優惠內容": "9折優惠。全品項。限平日使用",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png",
+        "F": "restaurant_line_id",
+        "G": "台北市信義區松壽路20號",
         obtainedDate: new Date(Date.now() - 86400000).toISOString(),
         used: usedCoupons['COUPON_2'] ? usedCoupons['COUPON_2'].used : 'abandoned'
       },
@@ -676,6 +782,8 @@ if (typeof loadCoupons === 'undefined') {
         "店家名稱": "書店",
         "優惠內容": "滿500送100。購物金。限下次使用",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_3_bookstore.png",
+        "F": "",
+        "G": "https://www.google.com/maps?q=書店+台北",
         obtainedDate: new Date().toISOString(),
         used: usedCoupons['COUPON_3'] ? usedCoupons['COUPON_3'].used : false
       }
