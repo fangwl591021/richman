@@ -901,9 +901,6 @@ async function handleChanceCell(cellConfig) {
   }
 }
 
-// ============================================
-// 🏪 店家彈窗顯示
-// ============================================
 function showShopPopup(shop) {
   console.log('📱 === showShopPopup 被調用 ===');
   
@@ -911,9 +908,14 @@ function showShopPopup(shop) {
   const shopNameText = shop["店家名稱"] || shop.name || shop.shopName || "神秘店家";
   let shopDescText = shop["優惠內容"] || shop.discount || shop.description || "限時優惠，趕快來看看！";
   
+  // ✅ 新增：取得加LINE連繫和地址
+  const lineContact = shop["加LINE連繫"] || "";
+  const address = shop["地址"] || "";
+  
   // 處理換行
   shopDescText = shopDescText.replace(/。/g, '。<br>');
   
+  // 圖片設置
   if (imgUrl && (imgUrl.startsWith("http://") || imgUrl.startsWith("https://"))) {
     shopImg.src = imgUrl;
     shopImg.onerror = function() {
@@ -924,7 +926,17 @@ function showShopPopup(shop) {
   }
   
   shopName.textContent = shopNameText;
-  shopDesc.innerHTML = shopDescText;
+  
+  // ✅ 修改：在描述中加入加LINE連繫和地址
+  let fullDesc = shopDescText;
+  if (lineContact) {
+    fullDesc += `<br><br>📱 加LINE: ${lineContact}`;
+  }
+  if (address) {
+    fullDesc += `<br><br>📍 地址: ${address}`;
+  }
+  
+  shopDesc.innerHTML = fullDesc;
   
   shopPopup.style.display = 'block';
   claimBtn.disabled = false;
