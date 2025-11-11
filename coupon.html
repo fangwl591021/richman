@@ -12,12 +12,47 @@
 </head>
 <body>
 
-<!-- ... 保持原有 HTML 結構不變 ... -->
+<!-- 頁面標題 -->
+<div class="page-header">
+  <h1>我的優惠券</h1>
+  <div class="subtitle">收集的店家優惠都在這裡</div>
+</div>
+
+<!-- 優惠券列表 -->
+<div class="coupon-list" id="couponList">
+  <div class="loading">載入中...</div>
+</div>
+
+<!-- 底部導航 -->
+<div class="bottom-nav">
+  <button onclick="window.location.href='index.html'">
+    <span class="icon">🎲</span>
+    <span>遊戲</span>
+  </button>
+  
+  <button class="active">
+    <span class="icon">🎫</span>
+    <span>優惠券</span>
+  </button>
+  
+  <button onclick="window.location.href='shop.html'">
+    <span class="icon">🗺️</span>
+    <span>店家地圖</span>
+  </button>
+  
+  <button id="lineLoginBtn" onclick="lineLogin()">
+    <span class="icon">📱</span>
+    <img class="line-avatar" id="lineAvatar" src="" alt="LINE">
+    <span id="lineLoginText">LINE</span>
+  </button>
+</div>
 
 <script>
 // 頁面載入時初始化
 window.addEventListener('DOMContentLoaded', async function() {
+  console.log('DOM 載入完成，開始初始化...');
   await initializeApp();
+  console.log('初始化完成，開始載入優惠券列表...');
   loadCouponList();
 });
 
@@ -62,15 +97,23 @@ function mergeLocalCouponStatus(coupons) {
 async function loadCouponList() {
   const couponList = document.getElementById('couponList');
   
+  // 檢查元素是否存在
+  if (!couponList) {
+    console.error('❌ 找不到 couponList 元素');
+    return;
+  }
+  
   try {
+    console.log('開始載入優惠券資料...');
     let coupons = await loadCoupons();
+    console.log('原始優惠券資料:', coupons);
     
     // 合併本地狀態
     coupons = mergeLocalCouponStatus(coupons);
     
     console.log('合併後的優惠券資料:', coupons);
     
-    if (coupons.length > 0) {
+    if (coupons && coupons.length > 0) {
       // 分組：未使用、已使用、已放棄
       const availableCoupons = coupons.filter(coupon => {
         const used = coupon.used;
@@ -113,6 +156,7 @@ async function loadCouponList() {
       }
       
       couponList.innerHTML = html;
+      console.log('優惠券列表更新完成');
     } else {
       couponList.innerHTML = `
         <div class="empty-state">
@@ -126,12 +170,14 @@ async function loadCouponList() {
     }
   } catch (error) {
     console.error('載入優惠券失敗:', error);
-    couponList.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">⚠️</div>
-        <p>載入失敗，請稍後再試</p>
-      </div>
-    `;
+    if (couponList) {
+      couponList.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">⚠️</div>
+          <p>載入失敗，請稍後再試</p>
+        </div>
+      `;
+    }
   }
 }
 
