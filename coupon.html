@@ -451,16 +451,17 @@ function createCouponHTML(coupon) {
   const discountText = formatCouponDescription(coupon["優惠內容"] || coupon.discount || coupon.description || '優惠內容');
   const imageUrl = coupon["圖片網址"] || coupon.imageUrl || coupon.icon || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png';
   
-  // 🎯 關鍵修正：正確讀取加LINE聯繫和地址連結
-  const lineContact = coupon["加LINE連繫"] || coupon.lineContact || coupon["加LINE 建模"] || coupon.lineUrl || '';
-  const address = coupon["地址"] || coupon.address || coupon.mapUrl || '';
+  const lineContact = coupon["加LINE連繫"] || coupon["F"] || coupon.lineContact || coupon.lineUrl || '';
+  const address = coupon["地址"] || coupon["G"] || coupon.address || coupon.mapUrl || '';
   
+  console.log('🔍 測試按鈕狀態', shopName, { lineContact, address });  // ← 這一行
   console.log(`🎫 優惠券 ${shopName} 的聯繫資訊:`, {
     lineContact,
     address,
     hasLine: !!lineContact,
     hasMap: !!address
   });
+
   
   // 其餘程式碼保持不變...
   // 狀態判斷
