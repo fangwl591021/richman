@@ -983,10 +983,6 @@ function showShopPopup(shop) {
   const shopNameText = shop["店家名稱"] || shop.name || shop.shopName || "神秘店家";
   let shopDescText = shop["優惠內容"] || shop.discount || shop.description || "限時優惠，趕快來看看！";
   
-  // ✅ 新增：取得加LINE連繫和地址
-  const lineContact = shop["加LINE連繫"] || "";
-  const address = shop["地址"] || "";
-  
   // 處理換行
   shopDescText = shopDescText.replace(/。/g, '。<br>');
   
@@ -1002,16 +998,8 @@ function showShopPopup(shop) {
   
   shopName.textContent = shopNameText;
   
-  // ✅ 修改：在描述中加入加LINE連繫和地址
-  let fullDesc = shopDescText;
-  if (lineContact) {
-    fullDesc += `<br><br>📱 加LINE: ${lineContact}`;
-  }
-  if (address) {
-    fullDesc += `<br><br>📍 地址: ${address}`;
-  }
-  
-  shopDesc.innerHTML = fullDesc;
+  // ✅ 前端彈窗：只顯示優惠內容，不顯示加LINE連繫和地址
+  shopDesc.innerHTML = shopDescText;
   
   shopPopup.style.display = 'block';
   claimBtn.disabled = false;
