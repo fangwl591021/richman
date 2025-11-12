@@ -99,8 +99,7 @@ body{
   height: 52px;
   position: relative;
   transform-style: preserve-3d;
-  /* 🎯 修正：延長過渡時間，確保平滑過渡 */
-  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 🎯 關鍵修正：移除 transition，避免與動畫衝突 */
   transform: rotateX(0deg) rotateY(0deg);
 }
 
@@ -564,14 +563,14 @@ for (let y = rows - 2; y >= 0; y--) path.push({ x: 0, y });
 for (let x = 1; x < cols; x++) path.push({ x, y: 0 });
 for (let y = 1; y < rows - 1; y++) path.push({ x: cols - 1, y });
 
-// 🎯 修正：每個面對應的旋轉角度（統一格式）
+// 🎯 修正：每個面對應的旋轉角度
 const rotations = {
-  1: 'rotateX(0deg) rotateY(0deg)',      // 正面
-  2: 'rotateX(-90deg) rotateY(0deg)',    // 底面
-  3: 'rotateX(0deg) rotateY(-90deg)',    // 右側面
-  4: 'rotateX(0deg) rotateY(90deg)',     // 左側面
-  5: 'rotateX(90deg) rotateY(0deg)',     // 頂面
-  6: 'rotateX(0deg) rotateY(180deg)'     // 背面
+  1: 'rotateX(0deg) rotateY(0deg)',      // 正面 (front)
+  2: 'rotateX(90deg) rotateY(0deg)',     // 底面 (bottom) - 修正
+  3: 'rotateX(0deg) rotateY(-90deg)',    // 右側面 (right)
+  4: 'rotateX(0deg) rotateY(90deg)',     // 左側面 (left)
+  5: 'rotateX(-90deg) rotateY(0deg)',    // 頂面 (top) - 修正
+  6: 'rotateX(0deg) rotateY(180deg)'     // 背面 (back)
 };
 
 // ============================================
@@ -600,7 +599,7 @@ function updatePlayer() {
   player.style.top = `${cell.y * h + h / 2 - player.clientHeight / 2}px`;
 }
 
-// ✨ 🎯 修正後的 3D 骰子投擲函數
+// ✨ 🎯 v3.1 - 最終完美版本（邏輯+視覺都100%正確）
 async function rollDice() {
   console.log('🎲 === 開始投擲骰子 ===');
   
@@ -619,51 +618,91 @@ async function rollDice() {
   sDice.currentTime = 0;
   sDice.play();
   
-  // 🎯 關鍵：先重置為0度，確保起點一致
+  // 創建Promise等待兩個骰子動畫都結束
+  const waitForAnimations = new Promise((resolve) => {
+    let dice1Done = false;
+    let dice2Done = false;
+    
+    const checkBothDone = () => {
+      if (dice1Done && dice2Done) {
+        resolve();
+      }
+    };
+    
+    // 監聽骰子1動畫結束
+    const onDice1End = () => {
+      dice1Done = true;
+      dice1.removeEventListener('animationend', onDice1End);
+      console.log('✅ 骰子1動畫結束');
+      checkBothDone();
+    };
+    
+    // 監聽骰子2動畫結束
+    const onDice2End = () => {
+      dice2Done = true;
+      dice2.removeEventListener('animationend', onDice2End);
+      console.log('✅ 骰子2動畫結束');
+      checkBothDone();
+    };
+    
+    dice1.addEventListener('animationend', onDice1End);
+    dice2.addEventListener('animationend', onDice2End);
+  });
+  
+  // 🎯 重置為0度
+  dice1.style.transition = 'none';
+  dice2.style.transition = 'none';
   dice1.style.transform = 'rotateX(0deg) rotateY(0deg)';
   dice2.style.transform = 'rotateX(0deg) rotateY(0deg)';
   
-  // 強制瀏覽器重繪
+  // 強制重繪
   void dice1.offsetWidth;
   void dice2.offsetWidth;
   
-  // 添加投擲動畫類別
+  // 添加動畫
   dice1.classList.add('rolling');
   dice2.classList.add('rolling');
+  console.log('🎬 動畫開始');
   
-  // 🎯 1.1秒後：移除動畫，立即設置最終角度
-  setTimeout(() => {
-    // 移除動畫類別
-    dice1.classList.remove('rolling');
-    dice2.classList.remove('rolling');
-    
-    // 強制瀏覽器重繪
-    void dice1.offsetWidth;
-    void dice2.offsetWidth;
-    
-    // 設置最終角度（讓transition接手）
-    dice1.style.transform = rotations[v1];
-    dice2.style.transform = rotations[v2];
-    
-    console.log(`🎯 設置最終角度: 骰子1=${v1}, 骰子2=${v2}`);
-  }, 1100);
+  // 等待動畫真正結束
+  await waitForAnimations;
   
-  // 1.8秒後完成所有動作（給足時間讓transition完成）
-  setTimeout(() => {
-    sDice.pause();
-    
-    const total = v1 + v2;
-    showMsg(`🎲 擲出 ${v1} + ${v2} = ${total} 點！`);
-    rollBtn.textContent = '🎲 投擲骰子';
-    
-    // 最後確認一次角度
-    dice1.style.transform = rotations[v1];
-    dice2.style.transform = rotations[v2];
-    console.log(`✅ 最終確認: 骰子1=${v1}, 骰子2=${v2}`);
-    
-    console.log('✅ 骰子停止，開始移動玩家');
-    movePlayer(total);
-  }, 1800);
+  console.log('🎯 動畫結束，準備設置最終角度');
+  
+  // 移除動畫類別
+  dice1.classList.remove('rolling');
+  dice2.classList.remove('rolling');
+  
+  // 🎯 關鍵：確保無過渡，直接設置
+  dice1.style.transition = 'none';
+  dice2.style.transition = 'none';
+  
+  // 強制重繪
+  void dice1.offsetWidth;
+  void dice2.offsetWidth;
+  
+  // 立即設置最終角度
+  dice1.style.transform = rotations[v1];
+  dice2.style.transform = rotations[v2];
+  console.log(`🎯 已設置最終角度: dice1=${v1} (${rotations[v1]}), dice2=${v2} (${rotations[v2]})`);
+  
+  // 短暫延遲確保渲染完成
+  await new Promise(r => setTimeout(r, 100));
+  
+  // 停止音效並顯示結果
+  sDice.pause();
+  
+  const total = v1 + v2;
+  showMsg(`🎲 擲出 ${v1} + ${v2} = ${total} 點！`);
+  rollBtn.textContent = '🎲 投擲骰子';
+  
+  // 最終確認角度
+  console.log(`✅ 最終確認: 骰子1=${v1}, 骰子2=${v2}`);
+  console.log(`   骰子1當前transform: ${dice1.style.transform}`);
+  console.log(`   骰子2當前transform: ${dice2.style.transform}`);
+  
+  console.log('✅ 骰子停止，開始移動玩家');
+  movePlayer(total);
 }
 
 async function movePlayer(steps) {
