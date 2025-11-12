@@ -99,7 +99,9 @@ body{
   height: 52px;
   position: relative;
   transform-style: preserve-3d;
-  transition: transform 0.6s ease-out;
+  /* 🎯 修正：延長過渡時間，並設定初始顯示為1點 */
+  transition: transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: rotateX(0deg) rotateY(0deg);
 }
 
 /* 骰子的每一面 */
@@ -234,9 +236,10 @@ body{
   right: 30%;
 }
 
-/* 投擲動畫 - 落地彈跳後旋轉 */
+/* 🎯 修正：調整投擲動畫，結束時回到中性狀態 */
 .dice.rolling {
-  animation: roll 1.2s ease-out;
+  animation: roll 1.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: none;
 }
 
 @keyframes roll {
@@ -255,6 +258,10 @@ body{
   50% { 
     transform: rotateX(540deg) rotateY(270deg) translateY(0px);
   }
+  75% {
+    transform: rotateX(630deg) rotateY(315deg) translateY(0px);
+  }
+  /* 🎯 關鍵修正：動畫結束時回到0度，讓JavaScript接手過渡 */
   100% { 
     transform: rotateX(720deg) rotateY(360deg) translateY(0px);
   }
@@ -557,14 +564,14 @@ for (let y = rows - 2; y >= 0; y--) path.push({ x: 0, y });
 for (let x = 1; x < cols; x++) path.push({ x, y: 0 });
 for (let y = 1; y < rows - 1; y++) path.push({ x: cols - 1, y });
 
-// 每個面對應的旋轉角度
+// 🎯 修正：每個面對應的旋轉角度（統一格式）
 const rotations = {
-  1: 'rotateX(0deg) rotateY(0deg)',
-  2: 'rotateX(-90deg) rotateY(0deg)',
-  3: 'rotateX(0deg) rotateY(-90deg)',
-  4: 'rotateX(0deg) rotateY(90deg)',
-  5: 'rotateX(90deg) rotateY(0deg)',
-  6: 'rotateX(0deg) rotateY(180deg)'
+  1: 'rotateX(0deg) rotateY(0deg)',      // 正面
+  2: 'rotateX(-90deg) rotateY(0deg)',    // 底面
+  3: 'rotateX(0deg) rotateY(-90deg)',    // 右側面
+  4: 'rotateX(0deg) rotateY(90deg)',     // 左側面
+  5: 'rotateX(90deg) rotateY(0deg)',     // 頂面
+  6: 'rotateX(0deg) rotateY(180deg)'     // 背面
 };
 
 // ============================================
@@ -593,7 +600,7 @@ function updatePlayer() {
   player.style.top = `${cell.y * h + h / 2 - player.clientHeight / 2}px`;
 }
 
-// ✨ 3D 骰子投擲函數
+// ✨ 🎯 修正後的 3D 骰子投擲函數
 async function rollDice() {
   console.log('🎲 === 開始投擲骰子 ===');
   
@@ -604,7 +611,7 @@ async function rollDice() {
   sDice.currentTime = 0;
   sDice.play();
   
-  // 添加投擲動畫
+  // 添加投擲動畫類別
   dice1.classList.add('rolling');
   dice2.classList.add('rolling');
   
@@ -616,15 +623,21 @@ async function rollDice() {
   console.log(`   骰子2: ${v2} 點`);
   console.log(`   總計: ${v1 + v2} 點`);
   
-  // 1.2秒後停止動畫並顯示結果
+  // 🎯 關鍵修正：在動畫結束前100ms設置最終角度
   setTimeout(() => {
+    // 先移除動畫類別，恢復transition效果
     dice1.classList.remove('rolling');
     dice2.classList.remove('rolling');
     
-    // 設置最終旋轉角度
+    // 立即設置最終角度，利用CSS transition平滑過渡
     dice1.style.transform = rotations[v1];
     dice2.style.transform = rotations[v2];
     
+    console.log('🎯 設置最終角度並開始過渡');
+  }, 1000);
+  
+  // 1.2秒後完成所有動作
+  setTimeout(() => {
     sDice.pause();
     
     const total = v1 + v2;
@@ -757,24 +770,22 @@ async function handleShopCell(cellConfig) {
     console.log(`🎲 隨機選擇第 ${randomIndex} 個店家:`, randomShop);
     
     // 確保店家資料包含所有必要欄位
-// 確保店家資料包含所有必要欄位
-currentShop = {
-  "店家名稱": randomShop["店家名稱"] || randomShop.name || "店家",
-  "優惠內容": randomShop["優惠內容"] || randomShop.discount || "優惠",
-  "圖片網址": randomShop["圖片網址"] || randomShop.imageUrl || randomShop.icon || "",
-  
-  // 🎯 關鍵修正：使用「加LINE 建模」作為主要欄位名稱
-  "加LINE連繫": randomShop["加LINE 建模"] || randomShop["加LINE連繫"] || randomShop.lineUrl || "",
-  "地址": randomShop["地址"] || randomShop.addressUrl || "",
-  
-  "店家分類": randomShop["店家分類"] || category
-};
+    currentShop = {
+      "店家名稱": randomShop["店家名稱"] || randomShop.name || "店家",
+      "優惠內容": randomShop["優惠內容"] || randomShop.discount || "優惠",
+      "圖片網址": randomShop["圖片網址"] || randomShop.imageUrl || randomShop.icon || "",
+      
+      // 🎯 關鍵修正：使用「加LINE 建模」作為主要欄位名稱
+      "加LINE連繫": randomShop["加LINE 建模"] || randomShop["加LINE連繫"] || randomShop.lineUrl || "",
+      "地址": randomShop["地址"] || randomShop.addressUrl || "",
+      
+      "店家分類": randomShop["店家分類"] || category
+    };
 
-console.log('🔍 加LINE 建模欄位內容:', randomShop["加LINE 建模"]);
-console.log('🔍 地址欄位內容:', randomShop["地址"]);
-console.log('✅ 處理後的店家資料:', currentShop);
-    
+    console.log('🔍 加LINE 建模欄位內容:', randomShop["加LINE 建模"]);
+    console.log('🔍 地址欄位內容:', randomShop["地址"]);
     console.log('✅ 處理後的店家資料:', currentShop);
+    
     showShopPopup(currentShop);
     
   } catch (error) {
@@ -1007,6 +1018,11 @@ window.addEventListener('DOMContentLoaded', async function() {
     alert('系統初始化失敗：找不到 common.js');
     return;
   }
+  
+  // 🎯 初始化骰子顯示為1點
+  dice1.style.transform = rotations[1];
+  dice2.style.transform = rotations[1];
+  console.log('✅ 骰子已初始化為1點');
   
   await initializeApp();
   updatePlayer();
