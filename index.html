@@ -358,19 +358,23 @@ body{
 .login-box .line-login-btn:hover{background:#05b04b;transform:translateY(-2px);box-shadow:0 12px 30px rgba(6,199,85,0.4);}
 .login-box .line-login-btn .icon{font-size:32px;}
 
-/* 店家彈窗 */
 .shop-popup{
-  position:fixed;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  width:85%;max-width:300px;
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) scale(0.75); /* 🎯 整體縮小 */
+  width:85%;
+  max-width:280px; /* 可視需求再略小 */
   background:white;
   border-radius:12px;
-  box-shadow:0 8px 25px rgba(0,0,0,.4);
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
   overflow:hidden;
   z-index:50;
   display:none;
   animation:fadeIn .4s ease;
+  transform-origin:center center; /* 確保縮放中心不偏移 */
 }
+
 @keyframes fadeIn{
   from{opacity:0;transform:translate(-50%,-45%);}
   to{opacity:1;transform:translate(-50%,-50%);}
@@ -403,14 +407,15 @@ body{
   width:100%;
   border:none;
   border-radius:8px;
-  padding:12px;
-  font-size:14px;
+  padding:10px; /* 原12px → 10px */
+  font-size:13px; /* 原14px → 13px */
   font-weight:bold;
   cursor:pointer;
   color:white;
   transition:all 0.2s ease;
   text-align:center;
 }
+
 .shop-buttons button:active{transform:scale(0.98);}
 .shop-buttons .claim{background:#764ba2;}
 .shop-buttons .close{background:#888;}
