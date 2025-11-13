@@ -18,7 +18,61 @@ body{
   padding:15px 0 75px;
   gap:15px;
 }
+// ============================================
+// 🔐 註冊狀態檢查（必須放在最前面）
+// ============================================
+function checkRegistrationStatus() {
+    const userId = localStorage.getItem('lineUserId');
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    
+    console.log('🔍 檢查註冊狀態...');
+    console.log('   userId:', userId);
+    console.log('   userProfile:', userProfile);
+    console.log('   registeredUsers:', registeredUsers);
+    
+    // 如果沒有用戶ID或未註冊，跳轉到登入頁面
+    if (!userId || !registeredUsers[userId] || !userProfile.nickname || !userProfile.county) {
+        console.log('❌ 用戶未註冊，跳轉到登入頁面');
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    console.log('✅ 用戶已註冊，可以開始遊戲');
+    return true;
+}
 
+// ============================================
+// 📱 頁面載入初始化（修改現有的）
+// ============================================
+window.addEventListener('DOMContentLoaded', async function() {
+    console.log('=== 📱 初始化應用程式 ===');
+    
+    // 🎯 首先檢查註冊狀態
+    if (!checkRegistrationStatus()) {
+        return; // 如果未註冊，停止後續初始化
+    }
+    
+    console.log('🎲 3D 骰子系統已啟用！');
+    
+    if (typeof initializeApp === 'undefined') {
+        console.error('❌ common.js 未載入！');
+        alert('系統初始化失敗：找不到 common.js');
+        return;
+    }
+    
+    // 🎯 初始化骰子顯示為1點
+    dice1.style.transform = rotations[1];
+    dice2.style.transform = rotations[1];
+    console.log('✅ 骰子已初始化為1點');
+    
+    await initializeApp();
+    updatePlayer();
+    
+    console.log('✅ 應用程式初始化完成');
+    console.log('📍 當前位置:', pos);
+    console.log('🎮 準備開始遊戲！');
+});
 /* 遊戲板 */
 .board{
   width:95%;
