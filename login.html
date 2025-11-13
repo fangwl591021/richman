@@ -21,9 +21,8 @@
             padding: 50px 40px;
             text-align: center;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 500px;
+            max-width: 450px;
             width: 100%;
-            transition: all 0.3s ease;
         }
         .logo {
             font-size: 80px;
@@ -54,16 +53,10 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
-            transition: all 0.3s ease;
-        }
-        .line-login-btn:hover {
-            background: #05a848;
-            transform: translateY(-2px);
         }
         .line-login-btn:disabled {
             background: #ccc;
             cursor: not-allowed;
-            transform: none;
         }
         .status {
             margin-top: 20px;
@@ -74,91 +67,6 @@
         .error { background: #ffebee; color: #c62828; }
         .success { background: #e8f5e9; color: #2e7d32; }
         .info { background: #e3f2fd; color: #1976d2; }
-        
-        /* 註冊表單樣式 */
-        .register-form {
-            display: none;
-            text-align: left;
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #333;
-            font-size: 16px;
-        }
-        select, input {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
-            font-family: "Microsoft JhengHei", sans-serif;
-            transition: border-color 0.3s;
-        }
-        select:focus, input:focus {
-            border-color: #06C755;
-            outline: none;
-        }
-        .register-btn {
-            width: 100%;
-            padding: 18px;
-            background: #764ba2;
-            color: white;
-            border: none;
-            border-radius: 15px;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: all 0.3s ease;
-        }
-        .register-btn:hover {
-            background: #667eea;
-            transform: translateY(-2px);
-        }
-        .register-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        /* 用戶資訊樣式 */
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-        }
-        .user-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 3px solid #06C755;
-        }
-        .user-details {
-            text-align: left;
-            flex: 1;
-        }
-        .user-name {
-            font-weight: bold;
-            font-size: 18px;
-            color: #333;
-        }
-        .user-id {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-        }
     </style>
 </head>
 <body>
@@ -167,53 +75,9 @@
         <h1>歡樂大富翁</h1>
         <p>歡迎來到最好買商圈！<br>請先使用 LINE 登入開始遊戲，<br>收集專屬優惠券吧！</p>
         
-        <div id="userInfo" class="user-info" style="display: none;">
-            <!-- 用戶資訊會由 JavaScript 動態填入 -->
-        </div>
-        
         <button class="line-login-btn" id="loginBtn" disabled>
             初始化中...
         </button>
-        
-        <div id="registerForm" class="register-form">
-            <div class="form-group">
-                <label for="nickname">遊戲暱稱</label>
-                <input type="text" id="nickname" placeholder="請輸入您的遊戲暱稱" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="county">選擇地區</label>
-                <select id="county" required>
-                    <option value="">請選擇縣市</option>
-                    <option value="台北市">台北市</option>
-                    <option value="新北市">新北市</option>
-                    <option value="桃園市">桃園市</option>
-                    <option value="台中市">台中市</option>
-                    <option value="台南市">台南市</option>
-                    <option value="高雄市">高雄市</option>
-                    <option value="基隆市">基隆市</option>
-                    <option value="新竹市">新竹市</option>
-                    <option value="嘉義市">嘉義市</option>
-                    <option value="新竹縣">新竹縣</option>
-                    <option value="苗栗縣">苗栗縣</option>
-                    <option value="彰化縣">彰化縣</option>
-                    <option value="南投縣">南投縣</option>
-                    <option value="雲林縣">雲林縣</option>
-                    <option value="嘉義縣">嘉義縣</option>
-                    <option value="屏東縣">屏東縣</option>
-                    <option value="宜蘭縣">宜蘭縣</option>
-                    <option value="花蓮縣">花蓮縣</option>
-                    <option value="台東縣">台東縣</option>
-                    <option value="澎湖縣">澎湖縣</option>
-                    <option value="金門縣">金門縣</option>
-                    <option value="連江縣">連江縣</option>
-                </select>
-            </div>
-            
-            <button class="register-btn" id="registerBtn">
-                完成註冊
-            </button>
-        </div>
         
         <div id="status"></div>
     </div>
@@ -227,33 +91,10 @@
     
     const loginBtn = document.getElementById('loginBtn');
     const statusDiv = document.getElementById('status');
-    const registerForm = document.getElementById('registerForm');
-    const registerBtn = document.getElementById('registerBtn');
-    const userInfoDiv = document.getElementById('userInfo');
     
     function showStatus(message, type = 'info') {
         statusDiv.textContent = message;
         statusDiv.className = `status ${type}`;
-    }
-    
-    // 檢查用戶是否已註冊
-    function isUserRegistered(userId) {
-        // 檢查已註冊用戶列表
-        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        if (registeredUsers[userId]) {
-            return true;
-        }
-        
-        // 檢查用戶資料完整性
-        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-        if (userProfile.lineUserId === userId && userProfile.nickname && userProfile.county) {
-            // 如果資料完整但不在註冊列表中，自動添加到註冊列表
-            registeredUsers[userId] = true;
-            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-            return true;
-        }
-        
-        return false;
     }
     
     // 初始化 LIFF
@@ -316,30 +157,19 @@
             showStatus(`歡迎，${profile.displayName}！`, 'success');
             loginBtn.textContent = '✅ 登入成功';
             
-            // 顯示用戶資訊
-            userInfoDiv.style.display = 'flex';
-            userInfoDiv.innerHTML = `
-                <img src="${userData.pictureUrl || 'https://via.placeholder.com/60x60?text=頭像'}" 
-                     alt="用戶頭像" class="user-avatar"
-                     onerror="this.src='https://via.placeholder.com/60x60?text=頭像'">
-                <div class="user-details">
-                    <div class="user-name">${userData.displayName}</div>
-                    <div class="user-id">ID: ${userData.userId.substring(0, 10)}...</div>
-                </div>
-            `;
+            // ✅ 等待足夠時間確保儲存完成
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // 檢查是否已經註冊過
-            if (isUserRegistered(userData.userId)) {
-                // 已註冊，直接進入遊戲
-                showStatus('您已經註冊過了！即將進入遊戲...', 'info');
-                setTimeout(() => {
-                    window.location.href = 'index.html';
-                }, 1500);
+            // ✅ 最後驗證一次
+            const verify = localStorage.getItem('lineUserId');
+            console.log('📋 驗證 localStorage:', verify);
+            
+            if (verify === userData.userId) {
+                console.log('🎮 跳轉到遊戲...');
+                // ✅ 修改這裡：跳轉到 index.html
+                window.location.href = 'index.html';
             } else {
-                // 未註冊，顯示註冊表單
-                showStatus('請填寫註冊資料才能開始遊戲', 'info');
-                registerForm.style.display = 'block';
-                loginBtn.style.display = 'none';
+                throw new Error('資料驗證失敗');
             }
             
         } catch (error) {
@@ -350,67 +180,6 @@
             loginBtn.onclick = () => location.reload();
         }
     }
-    
-    // 註冊表單提交處理
-    registerBtn.addEventListener('click', async function() {
-        const nickname = document.getElementById('nickname').value.trim();
-        const county = document.getElementById('county').value;
-        const userId = localStorage.getItem('lineUserId');
-        const displayName = localStorage.getItem('lineDisplayName');
-        const pictureUrl = localStorage.getItem('linePictureUrl');
-
-        if (!nickname || !county) {
-            showStatus('請填寫所有欄位', 'error');
-            return;
-        }
-
-        try {
-            registerBtn.disabled = true;
-            registerBtn.textContent = '註冊中...';
-            showStatus('註冊資料處理中...', 'info');
-
-            // 模擬 API 呼叫延遲
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // 儲存註冊資料
-            const userData = {
-                lineUserId: userId,
-                lineDisplayName: displayName,
-                linePictureUrl: pictureUrl,
-                nickname: nickname,
-                county: county,
-                registrationTime: new Date().toISOString(),
-                level: 1,
-                coins: 1000,
-                coupons: []
-            };
-
-            // 儲存到 localStorage
-            localStorage.setItem('userProfile', JSON.stringify(userData));
-            
-            // 記錄已註冊用戶
-            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            registeredUsers[userId] = true;
-            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-
-            // 設置註冊完成標記
-            sessionStorage.setItem('registrationComplete', 'true');
-
-            showStatus('註冊成功！即將進入遊戲...', 'success');
-            registerBtn.textContent = '✅ 註冊成功';
-
-            // 跳轉到遊戲主頁面
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
-
-        } catch (error) {
-            console.error('註冊失敗:', error);
-            showStatus('註冊失敗，請重試', 'error');
-            registerBtn.disabled = false;
-            registerBtn.textContent = '完成註冊';
-        }
-    });
     
     // 頁面載入時初始化
     window.addEventListener('DOMContentLoaded', init);
