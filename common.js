@@ -178,43 +178,31 @@ function updateUserProfile(updates) {
 // ============================================
 
 // 向 GAS 發送請求
-async function callGAS(action, data = {}) {
-    try {
-        const formData = new URLSearchParams();
-        formData.append('action', action);
-        
-        // 添加所有數據到表單
-        Object.keys(data).forEach(key => {
-            if (data[key] !== null && data[key] !== undefined) {
-                formData.append(key, data[key]);
-            }
-        });
-
-        console.log(`🌐 呼叫 GAS API: ${action}`, data);
-
-        const response = await fetch(GAS_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        console.log(`📊 GAS API 回應 (${action}):`, result);
-        return result;
-        
-    } catch (error) {
-        console.error(`❌ GAS API 呼叫失敗 (${action}):`, error);
-        return {
-            success: false,
-            message: `網絡錯誤: ${error.message}`
-        };
+async function callGAS(functionName, data = {}) {
+  try {
+    const response = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        function: functionName,
+        data: data
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+    
+    const result = await response.json();
+    return result;
+    
+  } catch (error) {
+    console.error('GAS API call failed:', error);
+    // 可以在这里添加重试逻辑或用户提示
+    throw error;
+  }
 }
 
 // 真正的後端註冊驗證
