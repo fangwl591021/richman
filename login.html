@@ -86,8 +86,9 @@
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     
     <script>
-    // ⚠️ 請填入您的 LIFF ID
+    // ⚠️ 請填入您的 LIFF ID 和後端 URL
     const LIFF_ID = '2008231249-7DlMkygo';
+    const BACKEND_URL = 'https://richman.fangwl591021.workers.dev/';
     
     const loginBtn = document.getElementById('loginBtn');
     const statusDiv = document.getElementById('status');
@@ -122,6 +123,41 @@
         }
     }
     
+    // 儲存用戶資料到後端
+    async function saveUserToBackend(profile) {
+        try {
+            console.log('💾 儲存用戶資料到後端...');
+            
+            const formData = new FormData();
+            formData.append('action', 'saveUserProfile');
+            formData.append('userId', profile.userId);
+            formData.append('displayName', profile.displayName);
+            formData.append('pictureUrl', profile.pictureUrl || '');
+            formData.append('statusMessage', profile.statusMessage || '');
+            
+            const response = await fetch(BACKEND_URL, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            console.log('📊 後端回應:', result);
+            
+            if (result.success || result.status === 'success') {
+                console.log('✅ 用戶資料已儲存到後端');
+                return true;
+            } else {
+                console.warn('⚠️ 後端儲存失敗，但繼續流程');
+                return false;
+            }
+            
+        } catch (error) {
+            console.error('❌ 儲存到後端失敗:', error);
+            // 不阻斷登入流程
+            return false;
+        }
+    }
+    
     // 取得用戶資料
     async function getProfile() {
         try {
@@ -130,43 +166,47 @@
             const profile = await liff.getProfile();
             console.log('✅ 用戶資料:', profile);
             
-            // ✅ 雙重儲存：localStorage + sessionStorage
+            // 📝 準備用戶資料
             const userData = {
                 userId: profile.userId,
                 displayName: profile.displayName,
                 pictureUrl: profile.pictureUrl || '',
+                statusMessage: profile.statusMessage || '',
                 loginTime: Date.now()
             };
             
-            // 儲存到 localStorage
+            // 💾 儲存到 localStorage
             localStorage.setItem('lineUserId', userData.userId);
             localStorage.setItem('lineDisplayName', userData.displayName);
             localStorage.setItem('linePictureUrl', userData.pictureUrl);
+            localStorage.setItem('lineStatusMessage', userData.statusMessage);
             localStorage.setItem('lineLoginTime', userData.loginTime);
             
-            // 同時儲存到 sessionStorage（作為備份）
+            // 💾 同時儲存到 sessionStorage（作為備份）
             sessionStorage.setItem('lineUserId', userData.userId);
             sessionStorage.setItem('lineDisplayName', userData.displayName);
             sessionStorage.setItem('linePictureUrl', userData.pictureUrl);
-            
-            // ✅ 設置登入標記
             sessionStorage.setItem('justLoggedIn', 'true');
             
-            console.log('✅ 資料已儲存');
+            console.log('✅ 本地資料已儲存');
             
+            // 🌐 儲存到後端 Google Sheets
+            showStatus('同步資料到伺服器...', 'info');
+            await saveUserToBackend(profile);
+            
+            // ✅ 顯示成功訊息
             showStatus(`歡迎，${profile.displayName}！`, 'success');
             loginBtn.textContent = '✅ 登入成功';
             
-            // ✅ 等待足夠時間確保儲存完成
+            // ⏱️ 等待後跳轉
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            // ✅ 最後驗證一次
+            // 🔍 最後驗證
             const verify = localStorage.getItem('lineUserId');
             console.log('📋 驗證 localStorage:', verify);
             
             if (verify === userData.userId) {
                 console.log('🎮 跳轉到遊戲...');
-                // ✅ 修改這裡：跳轉到 index.html
                 window.location.href = 'index.html';
             } else {
                 throw new Error('資料驗證失敗');
@@ -183,6 +223,6 @@
     
     // 頁面載入時初始化
     window.addEventListener('DOMContentLoaded', init);
-</script>
+    </script>
 </body>
 </html>
