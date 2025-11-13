@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>註冊資料 - 歡樂大富翁</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .register-box {
+            background: white;
+            border-radius: 30px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        .logo {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+        h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid #06C755;
+        }
+        .user-details {
+            text-align: left;
+            flex: 1;
+        }
+        .user-name {
+            font-weight: bold;
+            font-size: 18px;
+            color: #333;
+        }
+        .user-id {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        select, input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+        select:focus, input:focus {
+            border-color: #06C755;
+            outline: none;
+        }
+        .register-btn {
+            width: 100%;
+            padding: 20px;
+            background: #06C755;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .register-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .info { background: #e3f2fd; color: #1976d32; }
+    </style>
+</head>
+<body>
+    <div class="register-box">
+        <div class="logo">🎲</div>
+        <h1>歡迎加入歡樂大富翁！</h1>
+        <p class="subtitle">請填寫基本資料完成註冊</p>
+        
+        <div class="user-info" id="userInfo">
+            <!-- 用戶資訊會由 JavaScript 動態填入 -->
+        </div>
+        
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="nickname">遊戲暱稱</label>
+                <input type="text" id="nickname" placeholder="請輸入您的遊戲暱稱" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="county">選擇地區</label>
+                <select id="county" required>
+                    <option value="">請選擇縣市</option>
+                    <option value="台北市">台北市</option>
+                    <option value="新北市">新北市</option>
+                    <option value="桃園市">桃園市</option>
+                    <option value="台中市">台中市</option>
+                    <option value="台南市">台南市</option>
+                    <option value="高雄市">高雄市</option>
+                    <option value="基隆市">基隆市</option>
+                    <option value="新竹市">新竹市</option>
+                    <option value="嘉義市">嘉義市</option>
+                    <option value="新竹縣">新竹縣</option>
+                    <option value="苗栗縣">苗栗縣</option>
+                    <option value="彰化縣">彰化縣</option>
+                    <option value="南投縣">南投縣</option>
+                    <option value="雲林縣">雲林縣</option>
+                    <option value="嘉義縣">嘉義縣</option>
+                    <option value="屏東縣">屏東縣</option>
+                    <option value="宜蘭縣">宜蘭縣</option>
+                    <option value="花蓮縣">花蓮縣</option>
+                    <option value="台東縣">台東縣</option>
+                    <option value="澎湖縣">澎湖縣</option>
+                    <option value="金門縣">金門縣</option>
+                    <option value="連江縣">連江縣</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="register-btn" id="registerBtn">
+                完成註冊
+            </button>
+        </form>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+    const userInfoDiv = document.getElementById('userInfo');
+    const registerForm = document.getElementById('registerForm');
+    const registerBtn = document.getElementById('registerBtn');
+    const statusDiv = document.getElementById('status');
+
+    function showStatus(message, type = 'info') {
+        statusDiv.textContent = message;
+        statusDiv.className = `status ${type}`;
+    }
+
+    // 頁面載入時檢查用戶資料
+    window.addEventListener('DOMContentLoaded', function() {
+        const userId = localStorage.getItem('lineUserId');
+        const displayName = localStorage.getItem('lineDisplayName');
+        const pictureUrl = localStorage.getItem('linePictureUrl');
+
+        if (!userId || !displayName) {
+            showStatus('錯誤：未找到用戶資料，請重新登入', 'error');
+            registerBtn.disabled = true;
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+            return;
+        }
+
+        // 顯示用戶資訊
+        userInfoDiv.innerHTML = `
+            <img src="${pictureUrl || 'https://via.placeholder.com/60x60?text=頭像'}" 
+                 alt="用戶頭像" class="user-avatar"
+                 onerror="this.src='https://via.placeholder.com/60x60?text=頭像'">
+            <div class="user-details">
+                <div class="user-name">${displayName}</div>
+                <div class="user-id">ID: ${userId}</div>
+            </div>
+        `;
+
+        // 檢查是否已經註冊過
+        checkExistingRegistration(userId);
+    });
+
+    // 檢查是否已註冊
+    function checkExistingRegistration(userId) {
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        if (registeredUsers[userId]) {
+            showStatus('您已經註冊過了！即將進入遊戲...', 'info');
+            registerBtn.disabled = true;
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+    }
+
+    // 表單提交處理
+    registerForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const nickname = document.getElementById('nickname').value.trim();
+        const county = document.getElementById('county').value;
+        const userId = localStorage.getItem('lineUserId');
+        const displayName = localStorage.getItem('lineDisplayName');
+        const pictureUrl = localStorage.getItem('linePictureUrl');
+
+        if (!nickname || !county) {
+            showStatus('請填寫所有欄位', 'error');
+            return;
+        }
+
+        try {
+            registerBtn.disabled = true;
+            registerBtn.textContent = '註冊中...';
+            showStatus('註冊資料處理中...', 'info');
+
+            // 模擬 API 呼叫延遲
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // 儲存註冊資料
+            const userData = {
+                lineUserId: userId,
+                lineDisplayName: displayName,
+                linePictureUrl: pictureUrl,
+                nickname: nickname,
+                county: county,
+                registrationTime: new Date().toISOString(),
+                level: 1,
+                coins: 1000,
+                coupons: []
+            };
+
+            // 儲存到 localStorage
+            localStorage.setItem('userProfile', JSON.stringify(userData));
+            
+            // 記錄已註冊用戶
+            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+            registeredUsers[userId] = true;
+            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+
+            // 設置註冊完成標記
+            sessionStorage.setItem('registrationComplete', 'true');
+
+            showStatus('註冊成功！即將進入遊戲...', 'success');
+            registerBtn.textContent = '✅ 註冊成功';
+
+            // 跳轉到遊戲主頁面
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1500);
+
+        } catch (error) {
+            console.error('註冊失敗:', error);
+            showStatus('註冊失敗，請重試', 'error');
+            registerBtn.disabled = false;
+            registerBtn.textContent = '完成註冊';
+        }
+    });
+    </script>
+</body>
+</html>
