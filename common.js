@@ -14,38 +14,38 @@ const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbw0KshVY6WqQJy
 // 🌐 後端 API 功能 - Cloudflare Worker 代理版
 // ============================================
 
-// 向 GAS 發送請求 - 通過 Worker 代理
-async function callGAS(functionName, data = {}) {
+async function callGAS(action, data) {
+    const workerUrl = 'https://richman-proxy.tony-lab.workers.dev/';
+    
     try {
-        console.log(`🔄 呼叫 GAS (通過 Worker): ${functionName}`, data);
+        log('🔄 呼叫 GAS (通過 Worker)', action, data);
         
-        const response = await fetch(WORKER_URL, {
+        const response = await fetch(workerUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                // 移除可能導致 CORS 預檢失敗的自定義頭部
             },
             body: JSON.stringify({
-                action: functionName,
+                action: action,
                 ...data
-            })
+            }),
+            mode: 'cors',  // 明確指定 CORS 模式
+            credentials: 'omit'  // 不發送憑證
         });
-        
-        console.log('📡 Worker 回應狀態:', response.status, response.statusText);
-        
+
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const result = await response.json();
-        console.log('✅ GAS 呼叫成功:', result);
+        log('✅ Worker 響應成功', result);
         return result;
-        
+
     } catch (error) {
-        console.error('❌ Worker 代理失敗:', error);
-        
-        // Worker 失敗時，嘗試直接連接 GAS（降級方案）
-        console.log('🔄 嘗試直接連接 GAS...');
-        return await callGASDirect(functionName, data);
+        error('❌ Worker 代理失敗', error);
+        throw error;
     }
 }
 
