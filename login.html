@@ -236,28 +236,72 @@
         statusDiv.className = `status ${type}`;
     }
     
-    // 檢查用戶是否已註冊
+    // 添加調試函數
+    function debugStorage() {
+        console.log('=== 儲存調試資訊 ===');
+        console.log('lineUserId:', localStorage.getItem('lineUserId'));
+        console.log('lineDisplayName:', localStorage.getItem('lineDisplayName'));
+        console.log('registeredUsers:', localStorage.getItem('registeredUsers'));
+        console.log('userProfile:', localStorage.getItem('userProfile'));
+        console.log('========================');
+    }
+    
+    // 檢查用戶是否已註冊 - 修復版
     function isUserRegistered(userId) {
-        // 檢查已註冊用戶列表
+        if (!userId) {
+            console.log('❌ 用戶ID為空');
+            return false;
+        }
+        
+        console.log('🔍 檢查用戶註冊狀態，用戶ID:', userId);
+        
+        // 方法1: 檢查已註冊用戶列表
         const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        console.log('📋 註冊用戶列表:', registeredUsers);
+        
         if (registeredUsers[userId]) {
+            console.log('✅ 用戶已在註冊列表中');
             return true;
         }
         
-        // 檢查用戶資料完整性
-        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
-        if (userProfile.lineUserId === userId && userProfile.nickname && userProfile.county) {
-            // 如果資料完整但不在註冊列表中，自動添加到註冊列表
-            registeredUsers[userId] = true;
-            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-            return true;
+        // 方法2: 檢查用戶資料完整性
+        const userProfileStr = localStorage.getItem('userProfile');
+        console.log('📄 用戶資料檔案:', userProfileStr);
+        
+        if (userProfileStr) {
+            try {
+                const userProfile = JSON.parse(userProfileStr);
+                console.log('📝 解析後的用戶資料:', userProfile);
+                
+                // 檢查資料完整性
+                const isComplete = userProfile.lineUserId === userId && 
+                                  userProfile.nickname && 
+                                  userProfile.county;
+                
+                if (isComplete) {
+                    console.log('✅ 用戶資料完整，自動添加到註冊列表');
+                    // 如果資料完整但不在註冊列表中，自動添加到註冊列表
+                    registeredUsers[userId] = true;
+                    localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+                    return true;
+                } else {
+                    console.log('❌ 用戶資料不完整');
+                }
+            } catch (error) {
+                console.error('❌ 解析用戶資料失敗:', error);
+            }
+        } else {
+            console.log('❌ 未找到用戶資料檔案');
         }
         
+        console.log('❌ 用戶未註冊');
         return false;
     }
     
     // 初始化 LIFF
     async function init() {
+        debugStorage(); // 調試資訊
+        
         try {
             console.log('🚀 初始化 LIFF...');
             await liff.init({ liffId: LIFF_ID });
@@ -281,7 +325,7 @@
         }
     }
     
-    // 取得用戶資料
+    // 取得用戶資料 - 修復版
     async function getProfile() {
         try {
             showStatus('取得用戶資料中...', 'info');
@@ -328,8 +372,11 @@
                 </div>
             `;
             
-            // 檢查是否已經註冊過
-            if (isUserRegistered(userData.userId)) {
+            // 檢查是否已經註冊過 - 修復版
+            const isRegistered = isUserRegistered(userData.userId);
+            console.log('📊 註冊檢查結果:', isRegistered);
+            
+            if (isRegistered) {
                 // 已註冊，直接進入遊戲
                 showStatus('您已經註冊過了！即將進入遊戲...', 'info');
                 setTimeout(() => {
@@ -337,9 +384,13 @@
                 }, 1500);
             } else {
                 // 未註冊，顯示註冊表單
+                console.log('🆕 新用戶，顯示註冊表單');
                 showStatus('請填寫註冊資料才能開始遊戲', 'info');
                 registerForm.style.display = 'block';
                 loginBtn.style.display = 'none';
+                
+                // 自動填入建議的暱稱
+                document.getElementById('nickname').value = userData.displayName;
             }
             
         } catch (error) {
@@ -351,7 +402,7 @@
         }
     }
     
-    // 註冊表單提交處理
+    // 註冊表單提交處理 - 修復版
     registerBtn.addEventListener('click', async function() {
         const nickname = document.getElementById('nickname').value.trim();
         const county = document.getElementById('county').value;
@@ -361,6 +412,14 @@
 
         if (!nickname || !county) {
             showStatus('請填寫所有欄位', 'error');
+            return;
+        }
+
+        if (!userId) {
+            showStatus('錯誤：未找到用戶ID，請重新登入', 'error');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
             return;
         }
 
@@ -390,12 +449,16 @@
             
             // 記錄已註冊用戶
             const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            registeredUsers[userId] = true;
+            registeredUsers[userId] = {
+                registered: true,
+                timestamp: new Date().toISOString()
+            };
             localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
 
             // 設置註冊完成標記
             sessionStorage.setItem('registrationComplete', 'true');
 
+            console.log('✅ 註冊完成，用戶資料:', userData);
             showStatus('註冊成功！即將進入遊戲...', 'success');
             registerBtn.textContent = '✅ 註冊成功';
 
