@@ -1,14 +1,132 @@
 // ============================================
-// 🎮 歡樂大富翁 - 通用功能庫 (common.js) - 完整後端驗證版 v4.0
+// 🎮 歡樂大富翁 - 通用功能庫 (common.js) - Cloudflare Worker 代理版 v5.0
 // ============================================
 
 // 全局變量
 let liffInitialized = false;
 let currentUser = null;
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbyQn_0UJ7_lXv7bwV9K8Q7q9X8Z9Y0Z1a2b3c4d5e6f7g8h9i0/exec'; // 請替換為您的實際 GAS 網址
+
+// 🎯 使用 Cloudflare Worker 代理（解決 CORS 問題）
+const WORKER_URL = 'https://richman-proxy.tony-lab.workers.dev/'; // 替換為您的 Worker URL
+const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbxcT-4JynhE5BULxRfyRIU1TsZV1ggq-h17mK22I5RABc4zlTa5WSiGaSeXYV5B4Yzp/exec';
 
 // ============================================
-// 🎨 用戶界面更新功能
+// 🌐 後端 API 功能 - Cloudflare Worker 代理版
+// ============================================
+
+// 向 GAS 發送請求 - 通過 Worker 代理
+async function callGAS(functionName, data = {}) {
+    try {
+        console.log(`🔄 呼叫 GAS (通過 Worker): ${functionName}`, data);
+        
+        const response = await fetch(WORKER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: functionName,
+                ...data
+            })
+        });
+        
+        console.log('📡 Worker 回應狀態:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ GAS 呼叫成功:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Worker 代理失敗:', error);
+        
+        // Worker 失敗時，嘗試直接連接 GAS（降級方案）
+        console.log('🔄 嘗試直接連接 GAS...');
+        return await callGASDirect(functionName, data);
+    }
+}
+
+// 直接連接 GAS 的降級方案
+async function callGASDirect(functionName, data = {}) {
+    try {
+        console.log(`🔄 直接呼叫 GAS: ${functionName}`);
+        
+        const response = await fetch(FALLBACK_GAS_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: functionName,
+                ...data
+            })
+        });
+        
+        console.log('📡 直接連接回應狀態:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('✅ 直接連接成功:', result);
+        return result;
+        
+    } catch (directError) {
+        console.error('❌ 直接連接也失敗:', directError);
+        throw new Error(`所有連接方式都失敗: ${directError.message}`);
+    }
+}
+
+// 真正的後端註冊驗證 - Worker 代理版
+async function verifyRegistrationWithBackend(userId) {
+    console.log('🌐 向後端驗證註冊狀態...');
+    
+    try {
+        const result = await callGAS('checkRegistration', { userId });
+        console.log('📊 後端驗證結果:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ 後端驗證失敗:', error);
+        
+        // 自動降級處理
+        console.log('🔄 使用降級方案...');
+        return {
+            success: true,  // ✅ 注意這裡是 true，讓前端可以繼續
+            registered: false,
+            message: '後端暫時不可用，請先完成本地註冊',
+            details: {
+                userTable: 'unknown',
+                profileTable: 'unknown'
+            }
+        };
+    }
+}
+
+// 完成後端註冊 - Worker 代理版
+async function completeBackendRegistration(userData) {
+    console.log('🌐 向後端完成註冊...');
+    
+    try {
+        const result = await callGAS('completeRegistration', userData);
+        console.log('📊 後端註冊結果:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ 後端註冊失敗:', error);
+        return {
+            success: false,
+            message: '後端註冊失敗，但本地註冊已完成'
+        };
+    }
+}
+
+// ============================================
+// 🎨 用戶界面更新功能（保持不變）
 // ============================================
 
 // 更新用戶界面函數
@@ -113,7 +231,7 @@ function calculatePosition(position) {
 }
 
 // ============================================
-// 👤 用戶資料管理功能
+// 👤 用戶資料管理功能（保持不變）
 // ============================================
 
 // 獲取當前用戶資料
@@ -174,76 +292,7 @@ function updateUserProfile(updates) {
 }
 
 // ============================================
-// 🌐 後端 API 功能
-// ============================================
-
-// 向 GAS 發送請求
-async function callGAS(functionName, data = {}) {
-  try {
-    const response = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        function: functionName,
-        data: data
-      })
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    return result;
-    
-  } catch (error) {
-    console.error('GAS API call failed:', error);
-    // 可以在这里添加重试逻辑或用户提示
-    throw error;
-  }
-}
-
-// 真正的後端註冊驗證
-async function verifyRegistrationWithBackend(userId) {
-    console.log('🌐 向後端驗證註冊狀態...');
-    
-    try {
-        const result = await callGAS('verifyRegistration', { userId });
-        console.log('📊 後端驗證結果:', result);
-        return result;
-        
-    } catch (error) {
-        console.error('❌ 後端驗證失敗:', error);
-        return {
-            success: false,
-            registered: false,
-            message: '後端驗證失敗'
-        };
-    }
-}
-
-// 完成後端註冊
-async function completeBackendRegistration(userData) {
-    console.log('🌐 向後端完成註冊...');
-    
-    try {
-        const result = await callGAS('completeRegistration', userData);
-        console.log('📊 後端註冊結果:', result);
-        return result;
-        
-    } catch (error) {
-        console.error('❌ 後端註冊失敗:', error);
-        return {
-            success: false,
-            message: '後端註冊失敗'
-        };
-    }
-}
-
-// ============================================
-// 🔐 真正的註冊狀態檢查功能（修復版）
+// 🔐 真正的註冊狀態檢查功能（保持不變）
 // ============================================
 
 // 驗證用戶資料完整性
@@ -432,7 +481,7 @@ function checkAndFixAllData() {
 }
 
 // ============================================
-// 🔄 頁面導航功能
+// 🔄 頁面導航功能（保持不變）
 // ============================================
 
 // 重定向到註冊頁面
@@ -532,7 +581,7 @@ async function completeRegistration(userData) {
 }
 
 // ============================================
-// 📱 LINE 相關功能
+// 📱 LINE 相關功能（保持不變）
 // ============================================
 
 // 初始化 LIFF
@@ -592,11 +641,13 @@ async function getLineProfile() {
 }
 
 // ============================================
-// 📄 頁面初始化功能（修復版）
+// 📄 頁面初始化功能（更新版）
 // ============================================
 
 async function initializeApp() {
-    console.log('=== 📱 初始化應用程式 (強制後端驗證版) ===');
+    console.log('=== 📱 初始化應用程式 (Cloudflare Worker 代理版 v5.0) ===');
+    console.log('🌐 Worker URL:', WORKER_URL);
+    console.log('🔄 備用 GAS URL:', FALLBACK_GAS_URL);
     
     // 先執行資料修復
     checkAndFixAllData();
@@ -672,7 +723,7 @@ async function initializeApp() {
 }
 
 // ============================================
-// 🎮 遊戲功能
+// 🎮 遊戲功能（保持不變）
 // ============================================
 
 // 遊戲開始前的註冊檢查
@@ -740,10 +791,15 @@ window.clearAllData = function() {
 
 // 測試 GAS 連接
 window.testGASConnection = async function() {
-    console.log('🌐 測試 GAS 連接...');
-    const result = await callGAS('test');
-    console.log('GAS 測試結果:', result);
-    return result;
+    console.log('🧪 測試 GAS 連接...');
+    try {
+        const result = await callGAS('test');
+        console.log('✅ GAS 測試成功:', result);
+        return result;
+    } catch (error) {
+        console.error('❌ GAS 測試失敗:', error);
+        return { success: false, error: error.message };
+    }
 };
 
 // 手動註冊用戶
@@ -766,13 +822,14 @@ window.manualRegister = async function() {
 // 在頁面載入時執行初始化
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 頁面載入完成，開始初始化...');
-    console.log('🔧 common.js 版本: 4.0 (完整後端驗證版)');
-    console.log('🌐 GAS URL:', GAS_URL);
+    console.log('🔧 common.js 版本: 5.0 (Cloudflare Worker 代理版)');
+    console.log('🌐 Worker URL:', WORKER_URL);
+    console.log('🔄 備用 GAS URL:', FALLBACK_GAS_URL);
     initializeApp();
 });
 
 // ============================================
-// 📊 工具函數
+// 📊 工具函數（保持不變）
 // ============================================
 
 // 顯示狀態訊息
