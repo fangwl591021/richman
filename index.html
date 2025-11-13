@@ -539,6 +539,10 @@ body{
 <audio id="bgm" loop src="https://aiwe.cc/wp-content/uploads/2025/11/901cd11beb7b52aea3f9011f2d3d33bb.mp3"></audio>
 <audio id="sDice" src="https://aiwe.cc/wp-content/uploads/2025/11/77b2287cce9574aeb82a8dbbcf200050.mp3"></audio>
 <audio id="sMove" src="https://aiwe.cc/wp-content/uploads/2025/11/f8bf2fa137503315a28ad81a8aee77a5.mp3"></audio>
+<!-- 🎵 新增：抽到優惠券音效 -->
+<audio id="couponSound">
+    <source src="https://aiwe.cc/wp-content/uploads/2025/11/96b7a2f24b8df785169c1671eae6618c.mp3" type="audio/mpeg">
+</audio>
 
 <script>
 // 🎮 遊戲核心變數與設定
@@ -551,6 +555,7 @@ const rollBtn = document.getElementById('rollBtn');
 const bgm = document.getElementById('bgm');
 const sDice = document.getElementById('sDice');
 const sMove = document.getElementById('sMove');
+const couponSound = document.getElementById('couponSound'); // 🎵 新增優惠券音效
 const shopPopup = document.getElementById('shopPopup');
 const shopImg = document.getElementById('shopImg');
 const shopName = document.getElementById('shopName');
@@ -847,12 +852,25 @@ async function handleShopCell(cellConfig) {
     console.log('🔍 地址欄位內容:', randomShop["地址"]);
     console.log('✅ 處理後的店家資料:', currentShop);
     
+    // 🎵 播放抽到優惠券音效
+    playCouponSound();
     showShopPopup(currentShop);
     
   } catch (error) {
     console.error('❌ 處理店家格時發生錯誤:', error);
     showMsg('載入店家資料失敗');
   }
+}
+
+// 🎵 新增：播放優惠券音效函數
+function playCouponSound() {
+    try {
+        couponSound.currentTime = 0;
+        couponSound.volume = 0.7;
+        couponSound.play().catch(e => console.log('音效播放失敗:', e));
+    } catch (error) {
+        console.log('播放優惠券音效時發生錯誤:', error);
+    }
 }
 
 // 處理獎勵格
@@ -929,6 +947,8 @@ async function handleChanceCell(cellConfig) {
         if (shops.length >= 2) {
           const shop1 = shops[Math.floor(Math.random() * shops.length)];
           const shop2 = shops[Math.floor(Math.random() * shops.length)];
+          // 🎵 播放抽到優惠券音效
+          playCouponSound();
           await saveCoupon(shop1);
           await saveCoupon(shop2);
         }
