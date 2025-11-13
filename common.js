@@ -1,7 +1,110 @@
 // ============================================
 // 🔐 註冊狀態檢查功能（新增）
 // ============================================
+// ============================================
+// 👤 用戶界面更新函數
+// ============================================
 
+function updateUserInterface(userData) {
+    console.log('🔄 更新用戶界面，用戶資料:', userData);
+    
+    if (!userData) {
+        console.log('❌ 無用戶資料，無法更新界面');
+        return;
+    }
+    
+    // 更新用戶名稱顯示
+    const userNameElements = document.querySelectorAll('.user-name, #userName, [data-user-name]');
+    userNameElements.forEach(element => {
+        if (element) {
+            element.textContent = userData.displayName || '未知用戶';
+        }
+    });
+    
+    // 更新用戶頭像
+    const userAvatarElements = document.querySelectorAll('.user-avatar, #userAvatar, [data-user-avatar]');
+    userAvatarElements.forEach(element => {
+        if (element && userData.pictureUrl) {
+            if (element.tagName === 'IMG') {
+                element.src = userData.pictureUrl;
+            } else {
+                element.style.backgroundImage = `url(${userData.pictureUrl})`;
+            }
+        }
+    });
+    
+    // 更新用戶資訊區塊
+    const userInfoElement = document.getElementById('userInfo');
+    if (userInfoElement) {
+        userInfoElement.innerHTML = `
+            <div class="user-profile">
+                ${userData.pictureUrl ? `<img src="${userData.pictureUrl}" alt="用戶頭像" class="user-avatar">` : ''}
+                <span class="user-name">${userData.displayName || '未知用戶'}</span>
+            </div>
+        `;
+        userInfoElement.classList.remove('hidden');
+    }
+    
+    // 隱藏登入按鈕，顯示用戶資訊
+    const loginButton = document.getElementById('lineLoginBtn');
+    if (loginButton) {
+        loginButton.style.display = 'none';
+    }
+    
+    console.log('✅ 用戶界面更新完成');
+}
+
+// ============================================
+// 👤 獲取當前用戶資料
+// ============================================
+
+function getCurrentUser() {
+    const userId = localStorage.getItem('lineUserId');
+    const displayName = localStorage.getItem('lineDisplayName');
+    const pictureUrl = localStorage.getItem('linePictureUrl');
+    
+    if (!userId) {
+        return null;
+    }
+    
+    return {
+        userId: userId,
+        displayName: displayName || '未知用戶',
+        pictureUrl: pictureUrl || ''
+    };
+}
+
+// ============================================
+// 🔐 LIFF 初始化函數
+// ============================================
+
+let liffInitialized = false;
+
+async function initLiff() {
+    // 檢查是否在 LINE 環境中
+    if (typeof liff === 'undefined') {
+        console.log('ℹ️ 不在 LINE 環境中，跳過 LIFF 初始化');
+        return false;
+    }
+    
+    try {
+        const liffId = '2006655516-4zYpQyNG'; // 替換成你的 LIFF ID
+        console.log('🔄 初始化 LIFF...', liffId);
+        
+        await liff.init({ liffId: liffId });
+        liffInitialized = true;
+        
+        console.log('✅ LIFF 初始化成功');
+        console.log('📱 是否登入:', liff.isLoggedIn());
+        console.log('📱 是否在 LINE 中:', liff.isInClient());
+        
+        return true;
+    } catch (error) {
+        console.error('❌ LIFF 初始化失敗:', error);
+        liffInitialized = false;
+        return false;
+    }
+}
 // 檢查用戶是否已註冊
 function checkUserRegistration(userId) {
     if (!userId) {
