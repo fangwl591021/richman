@@ -1,10 +1,11 @@
 // ============================================
-// 🎮 歡樂大富翁 - 通用功能庫 (common.js)
+// 🎮 歡樂大富翁 - 通用功能庫 (common.js) - 完整後端驗證版
 // ============================================
 
 // 全局變量
 let liffInitialized = false;
 let currentUser = null;
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwYxEB7f0dC0qj3J9jK7Z6gK7V5Y6Y6Y6Y6Y6Y6Y6Y6Y6Y6Y6Y6/exec'; // 請替換為您的 GAS 網址
 
 // ============================================
 // 🎨 用戶界面更新功能
@@ -173,7 +174,85 @@ function updateUserProfile(updates) {
 }
 
 // ============================================
-// 🔐 註冊狀態檢查功能
+// 🌐 後端 API 功能（新增）
+// ============================================
+
+// 向 GAS 發送請求
+async function callGAS(action, data = {}) {
+    try {
+        const formData = new URLSearchParams();
+        formData.append('action', action);
+        
+        // 添加所有數據到表單
+        Object.keys(data).forEach(key => {
+            if (data[key] !== null && data[key] !== undefined) {
+                formData.append(key, data[key]);
+            }
+        });
+
+        const response = await fetch(GAS_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result;
+        
+    } catch (error) {
+        console.error(`❌ GAS API 呼叫失敗 (${action}):`, error);
+        return {
+            success: false,
+            message: `網絡錯誤: ${error.message}`
+        };
+    }
+}
+
+// 真正的後端註冊驗證
+async function verifyRegistrationWithBackend(userId) {
+    console.log('🌐 向後端驗證註冊狀態...');
+    
+    try {
+        const result = await callGAS('verifyRegistration', { userId });
+        console.log('📊 後端驗證結果:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ 後端驗證失敗:', error);
+        return {
+            success: false,
+            registered: false,
+            message: '後端驗證失敗'
+        };
+    }
+}
+
+// 完成後端註冊
+async function completeBackendRegistration(userData) {
+    console.log('🌐 向後端完成註冊...');
+    
+    try {
+        const result = await callGAS('completeRegistration', userData);
+        console.log('📊 後端註冊結果:', result);
+        return result;
+        
+    } catch (error) {
+        console.error('❌ 後端註冊失敗:', error);
+        return {
+            success: false,
+            message: '後端註冊失敗'
+        };
+    }
+}
+
+// ============================================
+// 🔐 真正的註冊狀態檢查功能（修復版）
 // ============================================
 
 // 驗證用戶資料完整性
@@ -210,6 +289,66 @@ function validateUserProfile(userId) {
         
     } catch (error) {
         console.error('❌ 解析 userProfile 失敗:', error);
+        return false;
+    }
+}
+
+// 真正的註冊檢查 - 修復版
+async function checkUserRegistration(userId) {
+    if (!userId) {
+        console.log('❌ 用戶ID為空');
+        return false;
+    }
+    
+    console.log('🔍 真正檢查用戶註冊狀態，用戶ID:', userId);
+    
+    try {
+        // 1. 先檢查本地 userProfile 是否完整
+        const userProfile = getUserProfile();
+        const localProfileValid = userProfile && 
+                                userProfile.lineUserId === userId && 
+                                userProfile.nickname && 
+                                userProfile.county;
+        
+        console.log('📱 本地 userProfile 檢查:', localProfileValid ? '完整' : '不完整');
+        
+        if (!localProfileValid) {
+            console.log('❌ 本地 userProfile 不完整，需要重新註冊');
+            return false;
+        }
+        
+        // 2. 向後端驗證真正的註冊狀態
+        const backendResult = await verifyRegistrationWithBackend(userId);
+        console.log('📊 後端驗證詳細結果:', backendResult);
+        
+        if (backendResult.success && backendResult.registered) {
+            console.log('✅ 後端確認用戶已完整註冊');
+            
+            // 更新本地註冊列表
+            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+            registeredUsers[userId] = {
+                registered: true,
+                verifiedAt: new Date().toISOString(),
+                backendVerified: true,
+                details: backendResult.details
+            };
+            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+            
+            return true;
+        } else {
+            console.log('❌ 後端確認用戶未註冊或註冊不完整');
+            console.log('詳細資訊:', backendResult.details || backendResult.message);
+            
+            // 清除本地錯誤的註冊標記
+            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+            delete registeredUsers[userId];
+            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+            
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('❌ 註冊檢查失敗:', error);
         return false;
     }
 }
@@ -259,71 +398,6 @@ function repairUserProfile(userId, registeredUserInfo) {
     }
 }
 
-// 修復註冊狀態問題
-function fixRegistrationStatus() {
-    console.log('🔧 開始修復註冊狀態...');
-    
-    const userId = localStorage.getItem('lineUserId');
-    if (!userId) {
-        console.log('❌ 無法修復：未找到用戶ID');
-        return false;
-    }
-    
-    const userProfileStr = localStorage.getItem('userProfile');
-    if (!userProfileStr) {
-        console.log('❌ 無法修復：userProfile 不存在');
-        return false;
-    }
-    
-    try {
-        const userProfile = JSON.parse(userProfileStr);
-        
-        // 檢查必要欄位
-        const hasRequiredFields = userProfile.lineUserId && 
-                                 userProfile.nickname && 
-                                 userProfile.county;
-        
-        if (!hasRequiredFields) {
-            console.log('❌ 無法修復：userProfile 不完整');
-            return false;
-        }
-        
-        // 檢查 registeredUsers 列表
-        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        console.log('📋 當前註冊用戶列表:', registeredUsers);
-        
-        if (!registeredUsers[userId]) {
-            console.log('🔄 檢測到用戶不在註冊列表中，正在修復...');
-            
-            // 添加到註冊列表
-            registeredUsers[userId] = {
-                registered: true,
-                nickname: userProfile.nickname,
-                county: userProfile.county,
-                registrationTime: userProfile.registrationTime || new Date().toISOString(),
-                fixed: true,
-                timestamp: new Date().toISOString()
-            };
-            
-            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-            console.log('✅ 註冊狀態修復完成');
-            
-            // 驗證修復結果
-            const updatedRegisteredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            console.log('✅ 修復後的註冊列表:', updatedRegisteredUsers);
-            
-            return true;
-        } else {
-            console.log('✅ 用戶已在註冊列表中，無需修復');
-            return true;
-        }
-        
-    } catch (error) {
-        console.error('❌ 修復註冊狀態失敗:', error);
-        return false;
-    }
-}
-
 // 檢查並修復所有資料問題
 function checkAndFixAllData() {
     console.log('🔍 全面檢查資料完整性...');
@@ -363,59 +437,7 @@ function checkAndFixAllData() {
     const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
     console.log('📋 registeredUsers 狀態:', registeredUsers[userId] ? '已註冊' : '未註冊');
     
-    // 執行修復
-    if (userProfile && !registeredUsers[userId]) {
-        console.log('⚠️ 檢測到資料不一致：userProfile 存在但不在註冊列表中');
-        return fixRegistrationStatus();
-    }
-    
     return true;
-}
-
-// 檢查用戶是否已註冊
-function checkUserRegistration(userId) {
-    if (!userId) {
-        console.log('❌ 用戶ID為空');
-        return false;
-    }
-    
-    console.log('🔍 檢查用戶註冊狀態，用戶ID:', userId);
-    
-    // 先執行資料修復檢查
-    checkAndFixAllData();
-    
-    // 方法1: 檢查已註冊用戶列表
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    console.log('📋 註冊用戶列表:', registeredUsers);
-    
-    const isInRegisteredList = !!registeredUsers[userId];
-    console.log('📝 在註冊列表中:', isInRegisteredList);
-    
-    if (isInRegisteredList) {
-        console.log('✅ 用戶已在註冊列表中');
-        return true;
-    }
-    
-    // 方法2: 檢查用戶資料完整性
-    const isProfileValid = validateUserProfile(userId);
-    if (isProfileValid) {
-        console.log('✅ 用戶資料完整，自動添加到註冊列表');
-        // 如果資料完整但不在註冊列表中，自動添加到註冊列表
-        registeredUsers[userId] = {
-            registered: true,
-            nickname: getUserProfile()?.nickname || '',
-            county: getUserProfile()?.county || '',
-            registrationTime: new Date().toISOString(),
-            autoAdded: true,
-            timestamp: new Date().toISOString()
-        };
-        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-        console.log('✅ 已添加到註冊列表');
-        return true;
-    }
-    
-    console.log('❌ 用戶未註冊');
-    return false;
 }
 
 // ============================================
@@ -465,25 +487,57 @@ function enforceRegistration() {
     return true;
 }
 
-// 完成註冊的函數
-function completeRegistration(userData) {
+// 完成註冊的函數（前端+後端）
+async function completeRegistration(userData) {
     const userId = userData.lineUserId;
     
-    // 儲存完整的用戶資料
-    localStorage.setItem('userProfile', JSON.stringify(userData));
-    
-    // 記錄已註冊用戶
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    registeredUsers[userId] = {
-        registered: true,
-        timestamp: new Date().toISOString()
-    };
-    localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-    
-    console.log('✅ 註冊完成，用戶資料已保存');
-    
-    // 設置標記，避免重複重定向
-    sessionStorage.setItem('fromRegistration', 'true');
+    try {
+        // 1. 保存到本地
+        localStorage.setItem('userProfile', JSON.stringify(userData));
+        
+        // 記錄已註冊用戶
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        registeredUsers[userId] = {
+            registered: true,
+            timestamp: new Date().toISOString(),
+            localOnly: true // 標記為僅本地註冊
+        };
+        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+        
+        console.log('✅ 本地註冊完成');
+        
+        // 2. 向後端註冊
+        console.log('🌐 開始後端註冊...');
+        const backendData = {
+            userId: userData.lineUserId,
+            displayName: userData.lineDisplayName,
+            pictureUrl: userData.linePictureUrl,
+            nickname: userData.nickname,
+            county: userData.county,
+            statusMessage: userData.statusMessage || ''
+        };
+        
+        const backendResult = await completeBackendRegistration(backendData);
+        
+        if (backendResult.success) {
+            console.log('✅ 後端註冊成功');
+            // 更新本地標記
+            registeredUsers[userId].backendVerified = true;
+            registeredUsers[userId].localOnly = false;
+            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+        } else {
+            console.log('⚠️ 後端註冊失敗，但本地註冊完成:', backendResult.message);
+        }
+        
+        // 設置標記，避免重複重定向
+        sessionStorage.setItem('fromRegistration', 'true');
+        
+        return backendResult.success;
+        
+    } catch (error) {
+        console.error('❌ 註冊過程出錯:', error);
+        return false;
+    }
 }
 
 // ============================================
@@ -522,9 +576,9 @@ async function getLineProfile() {
         
         console.log('✅ LINE 用戶資料取得成功:', profile.displayName);
         
-        // 檢查註冊狀態
-        const isRegistered = checkUserRegistration(profile.userId);
-        console.log('📊 註冊檢查結果:', isRegistered);
+        // 真正的註冊狀態檢查
+        const isRegistered = await checkUserRegistration(profile.userId);
+        console.log('📊 真實註冊檢查結果:', isRegistered);
         
         if (!isRegistered) {
             console.log('🆕 新用戶需要註冊，重定向到註冊頁面');
@@ -547,11 +601,11 @@ async function getLineProfile() {
 }
 
 // ============================================
-// 📄 頁面初始化功能
+// 📄 頁面初始化功能（修復版）
 // ============================================
 
 async function initializeApp() {
-    console.log('=== 📱 初始化應用程式 ===');
+    console.log('=== 📱 初始化應用程式 (強制後端驗證版) ===');
     
     // 先執行資料修復
     checkAndFixAllData();
@@ -562,26 +616,7 @@ async function initializeApp() {
         if (liffInitialized && liff.isLoggedIn()) {
             console.log('✅ LIFF 用戶已登入，自動取得資料');
             await getLineProfile();
-            
-            // 再次檢查修復（因為可能更新了用戶資料）
-            checkAndFixAllData();
-            
-            // 檢查註冊狀態
-            const user = getCurrentUser();
-            if (user && user.userId) {
-                if (!checkUserRegistration(user.userId)) {
-                    console.log('🆕 用戶需要註冊');
-                    return;
-                }
-            }
-            
-            if (localStorage.getItem('lineUserId')) {
-                const loginScreen = document.getElementById('loginScreen');
-                if (loginScreen) {
-                    loginScreen.classList.add('hidden');
-                }
-                return;
-            }
+            return;
         }
     } catch (error) {
         console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF，繼續其他登入方式');
@@ -607,8 +642,8 @@ async function initializeApp() {
             pictureUrl: linePictureUrl ? decodeURIComponent(linePictureUrl) : ''
         });
         
-        // 檢查註冊狀態
-        const isRegistered = checkUserRegistration(lineUserId);
+        // 真正的註冊狀態檢查
+        const isRegistered = await checkUserRegistration(lineUserId);
         if (!isRegistered) {
             console.log('🆕 新用戶需要註冊');
             redirectToRegistration();
@@ -627,8 +662,8 @@ async function initializeApp() {
                 pictureUrl: storedPictureUrl
             });
             
-            // 檢查註冊狀態
-            const isRegistered = checkUserRegistration(storedUserId);
+            // 真正的註冊狀態檢查
+            const isRegistered = await checkUserRegistration(storedUserId);
             if (!isRegistered) {
                 console.log('🆕 已登入但未註冊，重定向到註冊頁面');
                 redirectToRegistration();
@@ -656,22 +691,26 @@ function checkRegistrationBeforeGame() {
 }
 
 // ============================================
-// 🛠️ 調試工具
+// 🛠️ 調試工具（增強版）
 // ============================================
 
-// 添加調試命令到全局，方便在控制台調試
-window.debugRegistration = function() {
-    console.log('=== 🐛 註冊狀態調試 ===');
+// 真實註冊狀態調試
+window.debugRealRegistration = async function() {
+    console.log('=== 🔍 真實註冊狀態調試 ===');
     const userId = localStorage.getItem('lineUserId');
     console.log('用戶ID:', userId);
-    console.log('lineDisplayName:', localStorage.getItem('lineDisplayName'));
     
-    const userProfileStr = localStorage.getItem('userProfile');
-    console.log('userProfile:', userProfileStr ? JSON.parse(userProfileStr) : '不存在');
+    const userProfile = getUserProfile();
+    console.log('userProfile:', userProfile);
+    console.log('userProfile 完整性:', userProfile ? 
+        (userProfile.nickname && userProfile.county ? '完整' : '不完整') : '不存在');
     
     const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
     console.log('registeredUsers:', registeredUsers);
-    console.log('當前用戶在列表中:', !!registeredUsers[userId]);
+    
+    console.log('🌐 開始後端驗證...');
+    const backendResult = await verifyRegistrationWithBackend(userId);
+    console.log('後端驗證結果:', backendResult);
     console.log('=== 調試結束 ===');
 };
 
@@ -688,6 +727,14 @@ window.clearAllData = function() {
     location.reload();
 };
 
+// 測試 GAS 連接
+window.testGASConnection = async function() {
+    console.log('🌐 測試 GAS 連接...');
+    const result = await callGAS('test');
+    console.log('GAS 測試結果:', result);
+    return result;
+};
+
 // ============================================
 // 🚀 頁面載入初始化
 // ============================================
@@ -695,6 +742,7 @@ window.clearAllData = function() {
 // 在頁面載入時執行初始化
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 頁面載入完成，開始初始化...');
+    console.log('🔧 common.js 版本: 3.0 (完整後端驗證版)');
     initializeApp();
 });
 
