@@ -113,7 +113,7 @@
         }
         .error { background: #ffebee; color: #c62828; }
         .success { background: #e8f5e9; color: #2e7d32; }
-        .info { background: #e3f2fd; color: #1976d32; }
+        .info { background: #e3f2fd; color: #1976d2; }
     </style>
 </head>
 <body>
@@ -180,11 +180,27 @@
         statusDiv.className = `status ${type}`;
     }
 
+    // 檢查是否已註冊
+    function checkExistingRegistration(userId) {
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        if (registeredUsers[userId]) {
+            showStatus('您已經註冊過了！即將進入遊戲...', 'info');
+            registerBtn.disabled = true;
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+            return true;
+        }
+        return false;
+    }
+
     // 頁面載入時檢查用戶資料
     window.addEventListener('DOMContentLoaded', function() {
         const userId = localStorage.getItem('lineUserId');
         const displayName = localStorage.getItem('lineDisplayName');
         const pictureUrl = localStorage.getItem('linePictureUrl');
+
+        console.log('🔍 檢查用戶資料:', { userId, displayName, pictureUrl });
 
         if (!userId || !displayName) {
             showStatus('錯誤：未找到用戶資料，請重新登入', 'error');
@@ -206,21 +222,34 @@
             </div>
         `;
 
-        // 檢查是否已經註冊過
-        checkExistingRegistration(userId);
-    });
+        // 自動填入建議的暱稱
+        document.getElementById('nickname').value = displayName;
 
-    // 檢查是否已註冊
-    function checkExistingRegistration(userId) {
-        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        if (registeredUsers[userId]) {
-            showStatus('您已經註冊過了！即將進入遊戲...', 'info');
-            registerBtn.disabled = true;
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
+        // 檢查是否已經註冊過
+        if (checkExistingRegistration(userId)) {
+            return;
         }
-    }
+
+        // 檢查是否有未完成的註冊資料
+        const userProfileStr = localStorage.getItem('userProfile');
+        if (userProfileStr) {
+            try {
+                const userProfile = JSON.parse(userProfileStr);
+                if (userProfile.lineUserId === userId) {
+                    // 有未完成的註冊資料，自動填入
+                    if (userProfile.nickname) {
+                        document.getElementById('nickname').value = userProfile.nickname;
+                    }
+                    if (userProfile.county) {
+                        document.getElementById('county').value = userProfile.county;
+                    }
+                    showStatus('發現未完成的註冊資料，已自動填入', 'info');
+                }
+            } catch (error) {
+                console.error('解析用戶資料失敗:', error);
+            }
+        }
+    });
 
     // 表單提交處理
     registerForm.addEventListener('submit', async function(e) {
@@ -234,6 +263,14 @@
 
         if (!nickname || !county) {
             showStatus('請填寫所有欄位', 'error');
+            return;
+        }
+
+        if (!userId) {
+            showStatus('錯誤：未找到用戶ID，請重新登入', 'error');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
             return;
         }
 
@@ -263,12 +300,16 @@
             
             // 記錄已註冊用戶
             const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            registeredUsers[userId] = true;
+            registeredUsers[userId] = {
+                registered: true,
+                timestamp: new Date().toISOString()
+            };
             localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
 
             // 設置註冊完成標記
             sessionStorage.setItem('registrationComplete', 'true');
 
+            console.log('✅ 註冊完成，用戶資料:', userData);
             showStatus('註冊成功！即將進入遊戲...', 'success');
             registerBtn.textContent = '✅ 註冊成功';
 
