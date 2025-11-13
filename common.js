@@ -1,488 +1,61 @@
 // ============================================
-// 🎮 歡樂大富翁 - 通用功能庫 (common.js) - Cloudflare Worker 代理版 v5.0
+// 🔐 註冊狀態檢查功能（新增）
 // ============================================
 
-// 全局變量
-let liffInitialized = false;
-let currentUser = null;
-
-// 🎯 使用 Cloudflare Worker 代理（解決 CORS 問題）
-const WORKER_URL = 'https://richman-proxy.tony-lab.workers.dev/'; // 替換為您的 Worker URL
-const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbw0KshVY6WqQJyJkaZFEnP6pOg9e10EorbdBC5vwRURMzNwGgK3-uDbvBU9rJTTu5uxvg/exec';
-
-// ============================================
-// 🌐 後端 API 功能 - Cloudflare Worker 代理版
-// ============================================
-
-async function callGAS(action, data) {
-    const workerUrl = 'https://richman-proxy.tony-lab.workers.dev/';
-    
-    try {
-        log('🔄 呼叫 GAS (通過 Worker)', action, data);
-        
-        const response = await fetch(workerUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                // 移除可能導致 CORS 預檢失敗的自定義頭部
-            },
-            body: JSON.stringify({
-                action: action,
-                ...data
-            }),
-            mode: 'cors',  // 明確指定 CORS 模式
-            credentials: 'omit'  // 不發送憑證
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        log('✅ Worker 響應成功', result);
-        return result;
-
-    } catch (error) {
-        error('❌ Worker 代理失敗', error);
-        throw error;
-    }
-}
-
-// 直接連接 GAS 的降級方案
-async function callGASDirect(functionName, data = {}) {
-    try {
-        console.log(`🔄 直接呼叫 GAS: ${functionName}`);
-        
-        const response = await fetch(FALLBACK_GAS_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: functionName,
-                ...data
-            })
-        });
-        
-        console.log('📡 直接連接回應狀態:', response.status, response.statusText);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('✅ 直接連接成功:', result);
-        return result;
-        
-    } catch (directError) {
-        console.error('❌ 直接連接也失敗:', directError);
-        throw new Error(`所有連接方式都失敗: ${directError.message}`);
-    }
-}
-
-// 真正的後端註冊驗證 - Worker 代理版
-async function verifyRegistrationWithBackend(userId) {
-    console.log('🌐 向後端驗證註冊狀態...');
-    
-    try {
-        const result = await callGAS('checkRegistration', { userId });
-        console.log('📊 後端驗證結果:', result);
-        return result;
-        
-    } catch (error) {
-        console.error('❌ 後端驗證失敗:', error);
-        
-        // 自動降級處理
-        console.log('🔄 使用降級方案...');
-        return {
-            success: true,  // ✅ 注意這裡是 true，讓前端可以繼續
-            registered: false,
-            message: '後端暫時不可用，請先完成本地註冊',
-            details: {
-                userTable: 'unknown',
-                profileTable: 'unknown'
-            }
-        };
-    }
-}
-
-// 完成後端註冊 - Worker 代理版
-async function completeBackendRegistration(userData) {
-    console.log('🌐 向後端完成註冊...');
-    
-    try {
-        const result = await callGAS('completeRegistration', userData);
-        console.log('📊 後端註冊結果:', result);
-        return result;
-        
-    } catch (error) {
-        console.error('❌ 後端註冊失敗:', error);
-        return {
-            success: false,
-            message: '後端註冊失敗，但本地註冊已完成'
-        };
-    }
-}
-
-// ============================================
-// 🎨 用戶界面更新功能（保持不變）
-// ============================================
-
-// 更新用戶界面函數
-function updateUserInterface(userData) {
-    console.log('🔄 更新用戶界面，用戶資料:', userData);
-    
-    try {
-        // 更新用戶頭像和名稱
-        const userAvatar = document.getElementById('userAvatar');
-        const userName = document.getElementById('userName');
-        const userLevel = document.getElementById('userLevel');
-        const userCoins = document.getElementById('userCoins');
-        
-        if (userAvatar) {
-            userAvatar.src = userData.pictureUrl || userData.linePictureUrl || 'https://via.placeholder.com/50x50?text=頭像';
-            userAvatar.onerror = function() {
-                this.src = 'https://via.placeholder.com/50x50?text=頭像';
-            };
-        }
-        
-        if (userName) {
-            userName.textContent = userData.displayName || userData.nickname || userData.lineDisplayName || '玩家';
-        }
-        
-        if (userLevel) {
-            userLevel.textContent = `Lv.${userData.level || 1}`;
-        }
-        
-        if (userCoins) {
-            userCoins.textContent = userData.coins || 0;
-        }
-        
-        // 更新其他界面元素
-        updateGameInterface(userData);
-        
-    } catch (error) {
-        console.error('❌ 更新用戶界面失敗:', error);
-    }
-}
-
-// 更新遊戲界面
-function updateGameInterface(userData) {
-    console.log('🎮 更新遊戲界面');
-    
-    try {
-        // 更新玩家位置標記
-        const playerMarkers = document.querySelectorAll('.player-marker');
-        playerMarkers.forEach(marker => {
-            const playerId = marker.getAttribute('data-player-id');
-            if (playerId === userData.userId || playerId === userData.lineUserId) {
-                const currentPosition = userData.currentPosition || 0;
-                marker.style.transform = `translate(${calculatePosition(currentPosition)})`;
-            }
-        });
-        
-        // 更新擁有的地產
-        updateOwnedProperties(userData.ownedProperties || []);
-        
-        // 更新優惠券數量
-        const couponCount = document.getElementById('couponCount');
-        if (couponCount) {
-            couponCount.textContent = userData.coupons ? userData.coupons.length : 0;
-        }
-        
-    } catch (error) {
-        console.error('❌ 更新遊戲界面失敗:', error);
-    }
-}
-
-// 更新擁有的地產顯示
-function updateOwnedProperties(ownedProperties) {
-    console.log('🏠 更新地產顯示，數量:', ownedProperties.length);
-    
-    try {
-        const propertyElements = document.querySelectorAll('.property');
-        propertyElements.forEach(property => {
-            const propertyId = property.getAttribute('data-property-id');
-            const isOwned = ownedProperties.includes(propertyId);
-            
-            if (isOwned) {
-                property.classList.add('owned');
-                property.classList.remove('available');
-            } else {
-                property.classList.remove('owned');
-                property.classList.add('available');
-            }
-        });
-    } catch (error) {
-        console.error('❌ 更新地產顯示失敗:', error);
-    }
-}
-
-// 計算位置坐標
-function calculatePosition(position) {
-    const positions = [
-        '0px, 0px', '100px, 0px', '200px, 0px', '300px, 0px',
-        '300px, 100px', '300px, 200px', '300px, 300px',
-        '200px, 300px', '100px, 300px', '0px, 300px',
-        '0px, 200px', '0px, 100px'
-    ];
-    return positions[position % positions.length] || '0px, 0px';
-}
-
-// ============================================
-// 👤 用戶資料管理功能（保持不變）
-// ============================================
-
-// 獲取當前用戶資料
-function getCurrentUser() {
-    const userId = localStorage.getItem('lineUserId');
-    const displayName = localStorage.getItem('lineDisplayName');
-    const pictureUrl = localStorage.getItem('linePictureUrl');
-    
-    if (!userId) {
-        return null;
-    }
-    
-    return {
-        userId: userId,
-        displayName: displayName,
-        pictureUrl: pictureUrl
-    };
-}
-
-// 獲取完整的用戶資料
-function getUserProfile() {
-    const userProfileStr = localStorage.getItem('userProfile');
-    if (!userProfileStr) {
-        return null;
-    }
-    
-    try {
-        return JSON.parse(userProfileStr);
-    } catch (error) {
-        console.error('❌ 解析用戶資料失敗:', error);
-        return null;
-    }
-}
-
-// 更新用戶資料
-function updateUserProfile(updates) {
-    try {
-        const currentProfile = getUserProfile();
-        if (!currentProfile) {
-            console.error('❌ 無法更新：用戶資料不存在');
-            return false;
-        }
-        
-        const updatedProfile = {
-            ...currentProfile,
-            ...updates,
-            updatedAt: new Date().toISOString()
-        };
-        
-        localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-        console.log('✅ 用戶資料更新成功');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ 更新用戶資料失敗:', error);
-        return false;
-    }
-}
-
-// ============================================
-// 🔐 真正的註冊狀態檢查功能（保持不變）
-// ============================================
-
-// 驗證用戶資料完整性
-function validateUserProfile(userId) {
-    console.log('🔍 驗證用戶資料完整性...');
-    
-    const userProfileStr = localStorage.getItem('userProfile');
-    if (!userProfileStr) {
-        console.log('❌ userProfile 不存在');
-        return false;
-    }
-    
-    try {
-        const userProfile = JSON.parse(userProfileStr);
-        console.log('📄 userProfile 內容:', userProfile);
-        
-        // 檢查必要欄位
-        const requiredFields = ['lineUserId', 'nickname', 'county'];
-        const missingFields = requiredFields.filter(field => !userProfile[field]);
-        
-        if (missingFields.length > 0) {
-            console.log('❌ 缺少必要欄位:', missingFields);
-            return false;
-        }
-        
-        // 檢查用戶ID匹配
-        if (userProfile.lineUserId !== userId) {
-            console.log('❌ 用戶ID不匹配');
-            return false;
-        }
-        
-        console.log('✅ 用戶資料驗證通過');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ 解析 userProfile 失敗:', error);
-        return false;
-    }
-}
-
-// 真正的註冊檢查 - 修復版
-async function checkUserRegistration(userId) {
+// 檢查用戶是否已註冊
+function checkUserRegistration(userId) {
     if (!userId) {
         console.log('❌ 用戶ID為空');
         return false;
     }
     
-    console.log('🔍 真正檢查用戶註冊狀態，用戶ID:', userId);
+    console.log('🔍 檢查用戶註冊狀態，用戶ID:', userId);
     
-    try {
-        // 1. 先檢查本地 userProfile 是否完整
-        const userProfile = getUserProfile();
-        const localProfileValid = userProfile && 
-                                userProfile.lineUserId === userId && 
-                                userProfile.nickname && 
-                                userProfile.county;
-        
-        console.log('📱 本地 userProfile 檢查:', localProfileValid ? '完整' : '不完整');
-        
-        if (!localProfileValid) {
-            console.log('❌ 本地 userProfile 不完整，需要重新註冊');
-            return false;
-        }
-        
-        // 2. 向後端驗證真正的註冊狀態
-        const backendResult = await verifyRegistrationWithBackend(userId);
-        console.log('📊 後端驗證詳細結果:', backendResult);
-        
-        if (backendResult.success && backendResult.registered) {
-            console.log('✅ 後端確認用戶已完整註冊');
-            
-            // 更新本地註冊列表
-            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            registeredUsers[userId] = {
-                registered: true,
-                verifiedAt: new Date().toISOString(),
-                backendVerified: true,
-                details: backendResult.details
-            };
-            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-            
-            return true;
-        } else {
-            console.log('❌ 後端確認用戶未註冊或註冊不完整');
-            console.log('詳細資訊:', backendResult.details || backendResult.message);
-            
-            // 清除本地錯誤的註冊標記
-            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            delete registeredUsers[userId];
-            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-            
-            return false;
-        }
-        
-    } catch (error) {
-        console.error('❌ 註冊檢查失敗:', error);
-        return false;
-    }
-}
-
-// 修復用戶資料
-function repairUserProfile(userId, registeredUserInfo) {
-    try {
-        console.log('🔧 嘗試修復用戶資料...');
-        
-        const userProfileStr = localStorage.getItem('userProfile');
-        let userProfile = {};
-        
-        if (userProfileStr) {
-            try {
-                userProfile = JSON.parse(userProfileStr);
-            } catch (error) {
-                console.log('❌ 現有 userProfile 損壞，創建新的');
-            }
-        }
-        
-        // 確保基本資料存在
-        userProfile.lineUserId = userId;
-        userProfile.lineDisplayName = localStorage.getItem('lineDisplayName') || '';
-        userProfile.linePictureUrl = localStorage.getItem('linePictureUrl') || '';
-        
-        // 從註冊信息補充資料
-        if (registeredUserInfo.nickname) {
-            userProfile.nickname = registeredUserInfo.nickname;
-        }
-        if (registeredUserInfo.county) {
-            userProfile.county = registeredUserInfo.county;
-        }
-        
-        // 確保必要欄位
-        if (!userProfile.nickname) userProfile.nickname = userProfile.lineDisplayName;
-        if (!userProfile.county) userProfile.county = '未選擇';
-        if (!userProfile.level) userProfile.level = 1;
-        if (!userProfile.coins) userProfile.coins = 1000;
-        if (!userProfile.registrationTime) userProfile.registrationTime = new Date().toISOString();
-        
-        // 保存修復後的資料
-        localStorage.setItem('userProfile', JSON.stringify(userProfile));
-        console.log('✅ 用戶資料修復完成');
-        
-    } catch (error) {
-        console.error('❌ 修復用戶資料失敗:', error);
-    }
-}
-
-// 檢查並修復所有資料問題
-function checkAndFixAllData() {
-    console.log('🔍 全面檢查資料完整性...');
+    // 方法1: 檢查已註冊用戶列表
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    console.log('📋 註冊用戶列表:', registeredUsers);
     
-    const userId = localStorage.getItem('lineUserId');
-    if (!userId) {
-        console.log('❌ 未找到用戶ID');
-        return false;
+    if (registeredUsers[userId]) {
+        console.log('✅ 用戶已在註冊列表中');
+        return true;
     }
     
-    // 檢查基本LINE資料
-    const lineData = {
-        userId: localStorage.getItem('lineUserId'),
-        displayName: localStorage.getItem('lineDisplayName'),
-        pictureUrl: localStorage.getItem('linePictureUrl')
-    };
-    
-    console.log('📱 LINE 基本資料:', lineData);
-    
-    // 檢查 userProfile
+    // 方法2: 檢查用戶資料完整性
     const userProfileStr = localStorage.getItem('userProfile');
-    let userProfile = null;
+    console.log('📄 用戶資料檔案:', userProfileStr);
     
     if (userProfileStr) {
         try {
-            userProfile = JSON.parse(userProfileStr);
-            console.log('📄 userProfile 狀態:', userProfile ? '存在且有效' : '無效');
+            const userProfile = JSON.parse(userProfileStr);
+            console.log('📝 解析後的用戶資料:', userProfile);
+            
+            // 檢查資料完整性
+            const isComplete = userProfile.lineUserId === userId && 
+                              userProfile.nickname && 
+                              userProfile.county;
+            
+            if (isComplete) {
+                console.log('✅ 用戶資料完整，自動添加到註冊列表');
+                // 如果資料完整但不在註冊列表中，自動添加到註冊列表
+                registeredUsers[userId] = {
+                    registered: true,
+                    timestamp: new Date().toISOString()
+                };
+                localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+                return true;
+            } else {
+                console.log('❌ 用戶資料不完整');
+            }
         } catch (error) {
-            console.error('❌ userProfile 解析失敗:', error);
-            userProfile = null;
+            console.error('❌ 解析用戶資料失敗:', error);
         }
     } else {
-        console.log('❌ userProfile 不存在');
+        console.log('❌ 未找到用戶資料檔案');
     }
     
-    // 檢查 registeredUsers
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    console.log('📋 registeredUsers 狀態:', registeredUsers[userId] ? '已註冊' : '未註冊');
-    
-    return true;
+    console.log('❌ 用戶未註冊');
+    return false;
 }
-
-// ============================================
-// 🔄 頁面導航功能（保持不變）
-// ============================================
 
 // 重定向到註冊頁面
 function redirectToRegistration() {
@@ -527,76 +100,30 @@ function enforceRegistration() {
     return true;
 }
 
-// 完成註冊的函數（前端+後端）
-async function completeRegistration(userData) {
+// 完成註冊的函數
+function completeRegistration(userData) {
     const userId = userData.lineUserId;
     
-    try {
-        // 1. 保存到本地
-        localStorage.setItem('userProfile', JSON.stringify(userData));
-        
-        // 記錄已註冊用戶
-        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-        registeredUsers[userId] = {
-            registered: true,
-            timestamp: new Date().toISOString(),
-            localOnly: true // 標記為僅本地註冊
-        };
-        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-        
-        console.log('✅ 本地註冊完成');
-        
-        // 2. 向後端註冊
-        console.log('🌐 開始後端註冊...');
-        const backendData = {
-            userId: userData.lineUserId,
-            displayName: userData.lineDisplayName,
-            pictureUrl: userData.linePictureUrl,
-            nickname: userData.nickname,
-            county: userData.county,
-            statusMessage: userData.statusMessage || ''
-        };
-        
-        const backendResult = await completeBackendRegistration(backendData);
-        
-        if (backendResult.success) {
-            console.log('✅ 後端註冊成功');
-            // 更新本地標記
-            registeredUsers[userId].backendVerified = true;
-            registeredUsers[userId].localOnly = false;
-            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-        } else {
-            console.log('⚠️ 後端註冊失敗，但本地註冊完成:', backendResult.message);
-        }
-        
-        // 設置標記，避免重複重定向
-        sessionStorage.setItem('fromRegistration', 'true');
-        
-        return backendResult.success;
-        
-    } catch (error) {
-        console.error('❌ 註冊過程出錯:', error);
-        return false;
-    }
+    // 儲存完整的用戶資料
+    localStorage.setItem('userProfile', JSON.stringify(userData));
+    
+    // 記錄已註冊用戶
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    registeredUsers[userId] = {
+        registered: true,
+        timestamp: new Date().toISOString()
+    };
+    localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+    
+    console.log('✅ 註冊完成，用戶資料已保存');
+    
+    // 設置標記，避免重複重定向
+    sessionStorage.setItem('fromRegistration', 'true');
 }
 
 // ============================================
-// 📱 LINE 相關功能（保持不變）
+// 📱 修改現有的 LINE 登入功能
 // ============================================
-
-// 初始化 LIFF
-async function initLiff() {
-    try {
-        if (typeof liff !== 'undefined') {
-            await liff.init({ liffId: '2008231249-7DlMkygo' });
-            liffInitialized = true;
-            console.log('✅ LIFF 初始化成功');
-        }
-    } catch (error) {
-        console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF');
-        liffInitialized = false;
-    }
-}
 
 async function getLineProfile() {
     try {
@@ -607,7 +134,6 @@ async function getLineProfile() {
         localStorage.setItem('lineDisplayName', profile.displayName);
         localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
         
-        // 更新界面
         updateUserInterface({
             userId: profile.userId,
             displayName: profile.displayName,
@@ -616,9 +142,9 @@ async function getLineProfile() {
         
         console.log('✅ LINE 用戶資料取得成功:', profile.displayName);
         
-        // 真正的註冊狀態檢查
-        const isRegistered = await checkUserRegistration(profile.userId);
-        console.log('📊 真實註冊檢查結果:', isRegistered);
+        // ✅ 新增：檢查註冊狀態
+        const isRegistered = checkUserRegistration(profile.userId);
+        console.log('📊 註冊檢查結果:', isRegistered);
         
         if (!isRegistered) {
             console.log('🆕 新用戶需要註冊，重定向到註冊頁面');
@@ -641,16 +167,11 @@ async function getLineProfile() {
 }
 
 // ============================================
-// 📄 頁面初始化功能（更新版）
+// 📄 修改頁面初始化函數
 // ============================================
 
 async function initializeApp() {
-    console.log('=== 📱 初始化應用程式 (Cloudflare Worker 代理版 v5.0) ===');
-    console.log('🌐 Worker URL:', WORKER_URL);
-    console.log('🔄 備用 GAS URL:', FALLBACK_GAS_URL);
-    
-    // 先執行資料修復
-    checkAndFixAllData();
+    console.log('=== 📱 初始化應用程式 ===');
     
     try {
         await initLiff();
@@ -658,13 +179,28 @@ async function initializeApp() {
         if (liffInitialized && liff.isLoggedIn()) {
             console.log('✅ LIFF 用戶已登入，自動取得資料');
             await getLineProfile();
-            return;
+            
+            // 檢查註冊狀態
+            const user = getCurrentUser();
+            if (user && user.userId) {
+                if (!checkUserRegistration(user.userId)) {
+                    console.log('🆕 用戶需要註冊');
+                    return;
+                }
+            }
+            
+            if (localStorage.getItem('lineUserId')) {
+                const loginScreen = document.getElementById('loginScreen');
+                if (loginScreen) {
+                    loginScreen.classList.add('hidden');
+                }
+                return;
+            }
         }
     } catch (error) {
         console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF，繼續其他登入方式');
     }
     
-    // 處理 URL 參數方式登入
     const urlParams = new URLSearchParams(window.location.search);
     const lineUserId = urlParams.get('lineUserId');
     const lineDisplayName = urlParams.get('lineDisplayName');
@@ -684,8 +220,8 @@ async function initializeApp() {
             pictureUrl: linePictureUrl ? decodeURIComponent(linePictureUrl) : ''
         });
         
-        // 真正的註冊狀態檢查
-        const isRegistered = await checkUserRegistration(lineUserId);
+        // ✅ 新增：檢查註冊狀態
+        const isRegistered = checkUserRegistration(lineUserId);
         if (!isRegistered) {
             console.log('🆕 新用戶需要註冊');
             redirectToRegistration();
@@ -704,8 +240,8 @@ async function initializeApp() {
                 pictureUrl: storedPictureUrl
             });
             
-            // 真正的註冊狀態檢查
-            const isRegistered = await checkUserRegistration(storedUserId);
+            // ✅ 新增：檢查註冊狀態
+            const isRegistered = checkUserRegistration(storedUserId);
             if (!isRegistered) {
                 console.log('🆕 已登入但未註冊，重定向到註冊頁面');
                 redirectToRegistration();
@@ -718,149 +254,18 @@ async function initializeApp() {
             }
         }
     }
-    
-    console.log('✅ 應用程式初始化完成');
 }
 
 // ============================================
-// 🎮 遊戲功能（保持不變）
+// 🎮 遊戲開始前的註冊檢查（在遊戲主頁面調用）
 // ============================================
 
-// 遊戲開始前的註冊檢查
 function checkRegistrationBeforeGame() {
     console.log('🎮 遊戲開始前檢查註冊狀態');
     return enforceRegistration();
 }
 
-// ============================================
-// 🛠️ 調試工具（增強版）
-// ============================================
-
-// 真實註冊狀態調試
-window.debugRealRegistration = async function() {
-    console.log('=== 🔍 真實註冊狀態調試 ===');
-    const userId = localStorage.getItem('lineUserId');
-    console.log('用戶ID:', userId);
-    
-    const userProfile = getUserProfile();
-    console.log('userProfile:', userProfile);
-    console.log('userProfile 完整性:', userProfile ? 
-        (userProfile.nickname && userProfile.county ? '完整' : '不完整') : '不存在');
-    
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    console.log('registeredUsers:', registeredUsers);
-    
-    console.log('🌐 開始後端驗證...');
-    const backendResult = await verifyRegistrationWithBackend(userId);
-    console.log('後端驗證結果:', backendResult);
-    console.log('=== 調試結束 ===');
-};
-
-// 手動修復命令
-window.fixRegistration = function() {
-    console.log('🔧 手動修復註冊狀態...');
-    const userId = localStorage.getItem('lineUserId');
-    if (!userId) {
-        console.log('❌ 未找到用戶ID');
-        return false;
-    }
-    
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    const userProfile = getUserProfile();
-    
-    if (userProfile) {
-        registeredUsers[userId] = {
-            registered: true,
-            timestamp: new Date().toISOString(),
-            fixed: true
-        };
-        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-        console.log('✅ 手動修復完成');
-        return true;
-    }
-    return false;
-};
-
-// 清除所有資料（開發用）
-window.clearAllData = function() {
-    localStorage.clear();
-    sessionStorage.clear();
-    console.log('✅ 所有資料已清除');
-    location.reload();
-};
-
-// 測試 GAS 連接
-window.testGASConnection = async function() {
-    console.log('🧪 測試 GAS 連接...');
-    try {
-        const result = await callGAS('test');
-        console.log('✅ GAS 測試成功:', result);
-        return result;
-    } catch (error) {
-        console.error('❌ GAS 測試失敗:', error);
-        return { success: false, error: error.message };
-    }
-};
-
-// 手動註冊用戶
-window.manualRegister = async function() {
-    const userData = getUserProfile();
-    if (!userData) {
-        console.log('❌ 沒有用戶資料');
-        return;
-    }
-    console.log('🔄 手動註冊用戶:', userData);
-    const result = await completeRegistration(userData);
-    console.log('手動註冊結果:', result);
-    return result;
-};
-
-// ============================================
-// 🚀 頁面載入初始化
-// ============================================
-
-// 在頁面載入時執行初始化
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 頁面載入完成，開始初始化...');
-    console.log('🔧 common.js 版本: 5.0 (Cloudflare Worker 代理版)');
-    console.log('🌐 Worker URL:', WORKER_URL);
-    console.log('🔄 備用 GAS URL:', FALLBACK_GAS_URL);
-    initializeApp();
-});
-
-// ============================================
-// 📊 工具函數（保持不變）
-// ============================================
-
-// 顯示狀態訊息
-function showStatus(message, type = 'info') {
-    const statusDiv = document.getElementById('status');
-    if (statusDiv) {
-        statusDiv.textContent = message;
-        statusDiv.className = `status ${type}`;
-    }
-    console.log(`📢 ${type}: ${message}`);
-}
-
-// 隨機數生成
-function getRandomInt(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-// 格式化數字（金幣顯示）
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-// 防抖函數
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+// 在遊戲主頁面調用示例：
+// if (!checkRegistrationBeforeGame()) {
+//     return; // 如果未註冊，停止遊戲初始化
+// }
