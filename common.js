@@ -8,7 +8,7 @@ let currentUser = null;
 
 // 🎯 使用 Cloudflare Worker 代理（解決 CORS 問題）
 const WORKER_URL = 'https://richman-proxy.tony-lab.workers.dev/'; // 替換為您的 Worker URL
-const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbyMINAhEoO_HLH5VXKlC7bYIH6oOrTBKLbvxoEK5gU0JrB0lmUbuP9jGqJO86bz3Eg7/exec';
+const FALLBACK_GAS_URL = 'https://script.google.com/macros/s/AKfycbw0KshVY6WqQJyJkaZFEnP6pOg9e10EorbdBC5vwRURMzNwGgK3-uDbvBU9rJTTu5uxvg/exec';
 
 // ============================================
 // 🌐 後端 API 功能 - Cloudflare Worker 代理版
