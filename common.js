@@ -1,11 +1,11 @@
 // ============================================
-// 🎮 歡樂大富翁 - 通用功能庫 (common.js) - 完整後端驗證版
+// 🎮 歡樂大富翁 - 通用功能庫 (common.js) - 完整後端驗證版 v4.0
 // ============================================
 
 // 全局變量
 let liffInitialized = false;
 let currentUser = null;
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbwYxEB7f0dC0qj3J9jK7Z6gK7V5Y6Y6Y6Y6Y6Y6Y6Y6Y6Y6Y6Y6/exec'; // 請替換為您的 GAS 網址
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyQn_0UJ7_lXv7bwV9K8Q7q9X8Z9Y0Z1a2b3c4d5e6f7g8h9i0/exec'; // 請替換為您的實際 GAS 網址
 
 // ============================================
 // 🎨 用戶界面更新功能
@@ -174,7 +174,7 @@ function updateUserProfile(updates) {
 }
 
 // ============================================
-// 🌐 後端 API 功能（新增）
+// 🌐 後端 API 功能
 // ============================================
 
 // 向 GAS 發送請求
@@ -190,6 +190,8 @@ async function callGAS(action, data = {}) {
             }
         });
 
+        console.log(`🌐 呼叫 GAS API: ${action}`, data);
+
         const response = await fetch(GAS_URL, {
             method: 'POST',
             headers: {
@@ -203,6 +205,7 @@ async function callGAS(action, data = {}) {
         }
 
         const result = await response.json();
+        console.log(`📊 GAS API 回應 (${action}):`, result);
         return result;
         
     } catch (error) {
@@ -716,7 +719,27 @@ window.debugRealRegistration = async function() {
 
 // 手動修復命令
 window.fixRegistration = function() {
-    return fixRegistrationStatus();
+    console.log('🔧 手動修復註冊狀態...');
+    const userId = localStorage.getItem('lineUserId');
+    if (!userId) {
+        console.log('❌ 未找到用戶ID');
+        return false;
+    }
+    
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    const userProfile = getUserProfile();
+    
+    if (userProfile) {
+        registeredUsers[userId] = {
+            registered: true,
+            timestamp: new Date().toISOString(),
+            fixed: true
+        };
+        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+        console.log('✅ 手動修復完成');
+        return true;
+    }
+    return false;
 };
 
 // 清除所有資料（開發用）
@@ -735,6 +758,19 @@ window.testGASConnection = async function() {
     return result;
 };
 
+// 手動註冊用戶
+window.manualRegister = async function() {
+    const userData = getUserProfile();
+    if (!userData) {
+        console.log('❌ 沒有用戶資料');
+        return;
+    }
+    console.log('🔄 手動註冊用戶:', userData);
+    const result = await completeRegistration(userData);
+    console.log('手動註冊結果:', result);
+    return result;
+};
+
 // ============================================
 // 🚀 頁面載入初始化
 // ============================================
@@ -742,7 +778,8 @@ window.testGASConnection = async function() {
 // 在頁面載入時執行初始化
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 頁面載入完成，開始初始化...');
-    console.log('🔧 common.js 版本: 3.0 (完整後端驗證版)');
+    console.log('🔧 common.js 版本: 4.0 (完整後端驗證版)');
+    console.log('🌐 GAS URL:', GAS_URL);
     initializeApp();
 });
 
