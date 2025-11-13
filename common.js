@@ -1,8 +1,132 @@
 // ============================================
-// 🔐 註冊狀態檢查功能（新增）
+// 🎨 用戶界面更新功能（新增 - 修復錯誤）
 // ============================================
 
-// 檢查用戶是否已註冊
+// 更新用戶界面函數
+function updateUserInterface(userData) {
+    console.log('🔄 更新用戶界面，用戶資料:', userData);
+    
+    try {
+        // 更新用戶頭像和名稱
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+        const userLevel = document.getElementById('userLevel');
+        const userCoins = document.getElementById('userCoins');
+        
+        if (userAvatar) {
+            userAvatar.src = userData.pictureUrl || userData.linePictureUrl || 'https://via.placeholder.com/50x50?text=頭像';
+            userAvatar.onerror = function() {
+                this.src = 'https://via.placeholder.com/50x50?text=頭像';
+            };
+        }
+        
+        if (userName) {
+            userName.textContent = userData.displayName || userData.nickname || userData.lineDisplayName || '玩家';
+        }
+        
+        if (userLevel) {
+            userLevel.textContent = `Lv.${userData.level || 1}`;
+        }
+        
+        if (userCoins) {
+            userCoins.textContent = userData.coins || 0;
+        }
+        
+        // 更新其他界面元素
+        updateGameInterface(userData);
+        
+    } catch (error) {
+        console.error('❌ 更新用戶界面失敗:', error);
+    }
+}
+
+// 更新遊戲界面
+function updateGameInterface(userData) {
+    console.log('🎮 更新遊戲界面');
+    
+    try {
+        // 更新玩家位置標記
+        const playerMarkers = document.querySelectorAll('.player-marker');
+        playerMarkers.forEach(marker => {
+            const playerId = marker.getAttribute('data-player-id');
+            if (playerId === userData.userId || playerId === userData.lineUserId) {
+                // 更新當前玩家位置
+                const currentPosition = userData.currentPosition || 0;
+                marker.style.transform = `translate(${calculatePosition(currentPosition)})`;
+            }
+        });
+        
+        // 更新擁有的地產
+        updateOwnedProperties(userData.ownedProperties || []);
+        
+        // 更新優惠券數量
+        const couponCount = document.getElementById('couponCount');
+        if (couponCount) {
+            couponCount.textContent = userData.coupons ? userData.coupons.length : 0;
+        }
+        
+    } catch (error) {
+        console.error('❌ 更新遊戲界面失敗:', error);
+    }
+}
+
+// 更新擁有的地產顯示
+function updateOwnedProperties(ownedProperties) {
+    console.log('🏠 更新地產顯示，數量:', ownedProperties.length);
+    
+    try {
+        const propertyElements = document.querySelectorAll('.property');
+        propertyElements.forEach(property => {
+            const propertyId = property.getAttribute('data-property-id');
+            const isOwned = ownedProperties.includes(propertyId);
+            
+            if (isOwned) {
+                property.classList.add('owned');
+                property.classList.remove('available');
+            } else {
+                property.classList.remove('owned');
+                property.classList.add('available');
+            }
+        });
+    } catch (error) {
+        console.error('❌ 更新地產顯示失敗:', error);
+    }
+}
+
+// 計算位置坐標（示例函數）
+function calculatePosition(position) {
+    // 這裡根據您的遊戲板佈局實現具體的位置計算
+    const positions = [
+        '0px, 0px', '100px, 0px', '200px, 0px', '300px, 0px',
+        '300px, 100px', '300px, 200px', '300px, 300px',
+        '200px, 300px', '100px, 300px', '0px, 300px',
+        '0px, 200px', '0px, 100px'
+    ];
+    return positions[position % positions.length] || '0px, 0px';
+}
+
+// ============================================
+// 🔐 註冊狀態檢查功能（修正版）
+// ============================================
+
+// 獲取當前用戶資料
+function getCurrentUser() {
+    const userId = localStorage.getItem('lineUserId');
+    const displayName = localStorage.getItem('lineDisplayName');
+    const pictureUrl = localStorage.getItem('linePictureUrl');
+    
+    if (!userId) {
+        return null;
+    }
+    
+    return {
+        userId: userId,
+        displayName: displayName,
+        pictureUrl: pictureUrl
+    };
+}
+
+// 檢查用戶是否已註冊（修正版）
 function checkUserRegistration(userId) {
     if (!userId) {
         console.log('❌ 用戶ID為空');
@@ -17,47 +141,37 @@ function checkUserRegistration(userId) {
     
     if (registeredUsers[userId]) {
         console.log('✅ 用戶已在註冊列表中');
+        
+        // 同時驗證 userProfile 完整性
+        const isProfileValid = validateUserProfile(userId);
+        if (!isProfileValid) {
+            console.log('⚠️ 在註冊列表中但 userProfile 不完整，嘗試修復...');
+            repairUserProfile(userId, registeredUsers[userId]);
+        }
+        
         return true;
     }
     
     // 方法2: 檢查用戶資料完整性
-    const userProfileStr = localStorage.getItem('userProfile');
-    console.log('📄 用戶資料檔案:', userProfileStr);
-    
-    if (userProfileStr) {
-        try {
-            const userProfile = JSON.parse(userProfileStr);
-            console.log('📝 解析後的用戶資料:', userProfile);
-            
-            // 檢查資料完整性
-            const isComplete = userProfile.lineUserId === userId && 
-                              userProfile.nickname && 
-                              userProfile.county;
-            
-            if (isComplete) {
-                console.log('✅ 用戶資料完整，自動添加到註冊列表');
-                // 如果資料完整但不在註冊列表中，自動添加到註冊列表
-                registeredUsers[userId] = {
-                    registered: true,
-                    timestamp: new Date().toISOString()
-                };
-                localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-                return true;
-            } else {
-                console.log('❌ 用戶資料不完整');
-            }
-        } catch (error) {
-            console.error('❌ 解析用戶資料失敗:', error);
-        }
-    } else {
-        console.log('❌ 未找到用戶資料檔案');
+    const isProfileValid = validateUserProfile(userId);
+    if (isProfileValid) {
+        console.log('✅ 用戶資料完整，自動添加到註冊列表');
+        // 如果資料完整但不在註冊列表中，自動添加到註冊列表
+        registeredUsers[userId] = {
+            registered: true,
+            timestamp: new Date().toISOString(),
+            autoAdded: true
+        };
+        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+        return true;
     }
     
     console.log('❌ 用戶未註冊');
     return false;
 }
+
 // ============================================
-// 📋 用戶資料驗證功能（新增）
+// 📋 用戶資料驗證功能（修正版）
 // ============================================
 
 // 驗證用戶資料完整性
@@ -97,54 +211,6 @@ function validateUserProfile(userId) {
         console.error('❌ 解析 userProfile 失敗:', error);
         return false;
     }
-}
-
-// 檢查註冊狀態（增強版）
-function checkUserRegistration(userId) {
-    if (!userId) {
-        console.log('❌ 用戶ID為空');
-        return false;
-    }
-    
-    console.log('🔍 檢查用戶註冊狀態，用戶ID:', userId);
-    
-    // 方法1: 檢查已註冊用戶列表
-    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-    console.log('📋 註冊用戶列表:', registeredUsers);
-    
-    const isInRegisteredList = !!registeredUsers[userId];
-    console.log('📝 在註冊列表中:', isInRegisteredList);
-    
-    if (isInRegisteredList) {
-        console.log('✅ 用戶已在註冊列表中');
-        
-        // 同時驗證 userProfile 完整性
-        const isProfileValid = validateUserProfile(userId);
-        if (!isProfileValid) {
-            console.log('⚠️ 在註冊列表中但 userProfile 不完整，嘗試修復...');
-            // 嘗試從註冊列表重建 userProfile
-            repairUserProfile(userId, registeredUsers[userId]);
-        }
-        
-        return true;
-    }
-    
-    // 方法2: 檢查用戶資料完整性
-    const isProfileValid = validateUserProfile(userId);
-    if (isProfileValid) {
-        console.log('✅ 用戶資料完整，自動添加到註冊列表');
-        // 如果資料完整但不在註冊列表中，自動添加到註冊列表
-        registeredUsers[userId] = {
-            registered: true,
-            timestamp: new Date().toISOString(),
-            autoAdded: true
-        };
-        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
-        return true;
-    }
-    
-    console.log('❌ 用戶未註冊');
-    return false;
 }
 
 // 修復用戶資料
@@ -207,30 +273,10 @@ function getUserProfile() {
     }
 }
 
-// 更新用戶資料
-function updateUserProfile(updates) {
-    try {
-        const currentProfile = getUserProfile();
-        if (!currentProfile) {
-            console.error('❌ 無法更新：用戶資料不存在');
-            return false;
-        }
-        
-        const updatedProfile = {
-            ...currentProfile,
-            ...updates,
-            updatedAt: new Date().toISOString()
-        };
-        
-        localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-        console.log('✅ 用戶資料更新成功');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ 更新用戶資料失敗:', error);
-        return false;
-    }
-}
+// ============================================
+// 🔄 頁面導航功能（修正版）
+// ============================================
+
 // 重定向到註冊頁面
 function redirectToRegistration() {
     console.log('🔄 重定向到註冊頁面');
@@ -296,8 +342,24 @@ function completeRegistration(userData) {
 }
 
 // ============================================
-// 📱 修改現有的 LINE 登入功能
+// 📱 LINE 相關功能（修正版）
 // ============================================
+
+let liffInitialized = false;
+
+// 初始化 LIFF
+async function initLiff() {
+    try {
+        if (typeof liff !== 'undefined') {
+            await liff.init({ liffId: '2008231249-7DlMkygo' });
+            liffInitialized = true;
+            console.log('✅ LIFF 初始化成功');
+        }
+    } catch (error) {
+        console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF');
+        liffInitialized = false;
+    }
+}
 
 async function getLineProfile() {
     try {
@@ -308,6 +370,7 @@ async function getLineProfile() {
         localStorage.setItem('lineDisplayName', profile.displayName);
         localStorage.setItem('linePictureUrl', profile.pictureUrl || '');
         
+        // 更新界面
         updateUserInterface({
             userId: profile.userId,
             displayName: profile.displayName,
@@ -316,7 +379,7 @@ async function getLineProfile() {
         
         console.log('✅ LINE 用戶資料取得成功:', profile.displayName);
         
-        // ✅ 新增：檢查註冊狀態
+        // 檢查註冊狀態
         const isRegistered = checkUserRegistration(profile.userId);
         console.log('📊 註冊檢查結果:', isRegistered);
         
@@ -341,7 +404,7 @@ async function getLineProfile() {
 }
 
 // ============================================
-// 📄 修改頁面初始化函數
+// 📄 頁面初始化函數（修正版）
 // ============================================
 
 async function initializeApp() {
@@ -375,6 +438,7 @@ async function initializeApp() {
         console.log('ℹ️ LIFF 初始化失敗或未使用 LIFF，繼續其他登入方式');
     }
     
+    // 處理 URL 參數方式登入
     const urlParams = new URLSearchParams(window.location.search);
     const lineUserId = urlParams.get('lineUserId');
     const lineDisplayName = urlParams.get('lineDisplayName');
@@ -394,7 +458,7 @@ async function initializeApp() {
             pictureUrl: linePictureUrl ? decodeURIComponent(linePictureUrl) : ''
         });
         
-        // ✅ 新增：檢查註冊狀態
+        // 檢查註冊狀態
         const isRegistered = checkUserRegistration(lineUserId);
         if (!isRegistered) {
             console.log('🆕 新用戶需要註冊');
@@ -414,7 +478,7 @@ async function initializeApp() {
                 pictureUrl: storedPictureUrl
             });
             
-            // ✅ 新增：檢查註冊狀態
+            // 檢查註冊狀態
             const isRegistered = checkUserRegistration(storedUserId);
             if (!isRegistered) {
                 console.log('🆕 已登入但未註冊，重定向到註冊頁面');
@@ -431,7 +495,7 @@ async function initializeApp() {
 }
 
 // ============================================
-// 🎮 遊戲開始前的註冊檢查（在遊戲主頁面調用）
+// 🎮 遊戲開始前的註冊檢查
 // ============================================
 
 function checkRegistrationBeforeGame() {
