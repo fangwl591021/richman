@@ -236,6 +236,26 @@
         statusDiv.className = `status ${type}`;
     }
     
+    // 檢查用戶是否已註冊
+    function isUserRegistered(userId) {
+        // 檢查已註冊用戶列表
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        if (registeredUsers[userId]) {
+            return true;
+        }
+        
+        // 檢查用戶資料完整性
+        const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+        if (userProfile.lineUserId === userId && userProfile.nickname && userProfile.county) {
+            // 如果資料完整但不在註冊列表中，自動添加到註冊列表
+            registeredUsers[userId] = true;
+            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+            return true;
+        }
+        
+        return false;
+    }
+    
     // 初始化 LIFF
     async function init() {
         try {
@@ -309,8 +329,7 @@
             `;
             
             // 檢查是否已經註冊過
-            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            if (registeredUsers[userData.userId]) {
+            if (isUserRegistered(userData.userId)) {
                 // 已註冊，直接進入遊戲
                 showStatus('您已經註冊過了！即將進入遊戲...', 'info');
                 setTimeout(() => {
@@ -318,7 +337,7 @@
                 }, 1500);
             } else {
                 // 未註冊，顯示註冊表單
-                showStatus('請填寫註冊資料', 'info');
+                showStatus('請填寫註冊資料才能開始遊戲', 'info');
                 registerForm.style.display = 'block';
                 loginBtn.style.display = 'none';
             }
