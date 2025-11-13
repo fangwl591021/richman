@@ -56,7 +56,181 @@ function checkUserRegistration(userId) {
     console.log('❌ 用戶未註冊');
     return false;
 }
+// ============================================
+// 📋 用戶資料驗證功能（新增）
+// ============================================
 
+// 驗證用戶資料完整性
+function validateUserProfile(userId) {
+    console.log('🔍 驗證用戶資料完整性...');
+    
+    // 檢查 userProfile
+    const userProfileStr = localStorage.getItem('userProfile');
+    if (!userProfileStr) {
+        console.log('❌ userProfile 不存在');
+        return false;
+    }
+    
+    try {
+        const userProfile = JSON.parse(userProfileStr);
+        console.log('📄 userProfile 內容:', userProfile);
+        
+        // 檢查必要欄位
+        const requiredFields = ['lineUserId', 'nickname', 'county'];
+        const missingFields = requiredFields.filter(field => !userProfile[field]);
+        
+        if (missingFields.length > 0) {
+            console.log('❌ 缺少必要欄位:', missingFields);
+            return false;
+        }
+        
+        // 檢查用戶ID匹配
+        if (userProfile.lineUserId !== userId) {
+            console.log('❌ 用戶ID不匹配');
+            return false;
+        }
+        
+        console.log('✅ 用戶資料驗證通過');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ 解析 userProfile 失敗:', error);
+        return false;
+    }
+}
+
+// 檢查註冊狀態（增強版）
+function checkUserRegistration(userId) {
+    if (!userId) {
+        console.log('❌ 用戶ID為空');
+        return false;
+    }
+    
+    console.log('🔍 檢查用戶註冊狀態，用戶ID:', userId);
+    
+    // 方法1: 檢查已註冊用戶列表
+    const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+    console.log('📋 註冊用戶列表:', registeredUsers);
+    
+    const isInRegisteredList = !!registeredUsers[userId];
+    console.log('📝 在註冊列表中:', isInRegisteredList);
+    
+    if (isInRegisteredList) {
+        console.log('✅ 用戶已在註冊列表中');
+        
+        // 同時驗證 userProfile 完整性
+        const isProfileValid = validateUserProfile(userId);
+        if (!isProfileValid) {
+            console.log('⚠️ 在註冊列表中但 userProfile 不完整，嘗試修復...');
+            // 嘗試從註冊列表重建 userProfile
+            repairUserProfile(userId, registeredUsers[userId]);
+        }
+        
+        return true;
+    }
+    
+    // 方法2: 檢查用戶資料完整性
+    const isProfileValid = validateUserProfile(userId);
+    if (isProfileValid) {
+        console.log('✅ 用戶資料完整，自動添加到註冊列表');
+        // 如果資料完整但不在註冊列表中，自動添加到註冊列表
+        registeredUsers[userId] = {
+            registered: true,
+            timestamp: new Date().toISOString(),
+            autoAdded: true
+        };
+        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+        return true;
+    }
+    
+    console.log('❌ 用戶未註冊');
+    return false;
+}
+
+// 修復用戶資料
+function repairUserProfile(userId, registeredUserInfo) {
+    try {
+        console.log('🔧 嘗試修復用戶資料...');
+        
+        const userProfileStr = localStorage.getItem('userProfile');
+        let userProfile = {};
+        
+        if (userProfileStr) {
+            try {
+                userProfile = JSON.parse(userProfileStr);
+            } catch (error) {
+                console.log('❌ 現有 userProfile 損壞，創建新的');
+            }
+        }
+        
+        // 確保基本資料存在
+        userProfile.lineUserId = userId;
+        userProfile.lineDisplayName = localStorage.getItem('lineDisplayName') || '';
+        userProfile.linePictureUrl = localStorage.getItem('linePictureUrl') || '';
+        
+        // 從註冊信息補充資料
+        if (registeredUserInfo.nickname) {
+            userProfile.nickname = registeredUserInfo.nickname;
+        }
+        if (registeredUserInfo.county) {
+            userProfile.county = registeredUserInfo.county;
+        }
+        
+        // 確保必要欄位
+        if (!userProfile.nickname) userProfile.nickname = userProfile.lineDisplayName;
+        if (!userProfile.county) userProfile.county = '未選擇';
+        if (!userProfile.level) userProfile.level = 1;
+        if (!userProfile.coins) userProfile.coins = 1000;
+        if (!userProfile.registrationTime) userProfile.registrationTime = new Date().toISOString();
+        
+        // 保存修復後的資料
+        localStorage.setItem('userProfile', JSON.stringify(userProfile));
+        console.log('✅ 用戶資料修復完成');
+        
+    } catch (error) {
+        console.error('❌ 修復用戶資料失敗:', error);
+    }
+}
+
+// 獲取完整的用戶資料
+function getUserProfile() {
+    const userProfileStr = localStorage.getItem('userProfile');
+    if (!userProfileStr) {
+        return null;
+    }
+    
+    try {
+        return JSON.parse(userProfileStr);
+    } catch (error) {
+        console.error('❌ 解析用戶資料失敗:', error);
+        return null;
+    }
+}
+
+// 更新用戶資料
+function updateUserProfile(updates) {
+    try {
+        const currentProfile = getUserProfile();
+        if (!currentProfile) {
+            console.error('❌ 無法更新：用戶資料不存在');
+            return false;
+        }
+        
+        const updatedProfile = {
+            ...currentProfile,
+            ...updates,
+            updatedAt: new Date().toISOString()
+        };
+        
+        localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+        console.log('✅ 用戶資料更新成功');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ 更新用戶資料失敗:', error);
+        return false;
+    }
+}
 // 重定向到註冊頁面
 function redirectToRegistration() {
     console.log('🔄 重定向到註冊頁面');
