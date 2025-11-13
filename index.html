@@ -518,7 +518,7 @@ body{
 
 <!-- 📱 底部功能列 -->
 <div class="bottom-bar">
-  <button id="lineLoginBtn" onclick="lineLogin()">
+  <button id="lineLoginBtn" onclick="logoutAndReLogin()">
     <span class="icon">📱</span>
     <img class="line-avatar" id="lineAvatar" src="" alt="LINE">
     <span id="lineLoginText">LINE</span>
@@ -1118,10 +1118,35 @@ function startLineLogin() {
   showMsg('歡迎，Tonyfang！');
 }
 
-function lineLogin() {
-  // 模擬登入成功
-  document.getElementById('loginScreen').classList.add('hidden');
-  showMsg('歡迎，Tonyfang！');
+// 🎯 修正：登出並重新登入功能
+function logoutAndReLogin() {
+  console.log('🚪 執行登出並重新登入...');
+  
+  // 清除本地儲存的用戶資料
+  localStorage.removeItem('lineUserId');
+  localStorage.removeItem('lineDisplayName');
+  localStorage.removeItem('linePictureUrl');
+  localStorage.removeItem('lineLoginTime');
+  
+  sessionStorage.removeItem('lineUserId');
+  sessionStorage.removeItem('lineDisplayName');
+  sessionStorage.removeItem('linePictureUrl');
+  sessionStorage.removeItem('justLoggedIn');
+  
+  // 顯示登入畫面
+  document.getElementById('loginScreen').classList.remove('hidden');
+  
+  // 重置底部按鈕狀態
+  const lineLoginBtn = document.getElementById('lineLoginBtn');
+  const lineAvatar = document.getElementById('lineAvatar');
+  const lineLoginText = document.getElementById('lineLoginText');
+  
+  lineLoginBtn.classList.remove('has-avatar');
+  lineAvatar.src = '';
+  lineLoginText.textContent = 'LINE';
+  
+  console.log('✅ 已登出，準備重新登入');
+  showMsg('請重新登入');
 }
 </script>
 </body>
