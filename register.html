@@ -251,80 +251,123 @@
         }
     });
 
-    // 表單提交處理
-    registerForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const nickname = document.getElementById('nickname').value.trim();
-        const county = document.getElementById('county').value;
-        const userId = localStorage.getItem('lineUserId');
-        const displayName = localStorage.getItem('lineDisplayName');
-        const pictureUrl = localStorage.getItem('linePictureUrl');
+    // 表單提交處理 - 修復版
+registerForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const nickname = document.getElementById('nickname').value.trim();
+    const county = document.getElementById('county').value;
+    const userId = localStorage.getItem('lineUserId');
+    const displayName = localStorage.getItem('lineDisplayName');
+    const pictureUrl = localStorage.getItem('linePictureUrl');
 
-        if (!nickname || !county) {
-            showStatus('請填寫所有欄位', 'error');
-            return;
-        }
+    if (!nickname || !county) {
+        showStatus('請填寫所有欄位', 'error');
+        return;
+    }
 
-        if (!userId) {
-            showStatus('錯誤：未找到用戶ID，請重新登入', 'error');
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 2000);
-            return;
-        }
+    if (!userId) {
+        showStatus('錯誤：未找到用戶ID，請重新登入', 'error');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 2000);
+        return;
+    }
 
-        try {
-            registerBtn.disabled = true;
-            registerBtn.textContent = '註冊中...';
-            showStatus('註冊資料處理中...', 'info');
+    try {
+        registerBtn.disabled = true;
+        registerBtn.textContent = '註冊中...';
+        showStatus('註冊資料處理中...', 'info');
 
-            // 模擬 API 呼叫延遲
-            await new Promise(resolve => setTimeout(resolve, 1000));
+        // 模擬 API 呼叫延遲
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // 儲存註冊資料
-            const userData = {
-                lineUserId: userId,
-                lineDisplayName: displayName,
-                linePictureUrl: pictureUrl,
-                nickname: nickname,
-                county: county,
-                registrationTime: new Date().toISOString(),
-                level: 1,
-                coins: 1000,
-                coupons: []
-            };
-
-            // 儲存到 localStorage
-            localStorage.setItem('userProfile', JSON.stringify(userData));
+        // ✅ 修復：建立完整的用戶資料結構
+        const userData = {
+            // LINE 基本資料
+            lineUserId: userId,
+            lineDisplayName: displayName,
+            linePictureUrl: pictureUrl || '',
             
-            // 記錄已註冊用戶
-            const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
-            registeredUsers[userId] = {
-                registered: true,
-                timestamp: new Date().toISOString()
-            };
-            localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
+            // 註冊資料
+            nickname: nickname,
+            county: county,
+            
+            // 遊戲資料
+            level: 1,
+            coins: 1000,
+            experience: 0,
+            currentPosition: 0,
+            
+            // 資產與收藏
+            coupons: [],
+            ownedProperties: [],
+            visitedShops: [],
+            
+            // 統計資料
+            totalRolls: 0,
+            totalSteps: 0,
+            gamesPlayed: 0,
+            
+            // 時間戳記
+            registrationTime: new Date().toISOString(),
+            lastLoginTime: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
 
-            // 設置註冊完成標記
-            sessionStorage.setItem('registrationComplete', 'true');
+        console.log('💾 準備保存用戶資料:', userData);
 
-            console.log('✅ 註冊完成，用戶資料:', userData);
-            showStatus('註冊成功！即將進入遊戲...', 'success');
-            registerBtn.textContent = '✅ 註冊成功';
+        // ✅ 修復：雙重保存確保資料完整性
+        // 1. 保存到 userProfile
+        localStorage.setItem('userProfile', JSON.stringify(userData));
+        
+        // 2. 記錄到已註冊用戶列表
+        const registeredUsers = JSON.parse(localStorage.getItem('registeredUsers') || '{}');
+        registeredUsers[userId] = {
+            registered: true,
+            nickname: nickname,
+            county: county,
+            registrationTime: new Date().toISOString(),
+            timestamp: new Date().toISOString()
+        };
+        localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers));
 
-            // 跳轉到遊戲主頁面
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 1500);
+        // 3. 設置註冊完成標記
+        sessionStorage.setItem('registrationComplete', 'true');
+        sessionStorage.setItem('userRegistered', 'true');
 
-        } catch (error) {
-            console.error('註冊失敗:', error);
-            showStatus('註冊失敗，請重試', 'error');
-            registerBtn.disabled = false;
-            registerBtn.textContent = '完成註冊';
+        // ✅ 修復：驗證資料是否保存成功
+        const savedProfile = localStorage.getItem('userProfile');
+        const savedRegisteredUsers = localStorage.getItem('registeredUsers');
+        
+        console.log('✅ 註冊完成，驗證保存結果:');
+        console.log('- userProfile 長度:', savedProfile ? savedProfile.length : 0);
+        console.log('- registeredUsers 長度:', savedRegisteredUsers ? savedRegisteredUsers.length : 0);
+        
+        if (!savedProfile || !savedRegisteredUsers) {
+            throw new Error('資料保存失敗');
         }
-    });
+
+        // ✅ 修復：調用 common.js 中的完成註冊函數
+        if (typeof completeRegistration === 'function') {
+            completeRegistration(userData);
+        }
+
+        showStatus('註冊成功！即將進入遊戲...', 'success');
+        registerBtn.textContent = '✅ 註冊成功';
+
+        // 跳轉到遊戲主頁面
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 1500);
+
+    } catch (error) {
+        console.error('註冊失敗:', error);
+        showStatus('註冊失敗，請重試: ' + error.message, 'error');
+        registerBtn.disabled = false;
+        registerBtn.textContent = '完成註冊';
+    }
+});
     </script>
 </body>
 </html>
