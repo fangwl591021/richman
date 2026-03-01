@@ -3,54 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>店家管理後台｜v4.8 (GitHub 穩定版)</title>
-    <!-- 版本號：v4.8 - 修正 JSON 解析錯誤與 GitHub 部署優化 -->
+    <title>店家管理後台｜v4.9 (GitHub 託管版)</title>
+    <!-- 版本號：v4.9 - 移除 GAS 依賴，優化 GitHub 存取穩定性 -->
     <style>
-        /* [核心樣式] */
+        /* [核心 UI 樣式] */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Microsoft JhengHei', sans-serif; background: #f5f6fa; color: #333; line-height: 1.6; }
-        .header { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 30px 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: 'Microsoft JhengHei', sans-serif; background: #f0f2f5; color: #1a202c; line-height: 1.6; }
+        .header { background: linear-gradient(135deg, #4a90e2, #9b59b6); color: white; padding: 30px 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
         
-        /* 導航標籤 */
-        .tabs { display: flex; gap: 10px; margin-bottom: 25px; background: #fff; padding: 8px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow-x: auto; }
-        .tab-button { padding: 12px 24px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-weight: bold; color: #666; transition: all 0.3s; white-space: nowrap; flex: 1; }
-        .tab-button.active { background: #667eea; color: white; box-shadow: 0 4px 10px rgba(102,126,234,0.3); }
+        .tabs { display: flex; gap: 12px; margin-bottom: 25px; background: #fff; padding: 8px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .tab-button { padding: 12px 20px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-weight: bold; color: #718096; transition: 0.3s; flex: 1; }
+        .tab-button.active { background: #4a90e2; color: white; box-shadow: 0 4px 12px rgba(74,144,226,0.3); }
         
-        .tab-content { display: none; animation: fadeIn 0.3s ease; }
-        .tab-content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* 表格與卡片 */
-        .card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .table-container { overflow-x: auto; margin-top: 15px; border-radius: 10px; border: 1px solid #eee; }
+        .card { background: white; border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .table-container { overflow-x: auto; margin-top: 15px; border-radius: 10px; border: 1px solid #edf2f7; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 16px; text-align: left; border-bottom: 1px solid #f8f8f8; }
-        th { background: #fbfbfb; color: #888; font-size: 13px; }
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid #edf2f7; }
+        th { background: #f8fafc; color: #4a5568; font-size: 13px; font-weight: 800; }
         
-        /* 狀態與按鈕 */
-        .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: all 0.2s; }
-        .btn-success { background: #22c55e; color: white; }
-        .btn-danger { background: #ff4d4d; color: white; }
-        .badge { background: #ff4d4d; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px; }
+        .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn-danger { background: #f56565; color: white; }
         
-        /* 錯誤顯示與日誌 */
-        .error-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 18px; border-radius: 12px; margin-bottom: 20px; font-size: 14px; display: none; }
-        #debugLog { white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 11px; background: #1a202c; color: #cbd5e0; padding: 15px; border-radius: 10px; margin-top: 15px; border-left: 4px solid #ff4d4d; }
-        
-        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.7); z-index: 2000; align-items: center; justify-content: center; font-weight: bold; }
+        /* 狀態訊息 */
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 2000; align-items: center; justify-content: center; font-weight: 800; color: #4a90e2; }
+        .error-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: none; }
+        #debugLog { white-space: pre-wrap; word-break: break-all; max-height: 250px; overflow-y: auto; font-family: monospace; font-size: 11px; background: #2d3748; color: #cbd5e0; padding: 15px; border-radius: 10px; margin-top: 15px; display: none; }
+        .badge { background: #f56565; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px; }
     </style>
 </head>
 <body>
-    <div id="loadingOverlay" class="loading-overlay">⚙️ 正在處理請求...</div>
+    <div id="loadingOverlay" class="loading-overlay">⚙️ 正在讀取雲端資料庫...</div>
 
     <div class="header">
         <h1>🏪 店家管理後台</h1>
-        <p>版本：v4.8 | GitHub Pages 託管版</p>
+        <p>版本：v4.9 | 雲端 API 模式</p>
     </div>
 
     <div class="container">
-        <!-- 錯誤訊息區 -->
         <div id="errorDisplay" class="error-box"></div>
 
         <div class="tabs">
@@ -59,46 +50,43 @@
             <button class="tab-button" onclick="switchTab('shops', this)">🏪 店家管理</button>
         </div>
 
-        <!-- 總覽 -->
         <div id="overview" class="tab-content active">
             <div class="card">
-                <h3>📡 通訊狀態</h3>
-                <div style="margin: 15px 0;">
-                    <p id="connStatus" style="font-weight:bold; color: #667eea;">正在初始化...</p>
-                    <p style="font-size: 12px; color: #888; margin-top: 5px;">API 終端: https://richman.fangwl591021.workers.dev/</p>
+                <h3>📡 API 連線資訊</h3>
+                <p style="margin: 10px 0; color: #4a5568;">透過 Cloudflare Worker 安全代理連接 Google Sheets。</p>
+                <div style="background: #f7fafc; padding: 12px; border-radius: 8px; font-size: 12px; font-family: monospace; margin-bottom: 15px;">
+                    ENDPOINT: https://richman.fangwl591021.workers.dev/
                 </div>
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn" style="background:#667eea; color:white" onclick="loadShops()">🔄 重新整理</button>
-                    <button class="btn" style="background:#f0f0f0; color:#666" onclick="toggleDebug()">🐞 查看回應日誌</button>
+                    <button class="btn" style="background:#4a90e2; color:white" onclick="loadShops()">🔄 重新整理</button>
+                    <button class="btn" style="background:#e2e8f0; color:#4a5568" onclick="toggleDebug()">🐞 調試日誌</button>
                 </div>
-                <div id="debugLog" style="display:none">尚未有連線記錄</div>
+                <div id="debugLog">尚未有連線記錄</div>
             </div>
         </div>
 
-        <!-- 核准 -->
         <div id="approvals" class="tab-content">
             <div class="card">
-                <h3>待審核進駐申請</h3>
+                <h3>待審核店家申請</h3>
                 <div class="table-container">
                     <table>
                         <thead><tr><th>名稱</th><th>分類</th><th>優惠內容</th><th>操作</th></tr></thead>
                         <tbody id="approvalsTableBody">
-                            <tr><td colspan="4" style="text-align:center; padding:30px; color:#999">載入中...</td></tr>
+                            <tr><td colspan="4" style="text-align:center; padding:30px; color:#a0aec0">載入中...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-        <!-- 管理 -->
         <div id="shops" class="tab-content">
             <div class="card">
-                <h3>已上架清單</h3>
+                <h3>正式上架清單</h3>
                 <div class="table-container">
                     <table>
                         <thead><tr><th>圖標</th><th>名稱</th><th>優惠</th><th>狀態</th><th>操作</th></tr></thead>
                         <tbody id="shopsTableBody">
-                            <tr><td colspan="5" style="text-align:center; padding:30px; color:#999">載入中...</td></tr>
+                            <tr><td colspan="5" style="text-align:center; padding:30px; color:#a0aec0">載入中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -107,33 +95,28 @@
     </div>
 
     <script>
-        const CONFIG = { API_URL: 'https://richman.fangwl591021.workers.dev/'.trim() };
+        const CONFIG = { API_URL: 'https://richman.fangwl591021.workers.dev/' };
         let shops = [];
 
         function logDebug(msg, isRaw = false) {
             const log = document.getElementById('debugLog');
             const timestamp = new Date().toLocaleTimeString();
             if (log.innerText === '尚未有連線記錄') log.innerText = '';
-            const content = isRaw ? `\n--- [RAW RESPONSE] ---\n${msg}\n` : `\n[${timestamp}] ${msg}`;
-            log.innerText += content;
+            log.innerText += isRaw ? `\n[RAW]\n${msg}\n` : `\n[${timestamp}] ${msg}`;
             log.scrollTop = log.scrollHeight;
         }
 
         function toggleDebug() {
-            const log = document.getElementById('debugLog');
-            log.style.display = (log.style.display === 'none') ? 'block' : 'none';
+            const el = document.getElementById('debugLog');
+            el.style.display = (el.style.display === 'none') ? 'block' : 'none';
         }
 
-        function showError(title, detail) {
+        function showError(msg) {
             const el = document.getElementById('errorDisplay');
-            el.innerHTML = `<strong>⚠️ ${title}</strong><br><small>${detail}</small>`;
+            el.innerHTML = `<strong>⚠️ 通訊失敗</strong><br>${msg}`;
             el.style.display = 'block';
-            logDebug(`ERROR: ${title} - ${detail}`);
         }
 
-        /**
-         * 🚀 核心通訊機制 v4.8
-         */
         async function runAction(action, params = {}, method = 'GET') {
             document.getElementById('loadingOverlay').style.display = 'flex';
             document.getElementById('errorDisplay').style.display = 'none';
@@ -143,87 +126,82 @@
             for (const key in params) { urlParams.append(key, params[key]); }
 
             let fetchUrl = CONFIG.API_URL;
-            const fetchOptions = { method, mode: 'cors', cache: 'no-cache' };
+            const options = { method, mode: 'cors', cache: 'no-cache' };
 
             if (method === 'GET') {
-                fetchUrl += (fetchUrl.includes('?') ? '&' : '?') + urlParams.toString();
+                fetchUrl += '?' + urlParams.toString();
             } else {
-                fetchOptions.body = urlParams;
-                fetchOptions.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+                options.body = urlParams;
+                options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
             }
 
             try {
-                logDebug(`發送請求: ${action}`);
-                const response = await fetch(fetchUrl, fetchOptions);
-                const responseText = await response.text();
+                logDebug(`Sending: ${action}`);
+                const response = await fetch(fetchUrl, options);
+                const text = await response.text();
 
-                // 🎯 重要：檢查是否回傳了 HTML (代表 GAS 噴錯或需要登入)
-                if (responseText.trim().startsWith('<!doctype') || responseText.includes('<html')) {
-                    logDebug(responseText, true);
-                    throw new Error("後端回傳了 HTML 報錯頁面。請檢查 GAS 部署權限是否為「任何人」。");
+                if (text.includes('<html') || text.includes('<!doctype')) {
+                    logDebug(text, true);
+                    throw new Error("後端回傳了 HTML。這通常是 GAS 報錯或權限設定錯誤（請設為「任何人」）。");
                 }
 
-                const data = JSON.parse(responseText);
+                const data = JSON.parse(text);
                 document.getElementById('loadingOverlay').style.display = 'none';
                 return data;
             } catch (e) {
                 document.getElementById('loadingOverlay').style.display = 'none';
-                showError("通訊失敗", e.message);
-                return { success: false, message: e.message };
+                showError(e.message);
+                return { success: false };
             }
         }
 
-        window.onload = function() {
-            document.getElementById('connStatus').innerText = "🌐 已連線至代理伺服器，準備載入資料...";
-            loadShops();
-        };
+        window.onload = loadShops;
 
         async function loadShops() {
             const res = await runAction('getAllShops');
             if (res && res.success) {
                 shops = res.data || [];
                 renderUI();
-                logDebug(`成功載入 ${shops.length} 筆店家`);
+                logDebug(`Loaded ${shops.length} shops`);
             }
         }
 
         function renderUI() {
-            // 渲染正式店家
+            // 正式店家
             const active = shops.filter(s => s.status !== '待核准');
             document.getElementById('shopsTableBody').innerHTML = active.length ? active.map(s => `
                 <tr>
                     <td style="font-size:24px">${s.icon || '🏪'}</td>
                     <td><strong>${s.name}</strong></td>
-                    <td>${s.discount || '無'}</td>
-                    <td><span style="font-size:12px; padding:3px 8px; background:#edf2f7; border-radius:10px">${s.status}</span></td>
-                    <td><button class="btn btn-danger" style="padding:4px 8px" onclick="deleteShop('${s.id}')">刪除</button></td>
+                    <td>${s.discount}</td>
+                    <td><span style="font-size:12px; background:#edf2f7; padding:4px 8px; border-radius:8px">${s.status}</span></td>
+                    <td><button class="btn btn-danger" style="padding:5px 10px" onclick="deleteShop('${s.id}')">🗑️</button></td>
                 </tr>
-            `).join('') : '<tr><td colspan="5" style="text-align:center; padding:20px; color:#999">目前沒有上架店家</td></tr>';
+            `).join('') : '<tr><td colspan="5" style="text-align:center; padding:20px">尚無上架店家</td></tr>';
 
-            // 渲染審核案件
+            // 審核
             const pending = shops.filter(s => s.status === '待核准');
             document.getElementById('pendingBadge').style.display = pending.length ? 'inline' : 'none';
             document.getElementById('pendingBadge').innerText = pending.length;
-            
             document.getElementById('approvalsTableBody').innerHTML = pending.length ? pending.map(s => `
                 <tr>
                     <td><strong>${s.name}</strong></td>
                     <td>${s.category}</td>
-                    <td style="color:#e63946; font-weight:bold">${s.discount}</td>
-                    <td><button class="btn btn-success" onclick="approveShop('${s.id}')">✅ 核准上架</button></td>
+                    <td style="color:#e53e3e; font-weight:bold">${s.discount}</td>
+                    <td><button class="btn btn-success" onclick="approveShop('${s.id}')">✅ 核准</button></td>
                 </tr>
-            `).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px; color:#999">無待處理申請</td></tr>';
+            `).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px">無待處理申請</td></tr>';
         }
 
         async function approveShop(id) {
             const res = await runAction('updateShopStatus', { shopId: id, status: '啟用' }, 'POST');
-            if (res && res.success) loadShops();
+            if (res.success) loadShops();
         }
 
         async function deleteShop(id) {
-            if (!confirm("確定要刪除或拒絕此店家嗎？")) return;
+            if (!confirm("確定刪除？")) return;
             const res = await runAction('deleteShop', { shopId: id }, 'POST');
-            if (res && res.success) loadShops();
+            if (res.success) loadShops();
         }
 
         function switchTab(name, btn) {
