@@ -3,90 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>店家管理後台｜v4.9 (GitHub 託管版)</title>
-    <!-- 版本號：v4.9 - 移除 GAS 依賴，優化 GitHub 存取穩定性 -->
+    <title>店家管理後台｜v5.3 (GitHub 專用)</title>
+    <!-- 版本號：v5.3 - 增強型資料檢查器與空白容錯 -->
     <style>
-        /* [核心 UI 樣式] */
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Microsoft JhengHei', sans-serif; background: #f0f2f5; color: #1a202c; line-height: 1.6; }
-        .header { background: linear-gradient(135deg, #4a90e2, #9b59b6); color: white; padding: 30px 20px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: 'Microsoft JhengHei', sans-serif; background: #f0f4f8; color: #334e68; }
+        .header { background: linear-gradient(135deg, #102a43, #334e68); color: white; padding: 30px 20px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
-        
-        .tabs { display: flex; gap: 12px; margin-bottom: 25px; background: #fff; padding: 8px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .tab-button { padding: 12px 20px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-weight: bold; color: #718096; transition: 0.3s; flex: 1; }
-        .tab-button.active { background: #4a90e2; color: white; box-shadow: 0 4px 12px rgba(74,144,226,0.3); }
-        
-        .card { background: white; border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        .table-container { overflow-x: auto; margin-top: 15px; border-radius: 10px; border: 1px solid #edf2f7; }
+        .tabs { display: flex; gap: 12px; margin-bottom: 20px; background: #fff; padding: 10px; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .tab-button { padding: 12px 20px; border: none; background: transparent; border-radius: 10px; cursor: pointer; font-weight: bold; color: #627d98; flex: 1; transition: 0.2s; }
+        .tab-button.active { background: #102a43; color: white; }
+        .card { background: white; border-radius: 16px; padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .table-container { overflow-x: auto; border: 1px solid #d9e2ec; border-radius: 10px; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 16px; text-align: left; border-bottom: 1px solid #edf2f7; }
-        th { background: #f8fafc; color: #4a5568; font-size: 13px; font-weight: 800; }
-        
+        th, td { padding: 16px; text-align: left; border-bottom: 1px solid #f0f4f8; }
+        th { background: #f9fafb; font-size: 13px; color: #486581; }
         .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
-        .btn-success { background: #48bb78; color: white; }
-        .btn-danger { background: #f56565; color: white; }
-        
-        /* 狀態訊息 */
-        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 2000; align-items: center; justify-content: center; font-weight: 800; color: #4a90e2; }
-        .error-box { background: #fff5f5; border: 1px solid #feb2b2; color: #c53030; padding: 20px; border-radius: 12px; margin-bottom: 20px; display: none; }
-        #debugLog { white-space: pre-wrap; word-break: break-all; max-height: 250px; overflow-y: auto; font-family: monospace; font-size: 11px; background: #2d3748; color: #cbd5e0; padding: 15px; border-radius: 10px; margin-top: 15px; display: none; }
-        .badge { background: #f56565; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px; }
+        .btn-primary { background: #102a43; color: white; }
+        .btn-success { background: #27ab83; color: white; }
+        .btn-danger { background: #e12d39; color: white; }
+        .badge { background: #e12d39; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: 5px; }
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.85); z-index: 2000; align-items: center; justify-content: center; font-weight: bold; color: #102a43; }
+        #debugArea { background: #102a43; color: #bcccdc; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 12px; margin-top: 20px; max-height: 250px; overflow-y: auto; display: none; }
     </style>
 </head>
 <body>
-    <div id="loadingOverlay" class="loading-overlay">⚙️ 正在讀取雲端資料庫...</div>
+    <div id="loadingOverlay" class="loading-overlay">⏳ 正在同步試算表數據...</div>
 
     <div class="header">
         <h1>🏪 店家管理後台</h1>
-        <p>版本：v4.9 | 雲端 API 模式</p>
+        <p>Richman Monopoly System v5.3</p>
     </div>
 
     <div class="container">
-        <div id="errorDisplay" class="error-box"></div>
-
         <div class="tabs">
-            <button class="tab-button active" onclick="switchTab('overview', this)">📊 系統狀態</button>
-            <button class="tab-button" onclick="switchTab('approvals', this)">📝 審核申請 <span id="pendingBadge" class="badge" style="display:none">0</span></button>
-            <button class="tab-button" onclick="switchTab('shops', this)">🏪 店家管理</button>
+            <button class="tab-button active" onclick="switchTab('overview', this)">📊 系統診斷</button>
+            <button class="tab-button" onclick="switchTab('approvals', this)">📝 待審核 <span id="pendingBadge" class="badge" style="display:none">0</span></button>
+            <button class="tab-button" onclick="switchTab('shops', this)">🏪 已上架</button>
         </div>
 
+        <!-- 診斷分頁 -->
         <div id="overview" class="tab-content active">
             <div class="card">
-                <h3>📡 API 連線資訊</h3>
-                <p style="margin: 10px 0; color: #4a5568;">透過 Cloudflare Worker 安全代理連接 Google Sheets。</p>
-                <div style="background: #f7fafc; padding: 12px; border-radius: 8px; font-size: 12px; font-family: monospace; margin-bottom: 15px;">
-                    ENDPOINT: https://richman.fangwl591021.workers.dev/
+                <h3>連線測試</h3>
+                <p style="margin: 15px 0;">連線狀態：<span id="connStatus" style="color:#27ab83; font-weight:bold">檢查中...</span></p>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-primary" onclick="loadShops()">🔄 重新載入數據</button>
+                    <button class="btn" style="background:#d9e2ec; color:#102a43" onclick="toggleDebug()">🐞 查看原始數據</button>
                 </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn" style="background:#4a90e2; color:white" onclick="loadShops()">🔄 重新整理</button>
-                    <button class="btn" style="background:#e2e8f0; color:#4a5568" onclick="toggleDebug()">🐞 調試日誌</button>
-                </div>
-                <div id="debugLog">尚未有連線記錄</div>
             </div>
+            <div id="debugArea">正在讀取...</div>
         </div>
 
+        <!-- 核准分頁 -->
         <div id="approvals" class="tab-content">
             <div class="card">
-                <h3>待審核店家申請</h3>
+                <h3>進駐申請審核</h3>
                 <div class="table-container">
                     <table>
                         <thead><tr><th>名稱</th><th>分類</th><th>優惠內容</th><th>操作</th></tr></thead>
                         <tbody id="approvalsTableBody">
-                            <tr><td colspan="4" style="text-align:center; padding:30px; color:#a0aec0">載入中...</td></tr>
+                            <tr><td colspan="4" style="text-align:center; padding:30px; color:#bcccdc">資料加載中...</td></tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
+        <!-- 管理分頁 -->
         <div id="shops" class="tab-content">
             <div class="card">
-                <h3>正式上架清單</h3>
+                <h3>已上架店家名單</h3>
                 <div class="table-container">
                     <table>
-                        <thead><tr><th>圖標</th><th>名稱</th><th>優惠</th><th>狀態</th><th>操作</th></tr></thead>
+                        <thead><tr><th>圖標</th><th>名稱</th><th>內容</th><th>狀態</th><th>操作</th></tr></thead>
                         <tbody id="shopsTableBody">
-                            <tr><td colspan="5" style="text-align:center; padding:30px; color:#a0aec0">載入中...</td></tr>
+                            <tr><td colspan="5" style="text-align:center; padding:30px; color:#bcccdc">資料加載中...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -95,112 +87,91 @@
     </div>
 
     <script>
-        const CONFIG = { API_URL: 'https://richman.fangwl591021.workers.dev/' };
-        let shops = [];
+        const API_URL = 'https://richman.fangwl591021.workers.dev/';
+        let allShops = [];
 
-        function logDebug(msg, isRaw = false) {
-            const log = document.getElementById('debugLog');
-            const timestamp = new Date().toLocaleTimeString();
-            if (log.innerText === '尚未有連線記錄') log.innerText = '';
-            log.innerText += isRaw ? `\n[RAW]\n${msg}\n` : `\n[${timestamp}] ${msg}`;
-            log.scrollTop = log.scrollHeight;
-        }
-
-        function toggleDebug() {
-            const el = document.getElementById('debugLog');
-            el.style.display = (el.style.display === 'none') ? 'block' : 'none';
-        }
-
-        function showError(msg) {
-            const el = document.getElementById('errorDisplay');
-            el.innerHTML = `<strong>⚠️ 通訊失敗</strong><br>${msg}`;
-            el.style.display = 'block';
-        }
-
-        async function runAction(action, params = {}, method = 'GET') {
+        async function callApi(action, params = {}, method = 'GET') {
             document.getElementById('loadingOverlay').style.display = 'flex';
-            document.getElementById('errorDisplay').style.display = 'none';
+            const query = new URLSearchParams({ action, ...params });
+            const url = method === 'GET' ? `${API_URL}?${query}` : API_URL;
             
-            const urlParams = new URLSearchParams();
-            urlParams.append('action', action);
-            for (const key in params) { urlParams.append(key, params[key]); }
-
-            let fetchUrl = CONFIG.API_URL;
-            const options = { method, mode: 'cors', cache: 'no-cache' };
-
-            if (method === 'GET') {
-                fetchUrl += '?' + urlParams.toString();
-            } else {
-                options.body = urlParams;
-                options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
-            }
+            const options = { 
+                method, 
+                mode: 'cors',
+                headers: method === 'POST' ? { 'Content-Type': 'application/x-www-form-urlencoded' } : {}
+            };
+            if (method === 'POST') options.body = query;
 
             try {
-                logDebug(`Sending: ${action}`);
-                const response = await fetch(fetchUrl, options);
-                const text = await response.text();
-
-                if (text.includes('<html') || text.includes('<!doctype')) {
-                    logDebug(text, true);
-                    throw new Error("後端回傳了 HTML。這通常是 GAS 報錯或權限設定錯誤（請設為「任何人」）。");
-                }
-
-                const data = JSON.parse(text);
+                const res = await fetch(url, options).then(r => r.json());
                 document.getElementById('loadingOverlay').style.display = 'none';
-                return data;
+                return res;
             } catch (e) {
                 document.getElementById('loadingOverlay').style.display = 'none';
-                showError(e.message);
-                return { success: false };
+                console.error(e);
+                return { success: false, message: "連線失敗: " + e.message };
             }
         }
 
         window.onload = loadShops;
 
         async function loadShops() {
-            const res = await runAction('getAllShops');
+            const res = await callApi('getShops');
+            const debug = document.getElementById('debugArea');
+            
             if (res && res.success) {
-                shops = res.data || [];
+                allShops = res.data || [];
+                document.getElementById('connStatus').innerText = "✅ 正常連結";
+                debug.innerText = "成功取得 " + allShops.length + " 筆。首筆結構測試：\n" + JSON.stringify(allShops[0], null, 2);
                 renderUI();
-                logDebug(`Loaded ${shops.length} shops`);
+            } else {
+                document.getElementById('connStatus').innerText = "❌ 失敗: " + (res ? res.message : "未知原因");
+                debug.innerText = "ERR_PAYLOAD: " + JSON.stringify(res, null, 2);
+                debug.style.display = 'block';
             }
         }
 
         function renderUI() {
-            // 正式店家
-            const active = shops.filter(s => s.status !== '待核准');
+            // 容錯機制：同時支援英文 key (v5.2+) 與中文 key (舊版)
+            const getVal = (obj, engKey, chiKey) => obj[engKey] || obj[chiKey] || "";
+
+            // 1. 已上架
+            const active = allShops.filter(s => getVal(s, 'status', '狀態') !== '待核准');
             document.getElementById('shopsTableBody').innerHTML = active.length ? active.map(s => `
                 <tr>
-                    <td style="font-size:24px">${s.icon || '🏪'}</td>
-                    <td><strong>${s.name}</strong></td>
-                    <td>${s.discount}</td>
-                    <td><span style="font-size:12px; background:#edf2f7; padding:4px 8px; border-radius:8px">${s.status}</span></td>
-                    <td><button class="btn btn-danger" style="padding:5px 10px" onclick="deleteShop('${s.id}')">🗑️</button></td>
+                    <td style="font-size:24px">${getVal(s, 'icon', '圖示') || '🏪'}</td>
+                    <td><strong>${getVal(s, 'name', '店家名稱')}</strong></td>
+                    <td>${getVal(s, 'discount', '優惠內容')}</td>
+                    <td><span style="font-size:12px; background:#f0f4f8; padding:4px 8px; border-radius:6px">${getVal(s, 'status', '狀態')}</span></td>
+                    <td><button class="btn btn-danger" onclick="deleteShop('${getVal(s, 'id', 'ID')}')">🗑️ 刪除</button></td>
                 </tr>
-            `).join('') : '<tr><td colspan="5" style="text-align:center; padding:20px">尚無上架店家</td></tr>';
+            `).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px">目前無上架店家</td></tr>';
 
-            // 審核
-            const pending = shops.filter(s => s.status === '待核准');
-            document.getElementById('pendingBadge').style.display = pending.length ? 'inline' : 'none';
-            document.getElementById('pendingBadge').innerText = pending.length;
+            // 2. 審核中
+            const pending = allShops.filter(s => getVal(s, 'status', '狀態') === '待核准');
+            const badge = document.getElementById('pendingBadge');
+            if (pending.length > 0) { badge.style.display = 'inline'; badge.innerText = pending.length; }
+            else { badge.style.display = 'none'; }
+
             document.getElementById('approvalsTableBody').innerHTML = pending.length ? pending.map(s => `
                 <tr>
-                    <td><strong>${s.name}</strong></td>
-                    <td>${s.category}</td>
-                    <td style="color:#e53e3e; font-weight:bold">${s.discount}</td>
-                    <td><button class="btn btn-success" onclick="approveShop('${s.id}')">✅ 核准</button></td>
+                    <td><strong>${getVal(s, 'name', '店家名稱')}</strong></td>
+                    <td>${getVal(s, 'category', '分類')}</td>
+                    <td style="color:#e12d39; font-weight:bold">${getVal(s, 'discount', '優惠內容')}</td>
+                    <td><button class="btn btn-success" onclick="approveShop('${getVal(s, 'id', 'ID')}')">✅ 核准</button></td>
                 </tr>
-            `).join('') : '<tr><td colspan="4" style="text-align:center; padding:20px">無待處理申請</td></tr>';
+            `).join('') : '<tr><td colspan="4" style="text-align:center; padding:30px">無待審核案件</td></tr>';
         }
 
         async function approveShop(id) {
-            const res = await runAction('updateShopStatus', { shopId: id, status: '啟用' }, 'POST');
-            if (res.success) loadShops();
+            const res = await callApi('updateShopStatus', { shopId: id, status: '啟用' }, 'POST');
+            if (res.success) { alert("核准成功！"); loadShops(); }
+            else alert("錯誤: " + res.message);
         }
 
         async function deleteShop(id) {
-            if (!confirm("確定刪除？")) return;
-            const res = await runAction('deleteShop', { shopId: id }, 'POST');
+            if (!confirm("確定刪除嗎？")) return;
+            const res = await callApi('deleteShop', { shopId: id }, 'POST');
             if (res.success) loadShops();
         }
 
@@ -209,6 +180,11 @@
             btn.classList.add('active');
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.getElementById(name).classList.add('active');
+        }
+
+        function toggleDebug() {
+            const el = document.getElementById('debugArea');
+            el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
         }
     </script>
 </body>
