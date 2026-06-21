@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
 <title>歡樂大富翁</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="common.js?v=2.0"></script>
+<script src="config.js?v=1.0"></script>
+<script src="common.js?v=2.1"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
@@ -1111,12 +1112,6 @@ function hideMsg() {
   msg.style.opacity = 0;
 }
 
-// 簡化登入功能
-function startLineLogin() {
-  // 模擬登入成功
-  document.getElementById('loginScreen').classList.add('hidden');
-  showMsg('歡迎，Tonyfang！');
-}
 
 // 🎯 修正：登出並重新登入功能
 function logoutAndReLogin() {

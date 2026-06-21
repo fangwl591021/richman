@@ -1,0 +1,102 @@
+# Google Sheets 到 Cloudflare D1 遷移計畫
+
+## 目標
+
+把 `richman` 的正式資料來源從 Google Sheets / Apps Script 形態，逐步遷移到 Cloudflare D1。前端 action 名稱保持相容，降低一次性改版風險。
+
+## 已新增檔案
+
+- `wrangler.jsonc`：Worker + D1 binding 設定草案。
+- `migrations/0001_init.sql`：D1 schema。
+- `src/worker.js`：相容現有前端 action 的 D1-backed Worker。
+
+## D1 資料表
+
+| table | 用途 |
+| --- | --- |
+| `users` | LINE LIFF 使用者與補充資料 |
+| `shops` | 店家資料、分類、審核狀態、優惠內容 |
+| `coupons` | 使用者收藏、核銷、放棄的優惠券 |
+| `cell_configs` | 大富翁格子設定，未來可取代 Google Sheets gviz 讀取 |
+| `operation_logs` | 店家審核、刪除、優惠券操作等營運紀錄 |
+
+## 相容 action
+
+Worker 保留現有前端用到的 action：
+
+- `getShops`
+- `addShop`
+- `updateShopStatus`
+- `deleteShop`
+- `saveUserProfile`
+- `checkProfileComplete`
+- `updateUserProfile`
+- `saveCoupon`
+- `getUserCoupons`
+- `verifyCoupon`
+- `abandonCoupon`
+
+## 建議遷移順序
+
+1. 建立 D1 database。
+2. 把 `wrangler.jsonc` 的 `database_id` 換成真實 D1 ID。
+3. 套用 migration。
+4. 從 Google Sheet 匯出 CSV。
+5. 清洗欄位並匯入 `shops`、`cell_configs`，必要時匯入既有 `users` / `coupons`。
+6. 先用 staging Worker 驗證 action 回應格式。
+7. 將 `config.js` 的 `API_BASE` 指向新的 Worker URL。
+8. 驗證首頁、優惠券頁、店家申請、後台。
+9. 停止 Google Sheets 寫入，只保留備份匯出。
+
+## Wrangler 指令範例
+
+```powershell
+npx.cmd wrangler d1 create richman-db
+npx.cmd wrangler d1 migrations apply richman-db --local
+npx.cmd wrangler d1 migrations apply richman-db --remote
+npx.cmd wrangler deploy --dry-run
+```
+
+正式部署前請確認 `wrangler.jsonc` 的 `database_id` 已替換，不要使用 `REPLACE_WITH_D1_DATABASE_ID`。
+
+## 從 Google Sheet 匯入資料
+
+目前 repo 尚未包含 Sheet 匯出檔。建議先匯出：
+
+- 店家資料 -> `data/shops.csv`
+- 格子設定 -> `data/cell_configs.csv`
+- 既有優惠券或會員資料，如有 -> 分別匯出 CSV
+
+匯入前需要做欄位對應：
+
+| Sheet 欄位 | D1 欄位 |
+| --- | --- |
+| 店家名稱 / name | `shops.name` |
+| 分類 / 店家分類 / category | `shops.category` |
+| 圖示 / icon | `shops.icon` |
+| 優惠內容 / discount | `shops.discount` |
+| 地址 / mapUrl | `shops.address` |
+| 加LINE連繫 / 加LINE 建模 / lineUrl | `shops.line_contact` |
+| 圖片網址 / imageUrl | `shops.image_url` |
+| 狀態 / status | `shops.status` |
+
+## 注意事項
+
+- `coupons.status` 只允許 `available`、`used`、`abandoned`。
+- `shops.status` 只允許 `待核准`、`啟用`、`停用`、`已刪除`。
+- 前端仍有 fallback 常數；正式切換時優先修改 `config.js`。
+- 現有 Worker URL `https://richman.fangwl591021.workers.dev/` 是否已由別處管理尚未確認，部署前需避免覆蓋錯誤 Worker。
+- 後台目前仍無 admin token 驗證，若 D1 成為正式資料庫，下一階段應補管理權限。
+## 遠端 D1 建立紀錄
+
+建立時間：2026-06-21
+
+- database name：`richman-db`
+- database id：`4e1edba6-f1b4-4057-b620-2457945b9a9d`
+- region：APAC
+- `wrangler.jsonc` 已填入 database id
+- `npx.cmd wrangler d1 migrations apply richman-db --remote` 已成功套用 `0001_init.sql`
+- `npx.cmd wrangler deploy --dry-run` 已通過，binding 為 `env.DB (richman-db)`
+- 遠端表格已確認存在：`users`、`shops`、`coupons`、`cell_configs`、`operation_logs`
+
+注意：尚未正式 `wrangler deploy`。部署前需確認目前 `richman.fangwl591021.workers.dev` 是否就是要被這份 Worker 接管的 production Worker。

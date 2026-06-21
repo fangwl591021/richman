@@ -86,9 +86,27 @@
         </div>
     </div>
 
+    <script src="config.js?v=1.0"></script>
     <script>
-        const API_URL = 'https://richman.fangwl591021.workers.dev/';
+        const RICHMAN_CONFIG = window.RICHMAN_CONFIG || {};
+        const API_URL = RICHMAN_CONFIG.API_BASE || 'https://richman.fangwl591021.workers.dev/';
         let allShops = [];
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"]/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;'
+            }[char]));
+        }
+
+        function escapeInlineJsString(value) {
+            return escapeHtml(String(value ?? '')
+                .replace(/\\/g, '\\\\')
+                .replace(/'/g, '\\x27')
+                .replace(/[\r\n]+/g, ' '));
+        }
 
         async function callApi(action, params = {}, method = 'GET') {
             document.getElementById('loadingOverlay').style.display = 'flex';
@@ -134,16 +152,18 @@
         function renderUI() {
             // 容錯機制：同時支援英文 key (v5.2+) 與中文 key (舊版)
             const getVal = (obj, engKey, chiKey) => obj[engKey] || obj[chiKey] || "";
+            const renderVal = (obj, engKey, chiKey) => escapeHtml(getVal(obj, engKey, chiKey));
+            const renderActionArg = (obj, engKey, chiKey) => escapeInlineJsString(getVal(obj, engKey, chiKey));
 
             // 1. 已上架
             const active = allShops.filter(s => getVal(s, 'status', '狀態') !== '待核准');
             document.getElementById('shopsTableBody').innerHTML = active.length ? active.map(s => `
                 <tr>
-                    <td style="font-size:24px">${getVal(s, 'icon', '圖示') || '🏪'}</td>
-                    <td><strong>${getVal(s, 'name', '店家名稱')}</strong></td>
-                    <td>${getVal(s, 'discount', '優惠內容')}</td>
-                    <td><span style="font-size:12px; background:#f0f4f8; padding:4px 8px; border-radius:6px">${getVal(s, 'status', '狀態')}</span></td>
-                    <td><button class="btn btn-danger" onclick="deleteShop('${getVal(s, 'id', 'ID')}')">🗑️ 刪除</button></td>
+                    <td style="font-size:24px">${renderVal(s, 'icon', '圖示') || '🏪'}</td>
+                    <td><strong>${renderVal(s, 'name', '店家名稱')}</strong></td>
+                    <td>${renderVal(s, 'discount', '優惠內容')}</td>
+                    <td><span style="font-size:12px; background:#f0f4f8; padding:4px 8px; border-radius:6px">${renderVal(s, 'status', '狀態')}</span></td>
+                    <td><button class="btn btn-danger" onclick="deleteShop('${renderActionArg(s, 'id', 'ID')}')">🗑️ 刪除</button></td>
                 </tr>
             `).join('') : '<tr><td colspan="5" style="text-align:center; padding:30px">目前無上架店家</td></tr>';
 
@@ -155,10 +175,10 @@
 
             document.getElementById('approvalsTableBody').innerHTML = pending.length ? pending.map(s => `
                 <tr>
-                    <td><strong>${getVal(s, 'name', '店家名稱')}</strong></td>
-                    <td>${getVal(s, 'category', '分類')}</td>
-                    <td style="color:#e12d39; font-weight:bold">${getVal(s, 'discount', '優惠內容')}</td>
-                    <td><button class="btn btn-success" onclick="approveShop('${getVal(s, 'id', 'ID')}')">✅ 核准</button></td>
+                    <td><strong>${renderVal(s, 'name', '店家名稱')}</strong></td>
+                    <td>${renderVal(s, 'category', '分類')}</td>
+                    <td style="color:#e12d39; font-weight:bold">${renderVal(s, 'discount', '優惠內容')}</td>
+                    <td><button class="btn btn-success" onclick="approveShop('${renderActionArg(s, 'id', 'ID')}')">✅ 核准</button></td>
                 </tr>
             `).join('') : '<tr><td colspan="4" style="text-align:center; padding:30px">無待審核案件</td></tr>';
         }
@@ -173,6 +193,7 @@
             if (!confirm("確定刪除嗎？")) return;
             const res = await callApi('deleteShop', { shopId: id }, 'POST');
             if (res.success) loadShops();
+            else alert("刪除失敗: " + (res.message || "未知錯誤"));
         }
 
         function switchTab(name, btn) {

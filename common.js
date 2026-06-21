@@ -1,5 +1,7 @@
 // common.js - 共用功能庫
-const GAS_BASE = 'https://richman.fangwl591021.workers.dev/';
+const RICHMAN_CONFIG = window.RICHMAN_CONFIG || {};
+const GAS_BASE = RICHMAN_CONFIG.API_BASE || 'https://richman.fangwl591021.workers.dev/';
+const LIFF_ID = RICHMAN_CONFIG.LIFF_ID || '2008231249-7DlMkygo';
 let userId = "TEMP_USER";
 let liffInitialized = false;
 
@@ -96,7 +98,7 @@ async function initLiff() {
         }
         
         await liff.init({ 
-            liffId: '2008231249-7DlMkygo'
+            liffId: LIFF_ID
         });
         liffInitialized = true;
         console.log('✅ LIFF 初始化成功');
@@ -234,7 +236,7 @@ async function loadShops() {
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-    
+
     const result = await response.json();
     console.log('🛍️ 店家資料API回應:', result);
     
@@ -422,7 +424,7 @@ async function saveCoupon(shopData) {
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
-    
+
     const result = await response.json();
     console.log('💾 收藏優惠券回應:', result);
     
@@ -440,8 +442,8 @@ async function verifyCoupon(couponId) {
     
     const user = getCurrentUser();
     if (!user || !user.userId) {
-      console.log('⚠️ 未登入用戶，使用前端模擬核銷');
-      return simulateVerifyCoupon(couponId);
+      console.warn('⚠️ 未登入用戶，拒絕核銷');
+      return false;
     }
     
     const action = 'verifyCoupon';
@@ -452,7 +454,7 @@ async function verifyCoupon(couponId) {
     formData.append('userId', user.userId);
     formData.append('couponId', couponId);
     
-    const response = await fetch('https://richman.fangwl591021.workers.dev/', {
+    const response = await fetch(GAS_BASE, {
       method: 'POST',
       body: formData
     });
@@ -488,8 +490,7 @@ async function verifyCoupon(couponId) {
     
   } catch (error) {
     console.error('❌ 核銷錯誤:', error);
-    simulateVerifyCoupon(couponId);
-    return true;
+    return false;
   }
 }
 
@@ -658,7 +659,8 @@ async function abandonCoupon(couponId) {
   try {
     const user = getCurrentUser();
     if (!user || !user.userId) {
-      throw new Error('用戶未登入');
+      console.warn('⚠️ 未登入用戶，拒絕放棄優惠券');
+      return false;
     }
     
     const formData = new FormData();
@@ -666,11 +668,15 @@ async function abandonCoupon(couponId) {
     formData.append('userId', user.userId);
     formData.append('couponId', couponId);
     
-    const response = await fetch('https://richman.fangwl591021.workers.dev/', {
+    const response = await fetch(GAS_BASE, {
       method: 'POST',
       body: formData
     });
     
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
     const result = await response.json();
     console.log('放棄回應:', result);
     
@@ -701,12 +707,6 @@ async function abandonCoupon(couponId) {
     
   } catch (error) {
     console.error('❌ 放棄錯誤:', error);
-    let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
-    usedCoupons[couponId] = {
-      used: 'abandoned',
-      abandonedAt: new Date().toISOString()
-    };
-    localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
-    return true;
+    return false;
   }
 }

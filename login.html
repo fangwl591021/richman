@@ -258,11 +258,13 @@
 
     <!-- LINE LIFF SDK -->
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <script src="config.js?v=1.0"></script>
     
     <script>
     // ⚠️ 設定
-    const LIFF_ID = '2008231249-7DlMkygo';
-    const BACKEND_URL = 'https://richman.fangwl591021.workers.dev/';
+    const RICHMAN_CONFIG = window.RICHMAN_CONFIG || {};
+    const LIFF_ID = RICHMAN_CONFIG.LIFF_ID || '2008231249-7DlMkygo';
+    const BACKEND_URL = RICHMAN_CONFIG.API_BASE || 'https://richman.fangwl591021.workers.dev/';
     
     const loginBtn = document.getElementById('loginBtn');
     const statusDiv = document.getElementById('status');

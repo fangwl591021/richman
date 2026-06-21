@@ -208,8 +208,10 @@
         <button class="btn-submit" onclick="location.reload()" style="background: #f0f0f0; color: #555; box-shadow: none;">再填一份</button>
     </div>
 
+    <script src="config.js?v=1.0"></script>
     <script>
-        const API_URL = 'https://richman.fangwl591021.workers.dev/';
+        const RICHMAN_CONFIG = window.RICHMAN_CONFIG || {};
+        const API_URL = RICHMAN_CONFIG.API_BASE || 'https://richman.fangwl591021.workers.dev/';
 
         // 初始化 Emoji 清單
         const emojis = ['☕','🍔','🍕','🍜','🍣','🍰','🛍️','🎁','🏠','🏢','🏥','🏦','⚽','👕','👗','💊','🧋','🧁','🥐','🎨','💄','💈','📖'];
@@ -269,7 +271,16 @@
                     body: formData
                 });
 
-                const res = await response.json();
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                let res;
+                try {
+                    res = await response.json();
+                } catch (parseError) {
+                    throw new Error('後端回應格式錯誤，無法解析 JSON');
+                }
 
                 if (res.success) {
                     document.getElementById('formArea').style.display = 'none';
@@ -281,7 +292,7 @@
                 }
             } catch (err) {
                 console.error(err);
-                alert('網路連線失敗，請檢查您的網路或確認 Worker 是否正確執行。');
+                alert('提交失敗：' + (err.message || '網路連線失敗，請檢查您的網路或確認 Worker 是否正確執行。'));
                 btn.disabled = false;
                 btn.innerText = '重新送出申請';
             }

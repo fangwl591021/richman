@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, maximum-scale=1.0, user-scalable=no">
 <title>我的優惠券 - 歡樂大富翁</title>
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="common.js"></script>
+<script src="config.js?v=1.0"></script>
+<script src="common.js?v=2.1"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{
@@ -297,7 +298,7 @@ body{
     <span>優惠券</span>
   </button>
   
-  <button onclick="window.location.href='shop.html'">
+  <button onclick="window.location.href='https://aiwe.cc/index.php/linecard_12/1460/?share=1'">
     <span class="icon">🗺️</span>
     <span>店家地圖</span>
   </button>
@@ -330,10 +331,30 @@ function getCurrentUser() {
 }
 
 // 格式化優惠內容 - 句號換行
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"]/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;'
+  }[char]));
+}
+
+function escapeInlineJsString(value) {
+  return escapeHtml(String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, '\\x27')
+    .replace(/[\r\n]+/g, ' '));
+}
+
+function safeImageUrl(value) {
+  const url = String(value || '').trim();
+  return /^https?:\/\//i.test(url) ? escapeHtml(url) : 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png';
+}
+
 function formatCouponDescription(text) {
-  if (!text) return "暫無優惠說明";
-  // 將句號 "。" 轉換為換行
-  return text.replace(/。/g, '。<br>');
+  if (!text) return '暫無優惠說明';
+  return escapeHtml(text).replace(/。/g, '。<br>');
 }
 
 // 合併本地狀態到優惠券資料
@@ -448,8 +469,9 @@ async function loadCouponList() {
 // 在 coupon.html 中修改 createCouponHTML 函數
 function createCouponHTML(coupon) {
   const shopName = coupon["店家名稱"] || coupon.shopName || coupon.name || '店家名稱';
+  const shopNameText = escapeHtml(shopName);
   const discountText = formatCouponDescription(coupon["優惠內容"] || coupon.discount || coupon.description || '優惠內容');
-  const imageUrl = coupon["圖片網址"] || coupon.imageUrl || coupon.icon || 'https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png';
+  const imageUrl = safeImageUrl(coupon["圖片網址"] || coupon.imageUrl || coupon.icon);
   
   const lineContact = coupon["加LINE連繫"] || coupon["F"] || coupon.lineContact || coupon.lineUrl || '';
   const address = coupon["地址"] || coupon["G"] || coupon.address || coupon.mapUrl || '';
@@ -485,13 +507,18 @@ function createCouponHTML(coupon) {
   }
   
   const couponId = coupon.couponId || coupon.id || `temp_${Date.now()}`;
+  const couponIdArg = escapeInlineJsString(couponId);
+  const couponIdAttr = escapeHtml(couponId);
+  const lineContactArg = escapeHtml(encodeURIComponent(lineContact));
+  const addressArg = escapeHtml(encodeURIComponent(address));
+  const shopNameArg = escapeHtml(encodeURIComponent(shopName));
   
   return `
-  <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}" data-coupon-id="${couponId}">
+  <div class="coupon-card ${isUsed || isAbandoned ? 'inactive' : ''}" data-coupon-id="${couponIdAttr}">
     <img src="${imageUrl}" 
          onerror="this.src='https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png'">
     <div class="coupon-card-info">
-      <h3>${shopName}</h3>
+      <h3>${shopNameText}</h3>
       <div class="discount">${discountText}</div>
       <div class="date">
         ${coupon.obtainedDate ? new Date(coupon.obtainedDate).toLocaleDateString('zh-TW') : '今天'}
@@ -500,21 +527,21 @@ function createCouponHTML(coupon) {
       
       <div class="coupon-actions">
         ${!isUsed && !isAbandoned ? `
-        <button class="verify-btn" onclick="handleVerifyCoupon('${couponId}')">
+        <button class="verify-btn" onclick="handleVerifyCoupon('${couponIdArg}')">
           <span>✓</span>核銷
         </button>
-        <button class="abandon-btn" onclick="handleAbandonCoupon('${couponId}')">
+        <button class="abandon-btn" onclick="handleAbandonCoupon('${couponIdArg}')">
           <span>🗑️</span>放棄
         </button>
         ` : ''}
         
         <!-- 加LINE按鈕 -->
-        <button class="line-btn" onclick="handleLineContact('${couponId}', '${encodeURIComponent(lineContact)}', '${encodeURIComponent(shopName)}')" ${!lineContact ? 'disabled' : ''}>
+        <button class="line-btn" onclick="handleLineContact('${couponIdArg}', '${lineContactArg}', '${shopNameArg}')" ${!lineContact ? 'disabled' : ''}>
           <span>💚</span>加LINE
         </button>
         
         <!-- 地圖按鈕 -->
-        <button class="map-btn" onclick="handleOpenMap('${couponId}', '${encodeURIComponent(address)}', '${encodeURIComponent(shopName)}')" ${!address ? 'disabled' : ''}>
+        <button class="map-btn" onclick="handleOpenMap('${couponIdArg}', '${addressArg}', '${shopNameArg}')" ${!address ? 'disabled' : ''}>
           <span>🗺️</span>地圖
         </button>
       </div>
@@ -633,7 +660,10 @@ function handleOpenMap(couponId, encodedMapUrl, encodedShopName) {
 // 輔助函數：根據 couponId 找到對應的優惠券卡片
 function findCouponCardById(couponId) {
   // 方法1: 通過 data attribute 查找
-  const cardByDataAttr = document.querySelector(`[data-coupon-id="${couponId}"]`);
+  const safeCouponId = window.CSS && CSS.escape
+    ? CSS.escape(couponId)
+    : String(couponId).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
+  const cardByDataAttr = document.querySelector(`[data-coupon-id="${safeCouponId}"]`);
   if (cardByDataAttr) return cardByDataAttr;
   
   // 方法2: 通過按鈕的 onclick 內容查找
@@ -768,7 +798,7 @@ async function abandonCoupon(couponId) {
     formData.append('userId', user.userId);
     formData.append('couponId', couponId);
     
-    const response = await fetch('https://richman.fangwl591021.workers.dev/', {
+    const response = await fetch((window.RICHMAN_CONFIG && window.RICHMAN_CONFIG.API_BASE) || 'https://richman.fangwl591021.workers.dev/', {
       method: 'POST',
       body: formData
     });
@@ -794,68 +824,69 @@ async function abandonCoupon(couponId) {
     
   } catch (error) {
     console.error('❌ 放棄錯誤:', error);
-    // 後端錯誤時，在前端模擬放棄
-    let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
-    usedCoupons[couponId] = {
-      used: 'abandoned',
-      abandonedAt: new Date().toISOString()
-    };
-    localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
-    return true;
+    return false;
   }
 }
 
-// 如果 common.js 中沒有這些函數，提供模擬版本
+const DEV_MODE = new URLSearchParams(window.location.search).get('dev') === '1' || localStorage.getItem('richmanDevMode') === '1';
+
 if (typeof verifyCoupon === 'undefined') {
   window.verifyCoupon = async function(couponId) {
-    console.log('模擬核銷優惠券:', couponId);
-    
-    // 模擬 API 呼叫延遲
+    if (!DEV_MODE) {
+      console.error('common.js 未載入 verifyCoupon，正式模式拒絕模擬核銷:', couponId);
+      return false;
+    }
+
+    console.warn('DEV_MODE 模擬核銷優惠券:', couponId);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // 模擬成功核銷
+
     let usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
     usedCoupons[couponId] = {
       used: true,
-      verifiedAt: new Date().toISOString()
+      verifiedAt: new Date().toISOString(),
+      devMode: true
     };
     localStorage.setItem('usedCoupons', JSON.stringify(usedCoupons));
-    
+
     return true;
   };
 }
 
-// 在 coupon.html 的模擬資料中更新
 if (typeof loadCoupons === 'undefined') {
   window.loadCoupons = async function() {
+    if (!DEV_MODE) {
+      console.error('common.js 未載入 loadCoupons，正式模式不顯示模擬優惠券');
+      return [];
+    }
+
+    console.warn('DEV_MODE 載入模擬優惠券資料');
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     const usedCoupons = JSON.parse(localStorage.getItem('usedCoupons') || '{}');
-    
+
     return [
       {
-        couponId: 'COUPON_1',
-        "店家名稱": "咖啡廳",
-        "優惠內容": "買一送一。美式咖啡。限時優惠",
+        couponId: 'DEV_COUPON_1',
+        "店家名稱": "開發測試咖啡廳",
+        "優惠內容": "買一送一。美式咖啡。限開發模式使用",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_1_cafe.png",
-        "加LINE連繫": "https://line.me/ti/p/~coffee_shop", // 正確的 LINE 連結
-        "地址": "https://goo.gl/maps/example1", // 正確的地圖連結
+        "加LINE連繫": "https://line.me/ti/p/~coffee_shop",
+        "地址": "https://goo.gl/maps/example1",
         obtainedDate: new Date().toISOString(),
-        used: usedCoupons['COUPON_1'] ? usedCoupons['COUPON_1'].used : false
+        used: usedCoupons['DEV_COUPON_1'] ? usedCoupons['DEV_COUPON_1'].used : false
       },
       {
-        couponId: 'COUPON_2',
-        "店家名稱": "餐廳",
-        "優惠內容": "9折優惠。全品項。限平日使用",
+        couponId: 'DEV_COUPON_2',
+        "店家名稱": "開發測試餐廳",
+        "優惠內容": "9折優惠。全品項。限開發模式使用",
         "圖片網址": "https://developers-resource.landpress.line.me/fx/img/01_2_restaurant.png",
-        "加LINE連繫": "@restaurant_official", // LINE 官方帳號
-        "地址": "台北市信義區松壽路20號", // 文字地址，會自動轉成 Google Maps 搜尋
+        "加LINE連繫": "@restaurant_official",
+        "地址": "台北市信義區松壽路20號",
         obtainedDate: new Date(Date.now() - 86400000).toISOString(),
-        used: usedCoupons['COUPON_2'] ? usedCoupons['COUPON_2'].used : 'abandoned'
+        used: usedCoupons['DEV_COUPON_2'] ? usedCoupons['DEV_COUPON_2'].used : 'abandoned'
       }
     ];
   };
-}
-</script>
+}</script>
 </body>
 </html>
