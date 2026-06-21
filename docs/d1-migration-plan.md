@@ -175,9 +175,9 @@ CSV 匯入欄位：
 
 `shopId` 必須先存在於 `shops`；商品分類的 `shopId` 可以留空，代表全域分類。
 
-## Action 註冊戶名冊匯入
+## 外部 lineweb 名片匯入（保留相容，不作主要來源）
 
-來源：`https://www.lineweb.tw/querycard`
+來源：`https://www.lineweb.tw/querycard`。此來源不是目前 LINE- 後台顯示的 13 筆店家，只保留作相容紀錄。
 
 Worker action：
 
@@ -198,3 +198,30 @@ Worker action：
 | 分享 URI 的 `RR` 或穩定 hash | `id` |
 
 預設匯入關鍵字：新北市、台北市、桃園市、新竹縣、新竹市、苗栗縣、南投縣、彰化縣、雲林縣、嘉義縣、嘉義市、台南市、高雄市、宜蘭縣、台東縣。
+## LINE- Action 註冊戶匯入
+
+來源：`https://fangwl591021.github.io/LINE-/admin.html` 後台的 `allCardsData`，也就是 LINE- 商機引擎後台「名片/店家」清單。
+
+由於 `line-engine.fangwl591021.workers.dev` 的 `getCardContacts` 需要 LINE access token，Richman Worker 不直接跨系統抓取。操作方式：
+
+1. 在 LINE- 後台登入並確認名片/店家清單已載入。
+2. 開啟瀏覽器 Console。
+3. 執行 `copy(JSON.stringify(allCardsData))`。
+4. 回到 `data_admin.html` 的「LINE- Action 註冊戶」區塊貼上 JSON。
+5. 先預覽，再匯入 D1。
+
+Worker action：
+
+- `previewLineActionCards`：將貼上的 LINE- 名片 JSON 轉成 `shops` 格式。
+- `importLineActionCards`：將轉換後資料 upsert 到 `shops`。
+
+欄位對應：
+
+| LINE- card | D1 shops |
+| --- | --- |
+| `公司名稱`，空白時用 `姓名` | `name` |
+| `歸屬網` / `networkId` | `category`, `address` |
+| `服務項目` / `自訂名片設定.desc` | `discount` |
+| `自訂名片設定.imgUrl` / `名片圖檔` | `image_url` |
+| 第一個自訂按鈕 URL / `LINE ID` / 電話 | `line_contact` |
+| `rowId` 或穩定 hash | `id` |

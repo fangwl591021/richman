@@ -148,6 +148,82 @@ async function fetchActionTenants(keyword, storeId = ACTION_MEMBERLIST_STORE_ID)
   }
   return (payload.ResultData || []).map((row) => extractActionTenant(row, keyword)).filter(Boolean);
 }
+function parseJsonField(input, key) {
+  const raw = getField(input, key);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    throw new Error(`${key} JSON 格式錯誤: ${error.message}`);
+  }
+}
+
+function safeJsonObject(value) {
+  if (!value) return {};
+  if (typeof value === 'object') return value;
+  try { return JSON.parse(String(value)); } catch (_) { return {}; }
+}
+
+function normalizeLineActionCard(card) {
+  const cfg = safeJsonObject(card['自訂名片設定'] || card.customCardConfig || card.cardConfig);
+  const rowId = String(card.rowId || card.id || card['名片ID'] || card['會員ID'] || '').trim();
+  const name = String(card['公司名稱'] || card.company || card.companyName || card['姓名'] || card.name || '').trim();
+  if (!name) return null;
+  const person = String(card['姓名'] || card.name || '').trim();
+  const title = String(card['職稱'] || card.title || '').trim();
+  const desc = String(cfg.desc || card['服務項目'] || card.description || card['備註'] || '').trim();
+  const phone = String(card['手機號碼'] || card.phone || card.mobile || card['公司電話'] || '').trim();
+  const lineId = String(card['LINE ID'] || card.lineId || card.userId || '').trim();
+  const firstButton = Array.isArray(cfg.buttons) ? cfg.buttons.find((button) => button && button.u) : null;
+  const lineContact = firstButton?.u || (lineId ? `line:${lineId}` : phone ? `tel:${phone}` : '');
+  const imageUrl = String(cfg.imgUrl || cfg.imgUrlLandscape || card['名片圖檔'] || card.imageUrl || '').trim();
+  const network = String(card['歸屬網'] || card.networkId || card.storeId || 'Action').trim();
+  const shopId = `line_action_${rowId || stableHash(`${name}:${person}:${phone}:${imageUrl}`)}`;
+  return {
+    id: shopId,
+    name,
+    category: network,
+    icon: '🏪',
+    discount: desc || [person, title].filter(Boolean).join(' / ') || 'LINE- Action 註冊戶匯入',
+    address: network,
+    lineContact,
+    imageUrl,
+    status: '啟用',
+    couponCount: 100,
+    source: 'LINE-/admin.html'
+  };
+}
+
+async function upsertShop(env, shop, timestamp = nowIso()) {
+  await env.DB.prepare(`
+    INSERT INTO shops (id, name, category, icon, discount, address, line_contact, image_url, status, coupon_count, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      name = excluded.name,
+      category = excluded.category,
+      icon = excluded.icon,
+      discount = excluded.discount,
+      address = excluded.address,
+      line_contact = excluded.line_contact,
+      image_url = excluded.image_url,
+      status = excluded.status,
+      coupon_count = excluded.coupon_count,
+      updated_at = excluded.updated_at
+  `).bind(
+    shop.id,
+    shop.name,
+    shop.category,
+    shop.icon || '🏪',
+    shop.discount || '',
+    shop.address || '',
+    shop.lineContact || '',
+    shop.imageUrl || '',
+    shop.status || '啟用',
+    Number(shop.couponCount) || 100,
+    timestamp,
+    timestamp
+  ).run();
+}
 function getField(input, ...keys) {
   for (const key of keys) {
     const value = input.get ? input.get(key) : input[key];
@@ -614,6 +690,28 @@ async function deleteProduct(env, input, ctx) {
   ctx.waitUntil(logOperation(env, { action: 'deleteProduct', target_type: 'product', target_id: productId, result: ok ? 'success' : 'not_found' }));
   return json({ success: ok, status: ok ? 'success' : 'error', message: ok ? '商品已刪除' : '找不到商品' }, ok ? 200 : 404);
 }
+function previewLineActionCards(input) {
+  const cards = parseJsonField(input, 'cardsJson') || [];
+  const list = Array.isArray(cards) ? cards : (cards.contacts || cards.data || cards.items || []);
+  const shops = list.map(normalizeLineActionCard).filter(Boolean);
+  return json({ success: true, status: 'success', shops, data: shops, count: shops.length });
+}
+
+async function importLineActionCards(env, input, ctx) {
+  const cards = parseJsonField(input, 'cardsJson') || [];
+  const list = Array.isArray(cards) ? cards : (cards.contacts || cards.data || cards.items || []);
+  const shops = list.map(normalizeLineActionCard).filter(Boolean);
+  const timestamp = nowIso();
+  for (const shop of shops) await upsertShop(env, shop, timestamp);
+  ctx.waitUntil(logOperation(env, {
+    action: 'importLineActionCards',
+    target_type: 'shop',
+    result: 'success',
+    message: `imported ${shops.length} LINE Action cards`,
+    metadata: { source: 'LINE-/admin.html' }
+  }));
+  return json({ success: true, status: 'success', imported: shops.length, shops, data: shops, message: `已匯入 ${shops.length} 筆 LINE- Action 註冊戶` });
+}
 async function previewActionTenants(input) {
   const keywords = splitKeywords(input);
   const storeId = getField(input, 'storeId') || ACTION_MEMBERLIST_STORE_ID;
@@ -691,6 +789,8 @@ async function routeAction(action, env, input, ctx, isAdmin) {
     case 'getUsers': return isAdmin ? getUsers(env, input) : unauthorized();
     case 'getCoupons': return isAdmin ? getCoupons(env, input) : unauthorized();
     case 'getOperationLogs': return isAdmin ? getOperationLogs(env, input) : unauthorized();
+    case 'previewLineActionCards': return isAdmin ? previewLineActionCards(input) : unauthorized();
+    case 'importLineActionCards': return isAdmin ? importLineActionCards(env, input, ctx) : unauthorized();
     case 'previewActionRegistrants':
     case 'previewActionTenants': return isAdmin ? previewActionTenants(input) : unauthorized();
     case 'importActionRegistrants':

@@ -72,3 +72,14 @@ npx.cmd wrangler deploy
 4. 先按「預覽註冊戶」，確認後再按「匯入 D1」。
 
 匯入結果會寫入 `shops`，分類為縣市，優惠內容為 Action 名片簡介，圖片與 LINE 連結會同步保存。
+### LINE- Action 註冊戶匯入
+
+若來源是 `https://fangwl591021.github.io/LINE-/admin.html` 後台目前顯示的名片/店家資料，請使用 `data_admin.html` 的「LINE- Action 註冊戶」區塊。
+
+因 LINE- Worker 需要登入後的 LINE token，Richman Worker 不會直接抓取；請在已登入的 LINE- 後台瀏覽器 Console 執行：
+
+```javascript
+copy(JSON.stringify(allCardsData))
+```
+
+再回到 Richman D1 後台貼上 JSON，先預覽，再匯入 D1。
