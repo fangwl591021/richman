@@ -31,6 +31,123 @@ function hasAdminAccess(request, input, env) {
   return !!env.ADMIN_TOKEN && token === env.ADMIN_TOKEN;
 }
 
+
+const ACTION_MEMBERLIST_STORE_ID = '5ff3798e9a2ae93e9d8da9a7';
+const ACTION_MEMBERLIST_KEYWORDS = [
+  '新北市', '台北市', '桃園市', '新竹縣', '新竹市', '苗栗縣', '南投縣', '彰化縣',
+  '雲林縣', '嘉義縣', '嘉義市', '台南市', '高雄市', '宜蘭縣', '台東縣'
+];
+
+function splitKeywords(input) {
+  const raw = getField(input, 'keywords', 'keyword', 'city');
+  if (!raw) return ACTION_MEMBERLIST_KEYWORDS;
+  return raw.split(/[\s,，、]+/).map((item) => item.trim()).filter(Boolean);
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .replace(/\\u003cBR\\u003e/gi, '\n')
+    .replace(/<\s*br\s*\/?\s*>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function stableHash(value) {
+  let hash = 5381;
+  const text = String(value || '');
+  for (let i = 0; i < text.length; i += 1) hash = ((hash << 5) + hash) ^ text.charCodeAt(i);
+  return (hash >>> 0).toString(36);
+}
+
+function findFlexText(node, options = {}) {
+  if (!node || typeof node !== 'object') return '';
+  if (node.type === 'text' && typeof node.text === 'string') {
+    if (!options.size || node.size === options.size) return normalizeText(node.text);
+  }
+  for (const value of Object.values(node)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = findFlexText(item, options);
+        if (found) return found;
+      }
+    } else if (value && typeof value === 'object') {
+      const found = findFlexText(value, options);
+      if (found) return found;
+    }
+  }
+  return '';
+}
+
+function findFlexImage(node) {
+  if (!node || typeof node !== 'object') return '';
+  if (node.type === 'image' && typeof node.url === 'string') return node.url;
+  for (const value of Object.values(node)) {
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const found = findFlexImage(item);
+        if (found) return found;
+      }
+    } else if (value && typeof value === 'object') {
+      const found = findFlexImage(value);
+      if (found) return found;
+    }
+  }
+  return '';
+}
+
+function collectFlexButtons(node, buttons = []) {
+  if (!node || typeof node !== 'object') return buttons;
+  if (node.type === 'button' && node.action) buttons.push(node.action);
+  for (const value of Object.values(node)) {
+    if (Array.isArray(value)) value.forEach((item) => collectFlexButtons(item, buttons));
+    else if (value && typeof value === 'object') collectFlexButtons(value, buttons);
+  }
+  return buttons;
+}
+
+function extractActionTenant(row, keyword) {
+  let flex;
+  try {
+    flex = JSON.parse(row.DataID || '{}');
+  } catch (_) {
+    return null;
+  }
+  const bubble = flex.contents && flex.contents[0] ? flex.contents[0] : flex;
+  const title = findFlexText(bubble, { size: 'xl' }) || findFlexText(bubble);
+  if (!title) return null;
+  const description = normalizeText(findFlexText(bubble, { size: 'xs' }));
+  const imageUrl = findFlexImage(bubble);
+  const buttons = collectFlexButtons(bubble);
+  const lineButton = buttons.find((button) => /line|好友|官方/i.test(`${button.label || ''} ${button.uri || ''}`)) || buttons[0] || {};
+  const shareButton = buttons.find((button) => /liff\.line\.me/.test(button.uri || '')) || {};
+  const rr = new URL(shareButton.uri || 'https://example.invalid/').searchParams.get('RR') || '';
+  const tenantId = `action_${rr || stableHash(`${keyword}:${title}:${imageUrl}`)}`;
+  return {
+    id: tenantId,
+    name: title,
+    category: keyword,
+    icon: '🏪',
+    discount: description || 'Action 租戶名冊匯入',
+    address: keyword,
+    lineContact: lineButton.uri || '',
+    imageUrl,
+    status: '啟用',
+    couponCount: 100
+  };
+}
+
+async function fetchActionTenants(keyword, storeId = ACTION_MEMBERLIST_STORE_ID) {
+  const form = new FormData();
+  form.append('edtKeyword', keyword);
+  form.append('edtStore', storeId);
+  const response = await fetch('https://www.lineweb.tw/querycard', { method: 'POST', body: form });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload || payload.ResultStatus !== 'Success') {
+    throw new Error(`Action 名冊讀取失敗: ${keyword}`);
+  }
+  return (payload.ResultData || []).map((row) => extractActionTenant(row, keyword)).filter(Boolean);
+}
 function getField(input, ...keys) {
   for (const key of keys) {
     const value = input.get ? input.get(key) : input[key];
@@ -497,6 +614,69 @@ async function deleteProduct(env, input, ctx) {
   ctx.waitUntil(logOperation(env, { action: 'deleteProduct', target_type: 'product', target_id: productId, result: ok ? 'success' : 'not_found' }));
   return json({ success: ok, status: ok ? 'success' : 'error', message: ok ? '商品已刪除' : '找不到商品' }, ok ? 200 : 404);
 }
+async function previewActionTenants(input) {
+  const keywords = splitKeywords(input);
+  const storeId = getField(input, 'storeId') || ACTION_MEMBERLIST_STORE_ID;
+  const tenants = [];
+  for (const keyword of keywords) {
+    const rows = await fetchActionTenants(keyword, storeId);
+    tenants.push(...rows);
+  }
+  return json({ success: true, status: 'success', tenants, data: tenants, count: tenants.length });
+}
+
+async function importActionTenants(env, input, ctx) {
+  const keywords = splitKeywords(input);
+  const storeId = getField(input, 'storeId') || ACTION_MEMBERLIST_STORE_ID;
+  const tenants = [];
+  for (const keyword of keywords) {
+    const rows = await fetchActionTenants(keyword, storeId);
+    tenants.push(...rows);
+  }
+
+  let imported = 0;
+  const timestamp = nowIso();
+  for (const tenant of tenants) {
+    await env.DB.prepare(`
+      INSERT INTO shops (id, name, category, icon, discount, address, line_contact, image_url, status, coupon_count, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name = excluded.name,
+        category = excluded.category,
+        icon = excluded.icon,
+        discount = excluded.discount,
+        address = excluded.address,
+        line_contact = excluded.line_contact,
+        image_url = excluded.image_url,
+        status = excluded.status,
+        coupon_count = excluded.coupon_count,
+        updated_at = excluded.updated_at
+    `).bind(
+      tenant.id,
+      tenant.name,
+      tenant.category,
+      tenant.icon,
+      tenant.discount,
+      tenant.address,
+      tenant.lineContact,
+      tenant.imageUrl,
+      tenant.status,
+      tenant.couponCount,
+      timestamp,
+      timestamp
+    ).run();
+    imported += 1;
+  }
+
+  ctx.waitUntil(logOperation(env, {
+    action: 'importActionTenants',
+    target_type: 'shop',
+    result: 'success',
+    message: `imported ${imported} tenants`,
+    metadata: { keywords, storeId }
+  }));
+  return json({ success: true, status: 'success', imported, tenants, data: tenants, message: `已匯入 ${imported} 筆 Action 租戶` });
+}
 async function routeAction(action, env, input, ctx, isAdmin) {
   switch (action) {
     case 'getShops': return getShops(env);
@@ -511,6 +691,8 @@ async function routeAction(action, env, input, ctx, isAdmin) {
     case 'getUsers': return isAdmin ? getUsers(env, input) : unauthorized();
     case 'getCoupons': return isAdmin ? getCoupons(env, input) : unauthorized();
     case 'getOperationLogs': return isAdmin ? getOperationLogs(env, input) : unauthorized();
+    case 'previewActionTenants': return isAdmin ? previewActionTenants(input) : unauthorized();
+    case 'importActionTenants': return isAdmin ? importActionTenants(env, input, ctx) : unauthorized();
     case 'verifyCoupon': return updateCouponStatus(env, input, 'used', ctx);
     case 'abandonCoupon': return updateCouponStatus(env, input, 'abandoned', ctx);
     case 'getProductCategories': return getProductCategories(env, input);

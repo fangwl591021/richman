@@ -173,7 +173,22 @@
           <div class="table-wrap" id="importTable"></div>
         </div>
       </div>
-    </section>
+      <div class="panel-head" style="margin-top:18px"><h2>Action 租戶名冊</h2><div class="toolbar"><button id="previewActionBtn">預覽名冊</button><button class="primary" id="importActionBtn">匯入 D1</button></div></div>
+      <div class="import-layout">
+        <div class="field-stack">
+          <label>Store ID
+            <input id="actionStoreId" type="text" value="5ff3798e9a2ae93e9d8da9a7">
+          </label>
+          <label>縣市/關鍵字
+            <input id="actionKeywords" type="text" placeholder="留空匯入預設全部；或輸入：新北市,台北市">
+          </label>
+          <p class="hint">來源是 Action 頁面的 <code>lineweb.tw/querycard</code>。匯入後會寫入 <code>shops</code>，分類為縣市，優惠內容為名片簡介，圖片與 LINE 連結會一併帶入。</p>
+        </div>
+        <div>
+          <div class="status" id="actionImportStatus">需要 ADMIN_TOKEN。建議先預覽再匯入。</div>
+          <div class="table-wrap" id="actionImportTable"></div>
+        </div>
+      </div>    </section>
   </main>
 
   <script>
@@ -210,6 +225,8 @@
     });
     document.getElementById('sampleBtn').addEventListener('click', putSample);
     document.getElementById('importBtn').addEventListener('click', importCsv);
+    document.getElementById('previewActionBtn').addEventListener('click', () => syncActionTenants(false));
+    document.getElementById('importActionBtn').addEventListener('click', () => syncActionTenants(true));
     document.getElementById('csvFile').addEventListener('change', async (event) => {
       const file = event.target.files && event.target.files[0];
       if (file) document.getElementById('csvText').value = await file.text();
@@ -304,6 +321,23 @@
       document.getElementById('csvText').value = samples[type];
     }
 
+    async function syncActionTenants(shouldImport) {
+      const params = {
+        storeId: document.getElementById('actionStoreId').value.trim(),
+        keywords: document.getElementById('actionKeywords').value.trim()
+      };
+      const action = shouldImport ? 'importActionTenants' : 'previewActionTenants';
+      try {
+        setStatus('actionImportStatus', shouldImport ? '匯入 Action 名冊中...' : '讀取 Action 名冊中...');
+        const payload = await api(action, params, 'POST');
+        const rows = payload.tenants || payload.data || [];
+        renderTable('actionImportTable', rows);
+        setStatus('actionImportStatus', shouldImport ? `已匯入 ${payload.imported || rows.length} 筆租戶到 shops` : `預覽 ${rows.length} 筆租戶`, 'ok');
+        if (shouldImport) refresh('shops');
+      } catch (error) {
+        setStatus('actionImportStatus', error.message, 'error');
+      }
+    }
     async function importCsv() {
       const text = document.getElementById('csvText').value.trim();
       const type = document.getElementById('importType').value;

@@ -174,3 +174,27 @@ CSV 匯入欄位：
 - 商品：`productId,shopId,categoryId,sku,name,description,imageUrl,price,currency,stockQty,unit,status,sortOrder`
 
 `shopId` 必須先存在於 `shops`；商品分類的 `shopId` 可以留空，代表全域分類。
+
+## Action 租戶名冊匯入
+
+來源：`https://www.lineweb.tw/querycard`
+
+Worker action：
+
+- `previewActionTenants`：讀取 Action 名冊並轉換成 D1 `shops` 格式，不寫入。
+- `importActionTenants`：讀取 Action 名冊並 upsert 到 `shops`。
+
+兩個 action 都需要 `ADMIN_TOKEN`。預設 Store ID：`5ff3798e9a2ae93e9d8da9a7`。
+
+欄位對應：
+
+| Action Flex JSON | D1 shops |
+| --- | --- |
+| 名片標題 | `name` |
+| 查詢縣市/關鍵字 | `category`, `address` |
+| 名片簡介 | `discount` |
+| 第一張圖片 | `image_url` |
+| LINE/好友按鈕 URI | `line_contact` |
+| 分享 URI 的 `RR` 或穩定 hash | `id` |
+
+預設匯入關鍵字：新北市、台北市、桃園市、新竹縣、新竹市、苗栗縣、南投縣、彰化縣、雲林縣、嘉義縣、嘉義市、台南市、高雄市、宜蘭縣、台東縣。
