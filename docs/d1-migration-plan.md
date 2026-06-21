@@ -19,6 +19,8 @@
 | `coupons` | 使用者收藏、核銷、放棄的優惠券 |
 | `cell_configs` | 大富翁格子設定，未來可取代 Google Sheets gviz 讀取 |
 | `operation_logs` | 店家審核、刪除、優惠券操作等營運紀錄 |
+| `product_categories` | 商品分類，可綁定店家 |
+| `products` | 商品/品項資料、價格、庫存、上下架 |
 
 ## 相容 action
 
@@ -35,6 +37,12 @@ Worker 保留現有前端用到的 action：
 - `getUserCoupons`
 - `verifyCoupon`
 - `abandonCoupon`
+- `getProductCategories`
+- `saveProductCategory`
+- `getProducts`
+- `saveProduct` / `addProduct`
+- `updateProductStatus`
+- `deleteProduct`
 
 ## 建議遷移順序
 
@@ -100,3 +108,34 @@ npx.cmd wrangler deploy --dry-run
 - 遠端表格已確認存在：`users`、`shops`、`coupons`、`cell_configs`、`operation_logs`
 
 注意：尚未正式 `wrangler deploy`。部署前需確認目前 `richman.fangwl591021.workers.dev` 是否就是要被這份 Worker 接管的 production Worker。
+## 商品資料表補充
+
+已新增第二個 migration：`migrations/0002_product_catalog.sql`
+
+商品資料設計：
+
+- `product_categories`：商品分類，可選擇綁定 `shop_id`
+- `products`：商品/品項主表，包含 `shop_id`、`category_id`、`sku`、名稱、說明、圖片、價格、幣別、庫存、單位、狀態、排序
+
+商品狀態允許：
+
+- `draft`
+- `active`
+- `inactive`
+- `sold_out`
+- `deleted`
+
+建議用法：店家先在 `shops` 建立，再用 `shopId` 建立商品分類與商品。優惠券仍維持 `coupons`，不要把優惠券和商品混在同一張表。
+## 商品表遠端部署紀錄
+
+更新時間：2026-06-21
+
+- 已套用 `migrations/0002_product_catalog.sql`
+- 已部署 Worker version：`6f1fe2c5-68d9-49ce-8d23-6d830b56fa6b`
+- 遠端 D1 已確認存在：`product_categories`、`products`
+- Live smoke test 已通過：
+  - `addShop` 建立測試店家
+  - `saveProduct` 建立測試商品
+  - `getProducts` 可讀回測試商品
+  - `deleteProduct` soft-delete 測試商品
+  - `deleteShop` soft-delete 測試店家

@@ -261,6 +261,161 @@ async function updateCouponStatus(env, input, status, ctx) {
   return json({ success: false, status: 'error', message: '找不到優惠券' }, 404);
 }
 
+async function getProductCategories(env, input) {
+  const shopId = getField(input, 'shopId', 'shop_id');
+  const includeDeleted = getField(input, 'includeDeleted') === '1';
+  let query = `
+    SELECT
+      id,
+      shop_id AS shopId,
+      name,
+      name AS '商品分類',
+      description,
+      status,
+      sort_order AS sortOrder,
+      created_at AS createdAt,
+      updated_at AS updatedAt
+    FROM product_categories
+    WHERE (? = '' OR shop_id = ?)
+  `;
+  if (!includeDeleted) query += ` AND status != 'deleted'`;
+  query += ` ORDER BY sort_order ASC, created_at ASC`;
+  const { results } = await env.DB.prepare(query).bind(shopId, shopId).all();
+  return json({ success: true, status: 'success', categories: results || [], data: results || [] });
+}
+
+async function saveProductCategory(env, input, ctx) {
+  const categoryId = getField(input, 'categoryId', 'id') || id('pcat');
+  const name = getField(input, 'name', '商品分類', 'category');
+  if (!name) return badRequest('缺少商品分類名稱');
+  const timestamp = nowIso();
+  await env.DB.prepare(`
+    INSERT INTO product_categories (id, shop_id, name, description, status, sort_order, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      shop_id = excluded.shop_id,
+      name = excluded.name,
+      description = excluded.description,
+      status = excluded.status,
+      sort_order = excluded.sort_order,
+      updated_at = excluded.updated_at
+  `).bind(
+    categoryId,
+    getField(input, 'shopId', 'shop_id'),
+    name,
+    getField(input, 'description', '分類說明'),
+    getField(input, 'status') || 'active',
+    Number(getField(input, 'sortOrder', 'sort_order')) || 0,
+    timestamp,
+    timestamp
+  ).run();
+  ctx.waitUntil(logOperation(env, { action: 'saveProductCategory', target_type: 'product_category', target_id: categoryId, result: 'success' }));
+  return json({ success: true, status: 'success', categoryId, id: categoryId, message: '商品分類已儲存' });
+}
+
+async function getProducts(env, input) {
+  const shopId = getField(input, 'shopId', 'shop_id');
+  const categoryId = getField(input, 'categoryId', 'category_id');
+  const includeDeleted = getField(input, 'includeDeleted') === '1';
+  let query = `
+    SELECT
+      p.id,
+      p.shop_id AS shopId,
+      p.category_id AS categoryId,
+      pc.name AS categoryName,
+      p.sku,
+      p.name,
+      p.name AS '商品名稱',
+      p.description,
+      p.description AS '商品說明',
+      p.image_url AS imageUrl,
+      p.image_url AS '圖片網址',
+      p.price,
+      p.price AS '價格',
+      p.currency,
+      p.stock_qty AS stockQty,
+      p.stock_qty AS '庫存',
+      p.unit,
+      p.unit AS '單位',
+      p.status,
+      p.status AS '狀態',
+      p.sort_order AS sortOrder,
+      p.created_at AS createdAt,
+      p.updated_at AS updatedAt
+    FROM products p
+    LEFT JOIN product_categories pc ON pc.id = p.category_id
+    WHERE (? = '' OR p.shop_id = ?)
+      AND (? = '' OR p.category_id = ?)
+  `;
+  if (!includeDeleted) query += ` AND p.status != 'deleted'`;
+  query += ` ORDER BY p.sort_order ASC, p.created_at DESC`;
+  const { results } = await env.DB.prepare(query).bind(shopId, shopId, categoryId, categoryId).all();
+  return json({ success: true, status: 'success', products: results || [], data: results || [] });
+}
+
+async function saveProduct(env, input, ctx) {
+  const productId = getField(input, 'productId', 'id') || id('product');
+  const shopId = getField(input, 'shopId', 'shop_id');
+  const name = getField(input, 'name', '商品名稱');
+  if (!shopId) return badRequest('缺少 shopId');
+  if (!name) return badRequest('缺少商品名稱');
+  const timestamp = nowIso();
+  await env.DB.prepare(`
+    INSERT INTO products (id, shop_id, category_id, sku, name, description, image_url, price, currency, stock_qty, unit, status, sort_order, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(id) DO UPDATE SET
+      shop_id = excluded.shop_id,
+      category_id = excluded.category_id,
+      sku = excluded.sku,
+      name = excluded.name,
+      description = excluded.description,
+      image_url = excluded.image_url,
+      price = excluded.price,
+      currency = excluded.currency,
+      stock_qty = excluded.stock_qty,
+      unit = excluded.unit,
+      status = excluded.status,
+      sort_order = excluded.sort_order,
+      updated_at = excluded.updated_at
+  `).bind(
+    productId,
+    shopId,
+    getField(input, 'categoryId', 'category_id') || null,
+    getField(input, 'sku', '商品編號'),
+    name,
+    getField(input, 'description', '商品說明'),
+    getField(input, 'imageUrl', '圖片網址'),
+    Number(getField(input, 'price', '價格')) || 0,
+    getField(input, 'currency') || 'TWD',
+    Number(getField(input, 'stockQty', 'stock_qty', '庫存')) || 0,
+    getField(input, 'unit', '單位'),
+    getField(input, 'status', '狀態') || 'active',
+    Number(getField(input, 'sortOrder', 'sort_order')) || 0,
+    timestamp,
+    timestamp
+  ).run();
+  ctx.waitUntil(logOperation(env, { action: 'saveProduct', target_type: 'product', target_id: productId, result: 'success', metadata: { shopId } }));
+  return json({ success: true, status: 'success', productId, id: productId, message: '商品已儲存' });
+}
+
+async function updateProductStatus(env, input, ctx) {
+  const productId = getField(input, 'productId', 'id');
+  const status = getField(input, 'status', '狀態') || 'active';
+  if (!productId) return badRequest('缺少 productId');
+  const result = await env.DB.prepare(`UPDATE products SET status = ?, updated_at = ? WHERE id = ?`).bind(status, nowIso(), productId).run();
+  const ok = result.meta.changes > 0;
+  ctx.waitUntil(logOperation(env, { action: 'updateProductStatus', target_type: 'product', target_id: productId, result: ok ? 'success' : 'not_found', message: status }));
+  return json({ success: ok, status: ok ? 'success' : 'error', message: ok ? '商品狀態已更新' : '找不到商品' }, ok ? 200 : 404);
+}
+
+async function deleteProduct(env, input, ctx) {
+  const productId = getField(input, 'productId', 'id');
+  if (!productId) return badRequest('缺少 productId');
+  const result = await env.DB.prepare(`UPDATE products SET status = 'deleted', updated_at = ? WHERE id = ?`).bind(nowIso(), productId).run();
+  const ok = result.meta.changes > 0;
+  ctx.waitUntil(logOperation(env, { action: 'deleteProduct', target_type: 'product', target_id: productId, result: ok ? 'success' : 'not_found' }));
+  return json({ success: ok, status: ok ? 'success' : 'error', message: ok ? '商品已刪除' : '找不到商品' }, ok ? 200 : 404);
+}
 async function routeAction(action, env, input, ctx) {
   switch (action) {
     case 'getShops': return getShops(env);
@@ -274,6 +429,13 @@ async function routeAction(action, env, input, ctx) {
     case 'getUserCoupons': return getUserCoupons(env, input);
     case 'verifyCoupon': return updateCouponStatus(env, input, 'used', ctx);
     case 'abandonCoupon': return updateCouponStatus(env, input, 'abandoned', ctx);
+    case 'getProductCategories': return getProductCategories(env, input);
+    case 'saveProductCategory': return saveProductCategory(env, input, ctx);
+    case 'getProducts': return getProducts(env, input);
+    case 'saveProduct':
+    case 'addProduct': return saveProduct(env, input, ctx);
+    case 'updateProductStatus': return updateProductStatus(env, input, ctx);
+    case 'deleteProduct': return deleteProduct(env, input, ctx);
     default: return badRequest(`未知 action: ${action}`);
   }
 }
