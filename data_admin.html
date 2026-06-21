@@ -176,8 +176,8 @@
       <div class="panel-head" style="margin-top:18px"><h2>LINE- Action 註冊戶</h2><div class="toolbar"><button id="previewLineActionBtn">預覽 LINE- 資料</button><button class="primary" id="importLineActionBtn">匯入 D1</button></div></div>
       <div class="import-layout">
         <div class="field-stack">
-          <p class="hint">這裡匯入的是 <code>https://fangwl591021.github.io/LINE-/admin.html</code> 後台「名片/店家」資料，也就是你看到的 13 筆。因 LINE- Worker 需要登入 token，請在 LINE- 後台複製 <code>allCardsData</code> JSON 後貼到右側。</p>
-          <p class="hint">在 LINE- 後台登入後，按 F12 Console 執行：<code>copy(JSON.stringify(allCardsData))</code></p>
+          <p class="hint">這裡匯入的是 <code>https://fangwl591021.github.io/LINE-/admin.html</code> 後台「名片/店家」資料，也就是你看到的 13 筆。請在 LINE- 後台按「匯出 Richman」，再把下載的 JSON 檔選進來或貼到右側。</p>
+          <label>LINE- 匯出 JSON 檔<input id="lineActionFile" type="file" accept=".json,application/json"></label>
         </div>
         <div>
           <textarea id="lineActionJson" spellcheck="false" placeholder="貼上 LINE- admin.html 的 allCardsData JSON"></textarea>
@@ -226,6 +226,10 @@
     document.getElementById('csvFile').addEventListener('change', async (event) => {
       const file = event.target.files && event.target.files[0];
       if (file) document.getElementById('csvText').value = await file.text();
+    });
+    document.getElementById('lineActionFile').addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (file) document.getElementById('lineActionJson').value = await file.text();
     });
 
     function showPanel(id) {

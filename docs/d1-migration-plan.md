@@ -205,9 +205,9 @@ Worker action：
 由於 `line-engine.fangwl591021.workers.dev` 的 `getCardContacts` 需要 LINE access token，Richman Worker 不直接跨系統抓取。操作方式：
 
 1. 在 LINE- 後台登入並確認名片/店家清單已載入。
-2. 開啟瀏覽器 Console。
-3. 執行 `copy(JSON.stringify(allCardsData))`。
-4. 回到 `data_admin.html` 的「LINE- Action 註冊戶」區塊貼上 JSON。
+2. 在「全站名片庫」按「匯出 Richman」。
+3. 系統會下載 `richman-line-action-cards-YYYY-MM-DD.json` 並開啟 Richman 後台。
+4. 回到 `data_admin.html` 的「LINE- Action 註冊戶」區塊選擇 JSON 檔。
 5. 先預覽，再匯入 D1。
 
 Worker action：
