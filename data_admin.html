@@ -173,7 +173,7 @@
           <div class="table-wrap" id="importTable"></div>
         </div>
       </div>
-      <div class="panel-head" style="margin-top:18px"><h2>Action 租戶名冊</h2><div class="toolbar"><button id="previewActionBtn">預覽名冊</button><button class="primary" id="importActionBtn">匯入 D1</button></div></div>
+      <div class="panel-head" style="margin-top:18px"><h2>Action 註冊戶名冊</h2><div class="toolbar"><button id="previewActionBtn">預覽註冊戶</button><button class="primary" id="importActionBtn">匯入 D1</button></div></div>
       <div class="import-layout">
         <div class="field-stack">
           <label>Store ID
@@ -326,13 +326,13 @@
         storeId: document.getElementById('actionStoreId').value.trim(),
         keywords: document.getElementById('actionKeywords').value.trim()
       };
-      const action = shouldImport ? 'importActionTenants' : 'previewActionTenants';
+      const action = shouldImport ? 'importActionRegistrants' : 'previewActionRegistrants';
       try {
-        setStatus('actionImportStatus', shouldImport ? '匯入 Action 名冊中...' : '讀取 Action 名冊中...');
+        setStatus('actionImportStatus', shouldImport ? '匯入 Action 註冊戶中...' : '讀取 Action 註冊戶中...');
         const payload = await api(action, params, 'POST');
         const rows = payload.tenants || payload.data || [];
         renderTable('actionImportTable', rows);
-        setStatus('actionImportStatus', shouldImport ? `已匯入 ${payload.imported || rows.length} 筆租戶到 shops` : `預覽 ${rows.length} 筆租戶`, 'ok');
+        setStatus('actionImportStatus', shouldImport ? `已匯入 ${payload.imported || rows.length} 筆註冊戶到 shops` : `預覽 ${rows.length} 筆註冊戶`, 'ok');
         if (shouldImport) refresh('shops');
       } catch (error) {
         setStatus('actionImportStatus', error.message, 'error');

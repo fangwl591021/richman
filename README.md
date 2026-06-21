@@ -62,13 +62,13 @@ npx.cmd wrangler deploy
 
 部署後在 `data_admin.html` 輸入相同 token。Token 只會存在目前瀏覽器的 `localStorage`，不會寫入 repo。
 
-### Action 租戶名冊匯入
+### Action 註冊戶名冊匯入
 
-`data_admin.html` 的「匯入」分頁有 Action 租戶名冊區塊：
+`data_admin.html` 的「匯入」分頁有 Action 註冊戶名冊區塊：
 
 1. 輸入 `ADMIN_TOKEN`。
 2. Store ID 預設為 `5ff3798e9a2ae93e9d8da9a7`。
 3. 縣市/關鍵字可留空匯入預設縣市，或輸入 `新北市,台北市`。
-4. 先按「預覽名冊」，確認後再按「匯入 D1」。
+4. 先按「預覽註冊戶」，確認後再按「匯入 D1」。
 
 匯入結果會寫入 `shops`，分類為縣市，優惠內容為 Action 名片簡介，圖片與 LINE 連結會同步保存。

@@ -128,7 +128,7 @@ function extractActionTenant(row, keyword) {
     name: title,
     category: keyword,
     icon: '🏪',
-    discount: description || 'Action 租戶名冊匯入',
+    discount: description || 'Action 註冊戶名冊匯入',
     address: keyword,
     lineContact: lineButton.uri || '',
     imageUrl,
@@ -144,7 +144,7 @@ async function fetchActionTenants(keyword, storeId = ACTION_MEMBERLIST_STORE_ID)
   const response = await fetch('https://www.lineweb.tw/querycard', { method: 'POST', body: form });
   const payload = await response.json().catch(() => null);
   if (!response.ok || !payload || payload.ResultStatus !== 'Success') {
-    throw new Error(`Action 名冊讀取失敗: ${keyword}`);
+    throw new Error(`Action 註冊戶讀取失敗: ${keyword}`);
   }
   return (payload.ResultData || []).map((row) => extractActionTenant(row, keyword)).filter(Boolean);
 }
@@ -675,7 +675,7 @@ async function importActionTenants(env, input, ctx) {
     message: `imported ${imported} tenants`,
     metadata: { keywords, storeId }
   }));
-  return json({ success: true, status: 'success', imported, tenants, data: tenants, message: `已匯入 ${imported} 筆 Action 租戶` });
+  return json({ success: true, status: 'success', imported, tenants, data: tenants, message: `已匯入 ${imported} 筆 Action 註冊戶` });
 }
 async function routeAction(action, env, input, ctx, isAdmin) {
   switch (action) {
@@ -691,7 +691,9 @@ async function routeAction(action, env, input, ctx, isAdmin) {
     case 'getUsers': return isAdmin ? getUsers(env, input) : unauthorized();
     case 'getCoupons': return isAdmin ? getCoupons(env, input) : unauthorized();
     case 'getOperationLogs': return isAdmin ? getOperationLogs(env, input) : unauthorized();
+    case 'previewActionRegistrants':
     case 'previewActionTenants': return isAdmin ? previewActionTenants(input) : unauthorized();
+    case 'importActionRegistrants':
     case 'importActionTenants': return isAdmin ? importActionTenants(env, input, ctx) : unauthorized();
     case 'verifyCoupon': return updateCouponStatus(env, input, 'used', ctx);
     case 'abandonCoupon': return updateCouponStatus(env, input, 'abandoned', ctx);

@@ -175,16 +175,16 @@ CSV 匯入欄位：
 
 `shopId` 必須先存在於 `shops`；商品分類的 `shopId` 可以留空，代表全域分類。
 
-## Action 租戶名冊匯入
+## Action 註冊戶名冊匯入
 
 來源：`https://www.lineweb.tw/querycard`
 
 Worker action：
 
-- `previewActionTenants`：讀取 Action 名冊並轉換成 D1 `shops` 格式，不寫入。
-- `importActionTenants`：讀取 Action 名冊並 upsert 到 `shops`。
+- `previewActionRegistrants`：讀取 Action 註冊戶並轉換成 D1 `shops` 格式，不寫入。
+- `importActionRegistrants`：讀取 Action 註冊戶並 upsert 到 `shops`。
 
-兩個 action 都需要 `ADMIN_TOKEN`。預設 Store ID：`5ff3798e9a2ae93e9d8da9a7`。
+兩個 action 都需要 `ADMIN_TOKEN`。舊的 `previewActionTenants` / `importActionTenants` 仍保留為相容別名。預設 Store ID：`5ff3798e9a2ae93e9d8da9a7`。
 
 欄位對應：
 
