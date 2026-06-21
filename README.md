@@ -45,3 +45,19 @@ python -m http.server 8080
 Ruflo 建議作為工程流程與審查層使用，不放進 LIFF 前端或正式 Worker runtime。
 
 共用前端設定由 `config.js?v=1.0` 提供，更新 Worker API、LIFF ID 或地圖 URL 時優先改此檔。
+
+## D1 資料後台
+
+- 查看/匯入資料：開啟 `data_admin.html`。
+- 公開可讀：店家、商品分類、商品。
+- 管理員可讀：會員、全部優惠券、操作紀錄。
+- 管理員可寫：店家審核/刪除、商品分類、商品新增與上下架。
+
+第一次使用管理功能前，先在 Cloudflare Worker 設定 secret：
+
+```powershell
+npx.cmd wrangler secret put ADMIN_TOKEN
+npx.cmd wrangler deploy
+```
+
+部署後在 `data_admin.html` 輸入相同 token。Token 只會存在目前瀏覽器的 `localStorage`，不會寫入 repo。

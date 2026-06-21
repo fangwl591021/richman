@@ -16,6 +16,21 @@ function badRequest(message, extra = {}) {
   return json({ success: false, status: 'error', message, ...extra }, 400);
 }
 
+function unauthorized() {
+  return json({ success: false, status: 'error', message: '需要管理員權限' }, 401);
+}
+
+function getLimit(input, fallback = 100, max = 500) {
+  const value = Number(getField(input, 'limit'));
+  if (!Number.isFinite(value) || value <= 0) return fallback;
+  return Math.min(Math.floor(value), max);
+}
+
+function hasAdminAccess(request, input, env) {
+  const token = request.headers.get('x-admin-token') || getField(input, 'adminToken');
+  return !!env.ADMIN_TOKEN && token === env.ADMIN_TOKEN;
+}
+
 function getField(input, ...keys) {
   for (const key of keys) {
     const value = input.get ? input.get(key) : input[key];
@@ -235,6 +250,72 @@ async function getUserCoupons(env, input) {
   return json({ success: true, status: 'success', coupons: results || [] });
 }
 
+async function getUsers(env, input) {
+  const limit = getLimit(input, 100, 500);
+  const { results } = await env.DB.prepare(`
+    SELECT
+      user_id AS userId,
+      display_name AS displayName,
+      picture_url AS pictureUrl,
+      status_message AS statusMessage,
+      gender,
+      county,
+      profile_complete AS profileComplete,
+      created_at AS createdAt,
+      updated_at AS updatedAt
+    FROM users
+    ORDER BY updated_at DESC
+    LIMIT ?
+  `).bind(limit).all();
+  return json({ success: true, status: 'success', users: results || [], data: results || [] });
+}
+
+async function getCoupons(env, input) {
+  const userId = getField(input, 'userId', 'lineUserId');
+  const limit = getLimit(input, 100, 500);
+  const { results } = await env.DB.prepare(`
+    SELECT
+      id,
+      id AS couponId,
+      user_id AS userId,
+      shop_id AS shopId,
+      shop_name AS shopName,
+      discount,
+      image_url AS imageUrl,
+      line_contact AS lineContact,
+      address,
+      status,
+      obtained_at AS obtainedAt,
+      used_at AS usedAt,
+      abandoned_at AS abandonedAt,
+      updated_at AS updatedAt
+    FROM coupons
+    WHERE (? = '' OR user_id = ?)
+    ORDER BY obtained_at DESC
+    LIMIT ?
+  `).bind(userId, userId, limit).all();
+  return json({ success: true, status: 'success', coupons: results || [], data: results || [] });
+}
+
+async function getOperationLogs(env, input) {
+  const limit = getLimit(input, 100, 500);
+  const { results } = await env.DB.prepare(`
+    SELECT
+      id,
+      action,
+      actor_user_id AS actorUserId,
+      target_type AS targetType,
+      target_id AS targetId,
+      result,
+      message,
+      metadata,
+      created_at AS createdAt
+    FROM operation_logs
+    ORDER BY created_at DESC
+    LIMIT ?
+  `).bind(limit).all();
+  return json({ success: true, status: 'success', logs: results || [], data: results || [] });
+}
 async function updateCouponStatus(env, input, status, ctx) {
   const userId = getField(input, 'userId', 'lineUserId');
   const couponId = getField(input, 'couponId', 'id');
@@ -416,26 +497,29 @@ async function deleteProduct(env, input, ctx) {
   ctx.waitUntil(logOperation(env, { action: 'deleteProduct', target_type: 'product', target_id: productId, result: ok ? 'success' : 'not_found' }));
   return json({ success: ok, status: ok ? 'success' : 'error', message: ok ? '商品已刪除' : '找不到商品' }, ok ? 200 : 404);
 }
-async function routeAction(action, env, input, ctx) {
+async function routeAction(action, env, input, ctx, isAdmin) {
   switch (action) {
     case 'getShops': return getShops(env);
     case 'addShop': return addShop(env, input, ctx);
-    case 'updateShopStatus': return updateShopStatus(env, input, ctx);
-    case 'deleteShop': return deleteShop(env, input, ctx);
+    case 'updateShopStatus': return isAdmin ? updateShopStatus(env, input, ctx) : unauthorized();
+    case 'deleteShop': return isAdmin ? deleteShop(env, input, ctx) : unauthorized();
     case 'saveUserProfile': return saveUserProfile(env, input, ctx);
     case 'updateUserProfile': return updateUserProfile(env, input, ctx);
     case 'checkProfileComplete': return checkProfileComplete(env, input);
     case 'saveCoupon': return saveCoupon(env, input, ctx);
     case 'getUserCoupons': return getUserCoupons(env, input);
+    case 'getUsers': return isAdmin ? getUsers(env, input) : unauthorized();
+    case 'getCoupons': return isAdmin ? getCoupons(env, input) : unauthorized();
+    case 'getOperationLogs': return isAdmin ? getOperationLogs(env, input) : unauthorized();
     case 'verifyCoupon': return updateCouponStatus(env, input, 'used', ctx);
     case 'abandonCoupon': return updateCouponStatus(env, input, 'abandoned', ctx);
     case 'getProductCategories': return getProductCategories(env, input);
-    case 'saveProductCategory': return saveProductCategory(env, input, ctx);
+    case 'saveProductCategory': return isAdmin ? saveProductCategory(env, input, ctx) : unauthorized();
     case 'getProducts': return getProducts(env, input);
     case 'saveProduct':
-    case 'addProduct': return saveProduct(env, input, ctx);
-    case 'updateProductStatus': return updateProductStatus(env, input, ctx);
-    case 'deleteProduct': return deleteProduct(env, input, ctx);
+    case 'addProduct': return isAdmin ? saveProduct(env, input, ctx) : unauthorized();
+    case 'updateProductStatus': return isAdmin ? updateProductStatus(env, input, ctx) : unauthorized();
+    case 'deleteProduct': return isAdmin ? deleteProduct(env, input, ctx) : unauthorized();
     default: return badRequest(`未知 action: ${action}`);
   }
 }
@@ -449,7 +533,7 @@ export default {
       const input = await readInput(request);
       const action = getField(input, 'action');
       if (!action) return badRequest('缺少 action');
-      return await routeAction(action, env, input, ctx);
+      return await routeAction(action, env, input, ctx, hasAdminAccess(request, input, env));
     } catch (error) {
       console.error('worker error', error);
       return json({ success: false, status: 'error', message: error.message || '伺服器錯誤' }, 500);

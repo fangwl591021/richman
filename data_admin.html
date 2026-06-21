@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Richman D1 資料後台</title>
+  <script src="config.js?v=1.0"></script>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --muted: #6b7280;
+      --line: #d9dee7;
+      --accent: #0f766e;
+      --accent-dark: #115e59;
+      --danger: #b42318;
+      --warn: #a15c07;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    h1 { margin: 0; font-size: 20px; letter-spacing: 0; }
+    main { padding: 20px 24px 40px; max-width: 1440px; margin: 0 auto; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .token-box { display: flex; gap: 8px; align-items: center; min-width: min(520px, 100%); }
+    input, select, textarea, button {
+      font: inherit;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+    }
+    input, select { height: 38px; padding: 0 10px; }
+    input[type="password"], input[type="text"] { min-width: 220px; }
+    textarea { width: 100%; min-height: 180px; padding: 10px; resize: vertical; font-family: Consolas, "Courier New", monospace; font-size: 13px; }
+    button {
+      height: 38px;
+      padding: 0 12px;
+      cursor: pointer;
+      background: #fff;
+    }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.primary:hover { background: var(--accent-dark); }
+    button.danger { color: var(--danger); border-color: #f0b6ae; }
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .tabs button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .panel { display: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 16px; }
+    .panel.active { display: block; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    .panel-head h2 { margin: 0; font-size: 17px; letter-spacing: 0; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .metric { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fbfcfd; }
+    .metric strong { display: block; font-size: 24px; margin-top: 4px; }
+    .status { margin: 12px 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; background: #fbfcfd; color: var(--muted); white-space: pre-wrap; }
+    .status.error { border-color: #f0b6ae; color: var(--danger); background: #fff7f6; }
+    .status.ok { border-color: #9fd8cc; color: var(--accent-dark); background: #f0fdfa; }
+    .table-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; max-height: 62vh; }
+    table { border-collapse: collapse; width: 100%; min-width: 900px; background: #fff; }
+    th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; white-space: nowrap; }
+    th { position: sticky; top: 0; background: #eef2f6; z-index: 1; font-weight: 650; }
+    td.wrap { white-space: normal; min-width: 220px; max-width: 360px; }
+    .import-layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 16px; align-items: start; }
+    .field-stack { display: grid; gap: 10px; }
+    .hint { color: var(--muted); line-height: 1.55; margin: 8px 0 0; }
+    code { background: #eef2f6; padding: 1px 4px; border-radius: 4px; }
+    @media (max-width: 860px) {
+      header { align-items: flex-start; flex-direction: column; padding: 14px; }
+      main { padding: 14px; }
+      .grid, .import-layout { grid-template-columns: 1fr; }
+      .token-box { flex-direction: column; align-items: stretch; }
+      input[type="password"], input[type="text"] { min-width: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Richman D1 資料後台</h1>
+      <div class="hint" id="apiLabel"></div>
+    </div>
+    <div class="token-box">
+      <input id="adminToken" type="password" placeholder="ADMIN_TOKEN">
+      <button id="saveTokenBtn">儲存 Token</button>
+      <button id="clearTokenBtn">清除</button>
+    </div>
+  </header>
+
+  <main>
+    <nav class="tabs" id="tabs"></nav>
+    <section id="overview" class="panel active">
+      <div class="panel-head">
+        <h2>總覽</h2>
+        <button class="primary" data-refresh="overview">重新整理</button>
+      </div>
+      <div class="grid" id="metrics"></div>
+      <div class="status" id="overviewStatus">尚未載入</div>
+    </section>
+
+    <section id="shops" class="panel">
+      <div class="panel-head"><h2>店家</h2><button class="primary" data-refresh="shops">讀取店家</button></div>
+      <div class="status" id="shopsStatus">尚未載入</div>
+      <div class="table-wrap" id="shopsTable"></div>
+    </section>
+
+    <section id="categories" class="panel">
+      <div class="panel-head"><h2>商品分類</h2><button class="primary" data-refresh="categories">讀取分類</button></div>
+      <div class="status" id="categoriesStatus">尚未載入</div>
+      <div class="table-wrap" id="categoriesTable"></div>
+    </section>
+
+    <section id="products" class="panel">
+      <div class="panel-head"><h2>商品</h2><button class="primary" data-refresh="products">讀取商品</button></div>
+      <div class="status" id="productsStatus">尚未載入</div>
+      <div class="table-wrap" id="productsTable"></div>
+    </section>
+
+    <section id="users" class="panel">
+      <div class="panel-head"><h2>會員</h2><button class="primary" data-refresh="users">讀取會員</button></div>
+      <div class="status" id="usersStatus">需要 ADMIN_TOKEN</div>
+      <div class="table-wrap" id="usersTable"></div>
+    </section>
+
+    <section id="coupons" class="panel">
+      <div class="panel-head"><h2>優惠券</h2><button class="primary" data-refresh="coupons">讀取優惠券</button></div>
+      <div class="status" id="couponsStatus">需要 ADMIN_TOKEN</div>
+      <div class="table-wrap" id="couponsTable"></div>
+    </section>
+
+    <section id="logs" class="panel">
+      <div class="panel-head"><h2>操作紀錄</h2><button class="primary" data-refresh="logs">讀取紀錄</button></div>
+      <div class="status" id="logsStatus">需要 ADMIN_TOKEN</div>
+      <div class="table-wrap" id="logsTable"></div>
+    </section>
+
+    <section id="import" class="panel">
+      <div class="panel-head"><h2>CSV 匯入</h2><button class="primary" id="importBtn">開始匯入</button></div>
+      <div class="import-layout">
+        <div class="field-stack">
+          <label>資料類型
+            <select id="importType">
+              <option value="shops">店家 shops</option>
+              <option value="categories">商品分類 product_categories</option>
+              <option value="products">商品 products</option>
+            </select>
+          </label>
+          <label>CSV 檔案
+            <input id="csvFile" type="file" accept=".csv,text/csv">
+          </label>
+          <button id="sampleBtn">放入範例欄位</button>
+          <p class="hint">第一列必須是欄位名稱。商品匯入需要既有 <code>shopId</code>；分類可用空白 <code>shopId</code> 做全域分類。商品與分類匯入需要 ADMIN_TOKEN。</p>
+        </div>
+        <div>
+          <textarea id="csvText" spellcheck="false" placeholder="貼上 CSV 內容"></textarea>
+          <div class="status" id="importStatus">尚未匯入</div>
+          <div class="table-wrap" id="importTable"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_BASE = (window.RICHMAN_CONFIG && window.RICHMAN_CONFIG.API_BASE) || 'https://richman.fangwl591021.workers.dev/';
+    const state = { shops: [], categories: [], products: [], users: [], coupons: [], logs: [] };
+    const panels = [
+      ['overview', '總覽'], ['shops', '店家'], ['categories', '分類'], ['products', '商品'],
+      ['users', '會員'], ['coupons', '優惠券'], ['logs', '紀錄'], ['import', '匯入']
+    ];
+
+    document.getElementById('apiLabel').textContent = API_BASE;
+    document.getElementById('adminToken').value = localStorage.getItem('richmanAdminToken') || '';
+    document.getElementById('saveTokenBtn').addEventListener('click', () => {
+      localStorage.setItem('richmanAdminToken', document.getElementById('adminToken').value.trim());
+      setStatus('overviewStatus', 'Token 已儲存於本機瀏覽器', 'ok');
+    });
+    document.getElementById('clearTokenBtn').addEventListener('click', () => {
+      localStorage.removeItem('richmanAdminToken');
+      document.getElementById('adminToken').value = '';
+      setStatus('overviewStatus', 'Token 已清除', 'ok');
+    });
+
+    const tabs = document.getElementById('tabs');
+    panels.forEach(([id, label], index) => {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      btn.className = index === 0 ? 'active' : '';
+      btn.addEventListener('click', () => showPanel(id));
+      tabs.appendChild(btn);
+    });
+
+    document.querySelectorAll('[data-refresh]').forEach((btn) => {
+      btn.addEventListener('click', () => refresh(btn.dataset.refresh));
+    });
+    document.getElementById('sampleBtn').addEventListener('click', putSample);
+    document.getElementById('importBtn').addEventListener('click', importCsv);
+    document.getElementById('csvFile').addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (file) document.getElementById('csvText').value = await file.text();
+    });
+
+    function showPanel(id) {
+      document.querySelectorAll('.panel').forEach((el) => el.classList.toggle('active', el.id === id));
+      [...tabs.children].forEach((btn, idx) => btn.classList.toggle('active', panels[idx][0] === id));
+      if (id !== 'import') refresh(id);
+    }
+
+    async function api(action, params = {}, method = 'GET') {
+      const token = document.getElementById('adminToken').value.trim();
+      const headers = {};
+      if (token) headers['x-admin-token'] = token;
+      let url = API_BASE;
+      const bodyParams = { action, ...params };
+      let options = { method, headers };
+      if (method === 'GET') {
+        url += '?' + new URLSearchParams(bodyParams).toString();
+      } else {
+        const form = new FormData();
+        Object.entries(bodyParams).forEach(([key, value]) => form.append(key, value == null ? '' : value));
+        options.body = form;
+      }
+      const response = await fetch(url, options);
+      const payload = await response.json().catch(() => ({ success: false, message: response.statusText }));
+      if (!response.ok || payload.success === false) throw new Error(payload.message || `HTTP ${response.status}`);
+      return payload;
+    }
+
+    async function refresh(target) {
+      try {
+        if (target === 'overview') {
+          await Promise.allSettled([refresh('shops'), refresh('categories'), refresh('products'), refresh('users'), refresh('coupons'), refresh('logs')]);
+          renderMetrics();
+          setStatus('overviewStatus', '總覽已更新。若會員、優惠券或紀錄顯示 0，請確認 ADMIN_TOKEN。', 'ok');
+          return;
+        }
+        const map = {
+          shops: ['getShops', 'data'], categories: ['getProductCategories', 'categories'], products: ['getProducts', 'products'],
+          users: ['getUsers', 'users'], coupons: ['getCoupons', 'coupons'], logs: ['getOperationLogs', 'logs']
+        };
+        const [action, key] = map[target];
+        setStatus(`${target}Status`, '讀取中...');
+        const payload = await api(action, { limit: 300 });
+        state[target] = payload[key] || payload.data || [];
+        renderTable(`${target}Table`, state[target]);
+        setStatus(`${target}Status`, `已載入 ${state[target].length} 筆`, 'ok');
+      } catch (error) {
+        setStatus(`${target}Status`, error.message, 'error');
+      }
+    }
+
+    function renderMetrics() {
+      const metrics = [
+        ['店家', state.shops.length], ['商品分類', state.categories.length], ['商品', state.products.length],
+        ['會員', state.users.length], ['優惠券', state.coupons.length], ['操作紀錄', state.logs.length]
+      ];
+      document.getElementById('metrics').innerHTML = metrics.map(([label, value]) => `<div class="metric"><span>${escapeHtml(label)}</span><strong>${value}</strong></div>`).join('');
+    }
+
+    function renderTable(id, rows) {
+      const host = document.getElementById(id);
+      if (!rows || rows.length === 0) {
+        host.innerHTML = '<table><tbody><tr><td>沒有資料</td></tr></tbody></table>';
+        return;
+      }
+      const columns = [...rows.reduce((set, row) => {
+        Object.keys(row || {}).forEach((key) => set.add(key));
+        return set;
+      }, new Set())];
+      const head = columns.map((key) => `<th>${escapeHtml(key)}</th>`).join('');
+      const body = rows.map((row) => `<tr>${columns.map((key) => `<td class="${String(row[key] || '').length > 32 ? 'wrap' : ''}">${escapeHtml(row[key])}</td>`).join('')}</tr>`).join('');
+      host.innerHTML = `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+    }
+
+    function setStatus(id, message, type = '') {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = message;
+      el.className = `status ${type}`.trim();
+    }
+
+    function putSample() {
+      const type = document.getElementById('importType').value;
+      const samples = {
+        shops: 'id,name,category,icon,discount,address,lineContact,imageUrl,status,couponCount\nshop_demo,示範店家,餐飲,店,滿百折十,台北市,line://ti/p/@demo,https://example.com/shop.jpg,待核准,100',
+        categories: 'categoryId,shopId,name,description,status,sortOrder\npcat_demo,shop_demo,飲品,飲料分類,active,10',
+        products: 'productId,shopId,categoryId,sku,name,description,imageUrl,price,currency,stockQty,unit,status,sortOrder\nproduct_demo,shop_demo,pcat_demo,SKU-001,招牌商品,商品說明,https://example.com/product.jpg,120,TWD,50,份,active,10'
+      };
+      document.getElementById('csvText').value = samples[type];
+    }
+
+    async function importCsv() {
+      const text = document.getElementById('csvText').value.trim();
+      const type = document.getElementById('importType').value;
+      if (!text) return setStatus('importStatus', '請先貼上或選擇 CSV', 'error');
+      let rows;
+      try {
+        rows = parseCsv(text);
+      } catch (error) {
+        return setStatus('importStatus', error.message, 'error');
+      }
+      if (rows.length === 0) return setStatus('importStatus', 'CSV 沒有資料列', 'error');
+      setStatus('importStatus', `匯入中，共 ${rows.length} 筆...`);
+      const results = [];
+      for (const row of rows) {
+        const payload = normalizeRow(type, row);
+        try {
+          const action = type === 'shops' ? 'addShop' : type === 'categories' ? 'saveProductCategory' : 'saveProduct';
+          const response = await api(action, payload, 'POST');
+          results.push({ result: 'success', id: response.id || response.productId || response.categoryId || payload.id || payload.name, message: response.message || '' });
+        } catch (error) {
+          results.push({ result: 'error', id: payload.id || payload.productId || payload.categoryId || payload.name || '', message: error.message });
+        }
+      }
+      const ok = results.filter((row) => row.result === 'success').length;
+      renderTable('importTable', results);
+      setStatus('importStatus', `完成：成功 ${ok} 筆，失敗 ${results.length - ok} 筆`, ok === results.length ? 'ok' : 'error');
+      if (type === 'shops') refresh('shops');
+      if (type === 'categories') refresh('categories');
+      if (type === 'products') refresh('products');
+    }
+
+    function normalizeRow(type, row) {
+      const pick = (...keys) => keys.map((key) => row[key]).find((value) => value != null && String(value).trim() !== '') || '';
+      if (type === 'shops') {
+        return {
+          id: pick('id', 'shopId'), name: pick('name', '店家名稱'), category: pick('category', '分類', '店家分類'),
+          icon: pick('icon', '圖示'), discount: pick('discount', '優惠內容'), address: pick('address', '地址', 'mapUrl'),
+          lineContact: pick('lineContact', 'lineUrl', '加LINE連繫', '加LINE 建模'), imageUrl: pick('imageUrl', '圖片網址'),
+          status: pick('status', '狀態') || '待核准', couponCount: pick('couponCount') || '100'
+        };
+      }
+      if (type === 'categories') {
+        return {
+          categoryId: pick('categoryId', 'id'), shopId: pick('shopId', 'shop_id'), name: pick('name', '商品分類', 'category'),
+          description: pick('description', '分類說明'), status: pick('status') || 'active', sortOrder: pick('sortOrder', 'sort_order') || '0'
+        };
+      }
+      return {
+        productId: pick('productId', 'id'), shopId: pick('shopId', 'shop_id'), categoryId: pick('categoryId', 'category_id'),
+        sku: pick('sku', '商品編號'), name: pick('name', '商品名稱'), description: pick('description', '商品說明'),
+        imageUrl: pick('imageUrl', '圖片網址'), price: pick('price', '價格') || '0', currency: pick('currency') || 'TWD',
+        stockQty: pick('stockQty', 'stock_qty', '庫存') || '0', unit: pick('unit', '單位'), status: pick('status', '狀態') || 'active',
+        sortOrder: pick('sortOrder', 'sort_order') || '0'
+      };
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = '';
+      let quoted = false;
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+        if (char === '"' && quoted && next === '"') { cell += '"'; i += 1; continue; }
+        if (char === '"') { quoted = !quoted; continue; }
+        if (char === ',' && !quoted) { row.push(cell); cell = ''; continue; }
+        if ((char === '\n' || char === '\r') && !quoted) {
+          if (char === '\r' && next === '\n') i += 1;
+          row.push(cell); rows.push(row); row = []; cell = '';
+          continue;
+        }
+        cell += char;
+      }
+      row.push(cell); rows.push(row);
+      const cleanRows = rows.filter((items) => items.some((item) => String(item).trim() !== ''));
+      if (quoted) throw new Error('CSV 引號未關閉');
+      const headers = cleanRows.shift().map((key) => key.trim());
+      return cleanRows.map((items) => headers.reduce((obj, key, index) => {
+        obj[key] = (items[index] || '').trim();
+        return obj;
+      }, {}));
+    }
+
+    function escapeHtml(value) {
+      return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    refresh('overview');
+  </script>
+</body>
+</html>

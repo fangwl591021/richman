@@ -94,7 +94,7 @@ npx.cmd wrangler deploy --dry-run
 - `shops.status` 只允許 `待核准`、`啟用`、`停用`、`已刪除`。
 - 前端仍有 fallback 常數；正式切換時優先修改 `config.js`。
 - 現有 Worker URL `https://richman.fangwl591021.workers.dev/` 是否已由別處管理尚未確認，部署前需避免覆蓋錯誤 Worker。
-- 後台目前仍無 admin token 驗證，若 D1 成為正式資料庫，下一階段應補管理權限。
+- D1 管理 action 已加入 admin token 驗證；正式使用前需設定 Worker secret ADMIN_TOKEN。
 ## 遠端 D1 建立紀錄
 
 建立時間：2026-06-21
@@ -139,3 +139,38 @@ npx.cmd wrangler deploy --dry-run
   - `getProducts` 可讀回測試商品
   - `deleteProduct` soft-delete 測試商品
   - `deleteShop` soft-delete 測試店家
+
+## D1 後台與匯入
+
+新增頁面：`data_admin.html`
+
+可直接查看：
+
+- `shops`：店家
+- `product_categories`：商品分類
+- `products`：商品
+
+需要 `ADMIN_TOKEN`：
+
+- `getUsers`：會員清單
+- `getCoupons`：全部優惠券，支援 `userId` 過濾
+- `getOperationLogs`：操作紀錄
+- `saveProductCategory`：新增/更新商品分類
+- `saveProduct` / `addProduct`：新增/更新商品
+- `updateProductStatus` / `deleteProduct`：商品上下架與刪除
+- `updateShopStatus` / `deleteShop`：店家審核與刪除
+
+設定方式：
+
+```powershell
+npx.cmd wrangler secret put ADMIN_TOKEN
+npx.cmd wrangler deploy
+```
+
+CSV 匯入欄位：
+
+- 店家：`id,name,category,icon,discount,address,lineContact,imageUrl,status,couponCount`
+- 商品分類：`categoryId,shopId,name,description,status,sortOrder`
+- 商品：`productId,shopId,categoryId,sku,name,description,imageUrl,price,currency,stockQty,unit,status,sortOrder`
+
+`shopId` 必須先存在於 `shops`；商品分類的 `shopId` 可以留空，代表全域分類。
