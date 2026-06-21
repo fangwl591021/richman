@@ -878,6 +878,26 @@ function playCouponSound() {
 async function handleRewardCell(cellConfig) {
   const event = cellConfig.特殊事件;
   const param = cellConfig.事件參數;
+  const rewardMeta = {
+    source: 'reward',
+    sourceCellIndex: pos,
+    sourceCellName: cellConfig.格子名稱 || '獎勵'
+  };
+
+  if (typeof recordRewardLanding === 'function') {
+    recordRewardLanding(cellConfig, pos);
+  }
+
+  if ((event === '優惠券' || event === '獲得優惠券' || event === 'coupon') && param !== '0') {
+    showMsg(`🎁 ${cellConfig.格子名稱}！獲得優惠券！`);
+    const shops = await loadShops();
+    if (shops.length > 0) {
+      const shop = shops[Math.floor(Math.random() * shops.length)];
+      playCouponSound();
+      await saveCoupon(shop, rewardMeta);
+    }
+    return;
+  }
   
   if (event === '前進' && param) {
     showMsg(`🎉 ${cellConfig.格子名稱}！前進 ${param} 步！`);
@@ -906,7 +926,6 @@ async function handleRewardCell(cellConfig) {
     showMsg(`⭐ ${cellConfig.格子名稱}！`);
   }
 }
-
 // 處理懲罰格
 async function handlePenaltyCell(cellConfig) {
   const event = cellConfig.特殊事件;
@@ -950,8 +969,8 @@ async function handleChanceCell(cellConfig) {
           const shop2 = shops[Math.floor(Math.random() * shops.length)];
           // 🎵 播放抽到優惠券音效
           playCouponSound();
-          await saveCoupon(shop1);
-          await saveCoupon(shop2);
+          await saveCoupon(shop1, { source: 'chance_reward', sourceCellIndex: pos, sourceCellName: cellConfig.格子名稱 || '機會' });
+          await saveCoupon(shop2, { source: 'chance_reward', sourceCellIndex: pos, sourceCellName: cellConfig.格子名稱 || '機會' });
         }
       }},
       { msg: '✨ 好運！傳送到起點！', action: async () => {

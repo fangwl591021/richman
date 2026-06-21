@@ -397,9 +397,15 @@ async function saveCoupon(env, input, ctx) {
   if (!userId) return badRequest('缺少 userId');
   await ensureUser(env, userId);
   const couponId = getField(input, 'couponId', 'id') || id('coupon');
+  const source = getField(input, 'source', 'couponSource') || 'manual';
+  const sourceCellIndex = Number(getField(input, 'sourceCellIndex', 'cellIndex'));
+  const sourceCellName = getField(input, 'sourceCellName', 'cellName');
   await env.DB.prepare(`
-    INSERT INTO coupons (id, user_id, shop_id, shop_name, discount, image_url, line_contact, address, status, obtained_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'available', ?, ?)
+    INSERT INTO coupons (
+      id, user_id, shop_id, shop_name, discount, image_url, line_contact, address,
+      status, source, source_cell_index, source_cell_name, obtained_at, updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'available', ?, ?, ?, ?, ?)
   `).bind(
     couponId,
     userId,
@@ -409,13 +415,22 @@ async function saveCoupon(env, input, ctx) {
     getField(input, 'imageUrl', '圖片網址'),
     getField(input, 'lineContact', 'lineUrl', '加LINE連繫', '加LINE 建模'),
     getField(input, 'address', 'mapUrl', '地址'),
+    source,
+    Number.isFinite(sourceCellIndex) ? sourceCellIndex : null,
+    sourceCellName,
     nowIso(),
     nowIso()
   ).run();
-  ctx.waitUntil(logOperation(env, { action: 'saveCoupon', actor_user_id: userId, target_type: 'coupon', target_id: couponId, result: 'success' }));
+  ctx.waitUntil(logOperation(env, {
+    action: source === 'reward' ? 'rewardCouponIssued' : 'saveCoupon',
+    actor_user_id: userId,
+    target_type: 'coupon',
+    target_id: couponId,
+    result: 'success',
+    metadata: { source, sourceCellIndex: Number.isFinite(sourceCellIndex) ? sourceCellIndex : null, sourceCellName }
+  }));
   return json({ success: true, status: 'success', couponId, message: '優惠券已收藏' });
 }
-
 async function getUserCoupons(env, input) {
   const userId = getField(input, 'userId', 'lineUserId');
   if (!userId) return json({ success: true, status: 'success', coupons: [] });
@@ -434,6 +449,9 @@ async function getUserCoupons(env, input) {
       line_contact AS F,
       address AS '地址',
       address AS G,
+      source,
+      source_cell_index AS sourceCellIndex,
+      source_cell_name AS sourceCellName,
       obtained_at AS obtainedDate,
       CASE status WHEN 'used' THEN 1 WHEN 'abandoned' THEN 'abandoned' ELSE 0 END AS used
     FROM coupons
@@ -477,6 +495,9 @@ async function getCoupons(env, input) {
       image_url AS imageUrl,
       line_contact AS lineContact,
       address,
+      source,
+      source_cell_index AS sourceCellIndex,
+      source_cell_name AS sourceCellName,
       status,
       obtained_at AS obtainedAt,
       used_at AS usedAt,
@@ -508,6 +529,72 @@ async function getOperationLogs(env, input) {
     LIMIT ?
   `).bind(limit).all();
   return json({ success: true, status: 'success', logs: results || [], data: results || [] });
+}
+async function recordRewardLanding(env, input, ctx) {
+  const userId = getField(input, 'userId', 'lineUserId');
+  if (!userId) return badRequest('缺少 userId');
+  await ensureUser(env, userId);
+  const cellIndex = Number(getField(input, 'cellIndex', 'position'));
+  const cellName = getField(input, 'cellName', '格子名稱');
+  const event = getField(input, 'event', '特殊事件');
+  const eventParam = getField(input, 'eventParam', '事件參數');
+  const targetId = Number.isFinite(cellIndex) ? String(cellIndex) : 'reward';
+  ctx.waitUntil(logOperation(env, {
+    action: 'rewardLanding',
+    actor_user_id: userId,
+    target_type: 'cell',
+    target_id: targetId,
+    result: 'success',
+    message: cellName,
+    metadata: {
+      cellIndex: Number.isFinite(cellIndex) ? cellIndex : null,
+      cellName,
+      event,
+      eventParam
+    }
+  }));
+  return json({ success: true, status: 'success', message: '獎勵紀錄已建立' });
+}
+
+async function getRewardStats(env, input) {
+  const limit = getLimit(input, 30, 100);
+  const summary = await env.DB.prepare(`
+    SELECT
+      (SELECT COUNT(*) FROM operation_logs WHERE action = 'rewardLanding') AS rewardLandings,
+      (SELECT COUNT(*) FROM coupons WHERE source = 'reward') AS issuedCoupons,
+      (SELECT COUNT(*) FROM coupons WHERE source = 'reward' AND status = 'available') AS availableCoupons,
+      (SELECT COUNT(*) FROM coupons WHERE source = 'reward' AND status = 'used') AS usedCoupons,
+      (SELECT COUNT(*) FROM coupons WHERE source = 'reward' AND status = 'abandoned') AS abandonedCoupons
+  `).first();
+  const { results: recentRewards } = await env.DB.prepare(`
+    SELECT id, actor_user_id AS userId, target_id AS cellIndex, message AS cellName, metadata, created_at AS createdAt
+    FROM operation_logs
+    WHERE action = 'rewardLanding'
+    ORDER BY created_at DESC
+    LIMIT ?
+  `).bind(limit).all();
+  const { results: recentCoupons } = await env.DB.prepare(`
+    SELECT id AS couponId, user_id AS userId, shop_name AS shopName, discount, status,
+      source_cell_index AS sourceCellIndex, source_cell_name AS sourceCellName,
+      obtained_at AS obtainedAt, used_at AS usedAt, abandoned_at AS abandonedAt
+    FROM coupons
+    WHERE source = 'reward'
+    ORDER BY obtained_at DESC
+    LIMIT ?
+  `).bind(limit).all();
+  return json({
+    success: true,
+    status: 'success',
+    summary: {
+      rewardLandings: Number(summary && summary.rewardLandings) || 0,
+      issuedCoupons: Number(summary && summary.issuedCoupons) || 0,
+      availableCoupons: Number(summary && summary.availableCoupons) || 0,
+      usedCoupons: Number(summary && summary.usedCoupons) || 0,
+      abandonedCoupons: Number(summary && summary.abandonedCoupons) || 0
+    },
+    recentRewards: recentRewards || [],
+    recentCoupons: recentCoupons || []
+  });
 }
 async function updateCouponStatus(env, input, status, ctx) {
   const userId = getField(input, 'userId', 'lineUserId');
@@ -786,9 +873,11 @@ async function routeAction(action, env, input, ctx, isAdmin) {
     case 'checkProfileComplete': return checkProfileComplete(env, input);
     case 'saveCoupon': return saveCoupon(env, input, ctx);
     case 'getUserCoupons': return getUserCoupons(env, input);
+    case 'recordRewardLanding': return recordRewardLanding(env, input, ctx);
     case 'getUsers': return isAdmin ? getUsers(env, input) : unauthorized();
     case 'getCoupons': return isAdmin ? getCoupons(env, input) : unauthorized();
     case 'getOperationLogs': return isAdmin ? getOperationLogs(env, input) : unauthorized();
+    case 'getRewardStats': return isAdmin ? getRewardStats(env, input) : unauthorized();
     case 'previewLineActionCards': return isAdmin ? previewLineActionCards(input) : unauthorized();
     case 'importLineActionCards': return isAdmin ? importLineActionCards(env, input, ctx) : unauthorized();
     case 'previewActionRegistrants':

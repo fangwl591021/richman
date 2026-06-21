@@ -389,7 +389,7 @@ function getMockCoupons() {
 }
 
 // 在 common.js 中修改 saveCoupon 函數
-async function saveCoupon(shopData) {
+async function saveCoupon(shopData, options = {}) {
   try {
     const shopName = shopData["店家名稱"] || shopData.name || '';
     const discount = shopData["優惠內容"] || shopData.discount || '';
@@ -415,6 +415,9 @@ async function saveCoupon(shopData) {
     formData.append('imageUrl', imageUrl);
     formData.append('lineContact', lineContact); // 保存加LINE聯繫
     formData.append('address', address);         // 保存地址
+    if (options.source) formData.append('source', options.source);
+    if (options.sourceCellIndex !== undefined && options.sourceCellIndex !== null) formData.append('sourceCellIndex', options.sourceCellIndex);
+    if (options.sourceCellName) formData.append('sourceCellName', options.sourceCellName);
     
     const response = await fetch(GAS_BASE, {
       method: 'POST',
@@ -613,6 +616,33 @@ async function initializeApp() {
 // 🔧 新增工具函數
 // ============================================
 
+async function recordRewardLanding(cellConfig, position) {
+  try {
+    const user = getCurrentUser();
+    const uid = user?.userId || userId;
+    if (!uid) return false;
+    const formData = new FormData();
+    formData.append('action', 'recordRewardLanding');
+    formData.append('userId', uid);
+    formData.append('cellIndex', position);
+    formData.append('cellName', cellConfig?.格子名稱 || cellConfig?.cellName || '獎勵');
+    formData.append('event', cellConfig?.特殊事件 || cellConfig?.event || '');
+    formData.append('eventParam', cellConfig?.事件參數 || cellConfig?.eventParam || '');
+    const response = await fetch(GAS_BASE, { method: 'POST', body: formData });
+    const result = await response.json().catch(() => ({}));
+    return result.success === true || result.status === 'success';
+  } catch (error) {
+    console.warn('獎勵紀錄失敗:', error);
+    return false;
+  }
+}
+
+async function loadRewardStats(adminToken, limit = 30) {
+  const params = new URLSearchParams({ action: 'getRewardStats', limit: String(limit) });
+  if (adminToken) params.set('adminToken', adminToken);
+  const response = await fetch(`${GAS_BASE}?${params.toString()}`);
+  return response.json();
+}
 function getCurrentUser() {
   const lineUserId = localStorage.getItem('lineUserId');
   if (lineUserId) {
