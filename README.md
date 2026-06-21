@@ -76,6 +76,6 @@ npx.cmd wrangler deploy
 
 若來源是 `https://fangwl591021.github.io/LINE-/admin.html` 後台目前顯示的名片/店家資料，請使用 `data_admin.html` 的「LINE- Action 註冊戶」區塊。
 
-因 LINE- Worker 需要登入後的 LINE token，Richman Worker 不會直接抓取；請在已登入的 LINE- 後台按「匯出 Richman」，系統會下載 JSON 並開啟 Richman 後台。
+因 LINE- Worker 需要登入後的 LINE token，Richman Worker 不會直接抓取；請在已登入的 LINE- 後台按「同步 Richman」，直接把已載入名片寫入 Richman D1。
 
-回到 Richman D1 後台後，選擇剛下載的 JSON 檔，先預覽，再匯入 D1。
+第一次同步會要求輸入 Richman `ADMIN_TOKEN`，之後會保存在 LINE- 後台的本機瀏覽器。`匯出備份` 仍可下載 JSON，作為手動匯入備援。
